@@ -5,6 +5,9 @@
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.ts",
+	"repository": {
+		"url": "https://github.com/hf-chimera/store"
+	},
 	"scripts": {
 		"build": "tsup",
 		"lint": "tsc && pnpm biome check --write",
