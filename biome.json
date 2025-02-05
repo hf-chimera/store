@@ -11,7 +11,8 @@
 			"src/*.ts",
 			"src/*.js",
 			"package.json",
-			"tsconfig.json"
+			"tsconfig.json",
+			"tsup.config.ts"
 		],
 		"ignore": []
 	},
@@ -27,12 +28,49 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true,
+			"all": true,
 			"complexity": {
 				"noForEach": "off"
 			},
 			"performance": {
 				"noAccumulatingSpread": "off"
+			},
+			"correctness": {
+				"useHookAtTopLevel": "off",
+				"noUndeclaredDependencies": "off"
+			},
+			"suspicious": {
+				"noConsole": {
+					"options": {
+						"allow": [
+							"error",
+							"info",
+							"warn"
+						]
+					},
+					"level": "error"
+				},
+				"noConsoleLog": "off"
+			},
+			"style": {
+				"useBlockStatements": "off",
+				"noDefaultExport": "off",
+				"useNamingConvention": {
+					"options": {
+						"strictCase": false,
+						"requireAscii": true,
+						"conventions": [
+							{
+								"selector": {
+									"kind": "objectLiteralMember"
+								},
+								"match": ".*"
+							}
+						]
+					},
+					"level": "error"
+				},
+				"useExplicitLengthCheck": "off"
 			}
 		}
 	},

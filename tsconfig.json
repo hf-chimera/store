@@ -1,8 +1,9 @@
 {
 	"compilerOptions": {
 		"target": "es2022",
+		"moduleResolution": "NodeNext",
 		"moduleDetection": "force",
-		"module": "commonjs",
+		"module": "ES2022",
 		"resolveJsonModule": true,
 		"allowJs": true,
 		"noEmit": true,
