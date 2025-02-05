@@ -1,13 +1,12 @@
 {
 	"compilerOptions": {
-		"target": "es2022",
+		"target": "ES2022",
 		"moduleResolution": "NodeNext",
 		"moduleDetection": "force",
 		"module": "NodeNext",
 		"resolveJsonModule": true,
 		"allowJs": true,
 		"noEmit": true,
-		"verbatimModuleSyntax": true,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
