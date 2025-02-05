@@ -1,5 +1,6 @@
 src
 .github
+.changeset
 biome.json
 tsconfig.json
-tsup.config.
+tsup.config.js
