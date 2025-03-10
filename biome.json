@@ -36,7 +36,8 @@
 			},
 			"performance": {
 				"noAccumulatingSpread": "off",
-				"noBarrelFile": "off"
+				"noBarrelFile": "off",
+				"noReExportAll": "off"
 			},
 			"correctness": {
 				"useHookAtTopLevel": "off",
