@@ -8,8 +8,10 @@
 	"files": {
 		"ignoreUnknown": false,
 		"include": [
-			"src/*.ts",
-			"src/*.js",
+			"src/**/*.ts",
+			"src/**/*.js",
+			"test/**/*.ts",
+			"test/**/*.js",
 			"package.json",
 			"tsconfig.json",
 			"tsup.config.ts"
@@ -18,7 +20,7 @@
 	},
 	"formatter": {
 		"enabled": true,
-		"lineWidth": 80,
+		"lineWidth": 120,
 		"lineEnding": "lf",
 		"indentStyle": "tab"
 	},
@@ -33,7 +35,8 @@
 				"noForEach": "off"
 			},
 			"performance": {
-				"noAccumulatingSpread": "off"
+				"noAccumulatingSpread": "off",
+				"noBarrelFile": "off"
 			},
 			"correctness": {
 				"useHookAtTopLevel": "off",
@@ -50,11 +53,12 @@
 					},
 					"level": "error"
 				},
-				"noConsoleLog": "off"
+				"noConsoleLog": "off",
+				"noAssignInExpressions": "off"
 			},
 			"style": {
+				"useExplicitLengthCheck": "off",
 				"useBlockStatements": "off",
-				"noDefaultExport": "off",
 				"useNamingConvention": {
 					"options": {
 						"strictCase": false,
@@ -69,14 +73,8 @@
 						]
 					},
 					"level": "error"
-				},
-				"useExplicitLengthCheck": "off"
+				}
 			}
-		}
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "double"
 		}
 	}
 }

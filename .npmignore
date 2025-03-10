@@ -1,4 +1,5 @@
 src
+tests
 .github
 .changeset
 biome.json

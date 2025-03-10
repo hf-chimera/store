@@ -1,16 +1,32 @@
 {
 	"compilerOptions": {
-		"target": "ES2022",
-		"moduleResolution": "NodeNext",
-		"moduleDetection": "force",
-		"module": "NodeNext",
-		"resolveJsonModule": true,
-		"allowJs": true,
-		"noEmit": true,
 		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"target": "ES2022",
+		"verbatimModuleSyntax": true,
+		"allowJs": true,
+		"resolveJsonModule": true,
+		"moduleDetection": "force",
+		"allowImportingTsExtensions": true,
 		"strict": true,
 		"noUncheckedIndexedAccess": true,
-		"skipLibCheck": true
+		"forceConsistentCasingInFileNames": true,
+		"exactOptionalPropertyTypes": true,
+		"noImplicitOverride": true,
+		"noImplicitReturns": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"noUnusedLocals": true,
+		"moduleResolution": "Bundler",
+		"module": "ESNext",
+		"noEmit": true,
+		"outDir": "dist",
+		"sourceMap": true,
+		"lib": [
+			"es2022",
+			"ESNext",
+			"dom"
+		],
+		"declaration": true,
+		"declarationMap": true
 	}
 }
