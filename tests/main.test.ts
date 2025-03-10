@@ -1,8 +1,8 @@
 import {
+	ChimeraStore,
 	type ChimeraDefaultFetcher,
 	type ChimeraDefaultMutator
-} from "../src/config";
-import { ChimeraStore } from "../src";
+} from "../src";
 import { type TestEntityMap, TestEntityName } from "./stubs/types";
 
 const store = new ChimeraStore<TestEntityMap>({
