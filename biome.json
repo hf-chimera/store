@@ -55,9 +55,11 @@
 					"level": "error"
 				},
 				"noConsoleLog": "off",
-				"noAssignInExpressions": "off"
+				"noAssignInExpressions": "off",
+				"noExplicitAny": "off"
 			},
 			"style": {
+				"noVar": "off",
 				"useExplicitLengthCheck": "off",
 				"useBlockStatements": "off",
 				"useNamingConvention": {

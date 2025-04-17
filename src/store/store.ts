@@ -1,5 +1,6 @@
 import { EventEmitter } from "eventemitter3";
-import type { ChimeraEntityMap, ChimeraStoreConfig } from "./config.ts";
+import type { ChimeraEntityMap } from "../shared/types.ts";
+import type { ChimeraStoreConfig } from "./types.ts";
 
 type ChimeraStoreEventMap = {
 	"": []; // TODO: add events
@@ -11,9 +12,6 @@ export class ChimeraStore<
 > extends EventEmitter<ChimeraStoreEventMap> {
 	readonly #config: object;
 	readonly #userConfig: Config;
-
-	compileConfig() {
-	}
 
 	constructor(userConfig: Config) {
 		super();

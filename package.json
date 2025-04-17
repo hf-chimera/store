@@ -9,6 +9,9 @@
 	"repository": {
 		"url": "https://github.com/hf-chimera/store"
 	},
+	"bugs": {
+		"url": "https://github.com/hf-chimera/store/issues"
+	},
 	"scripts": {
 		"build": "tsup",
 		"lint": "tsc && pnpm biome check --write",
