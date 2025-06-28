@@ -29,7 +29,7 @@ export type ChimeraSimplifiedOrderDescriptor<Keys extends string = string> = {
 	nulls: ChimeraOrderNulls;
 };
 
-export type ChimeraKeyFromOrderGetter = (order: ChimeraSimplifiedOrderDescriptor[]) => string;
+export type ChimeraKeyFromOrderGetter = (order: ChimeraSimplifiedOrderDescriptor[] | null) => string;
 
 export type ChimeraOrderConfig = {
 	primitiveComparator: ChimeraPrimitiveComparator;

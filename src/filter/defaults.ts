@@ -46,4 +46,5 @@ export const chimeraDefaultFilterOperators = {
 export const chimeraDefaultFilterConfig = {
 	conjunctions: chimeraDefaultFilterConjunctions,
 	operators: chimeraDefaultFilterOperators,
+	getKey: chimeraDefaultGetKeyFromFilter,
 } satisfies ChimeraFilterConfig;

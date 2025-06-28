@@ -1,6 +1,6 @@
 import type { ChimeraFilterConfig, ChimeraSimplifiedFilter } from "../filter/types.ts";
 import type { ChimeraSimplifiedOrderDescriptor } from "../order/types.ts";
-import type { ChimeraEntityId, ChimeraEntityMap, ChimeraIdGetterFunc, DeepPartial } from "../shared/types.ts";
+import type { ChimeraEntityId, ChimeraEntityMap, ChimeraIdGetterFunc, DeepPartial, StrKeys } from "../shared/types.ts";
 
 export enum ChimeraQueryFetchingState {
 	/** Query just initialized. */
@@ -60,9 +60,15 @@ export interface ChimeraQueryFetchingStatable {
 
 export type ChimeraQueryEntityIdGetter<Entity> = keyof Entity | ChimeraIdGetterFunc<Entity>;
 
+export type ChimeraQueryDefaultEntityIdGetterFunction<EntityMap extends ChimeraEntityMap> = <
+	EntityName extends StrKeys<EntityMap>,
+>(
+	name: EntityName,
+	newEntity: EntityMap[EntityName],
+) => ChimeraEntityId;
 export type ChimeraQueryDefaultEntityIdGetter<EntityMap extends ChimeraEntityMap> =
 	| keyof EntityMap[keyof EntityMap]
-	| (<EntityName extends keyof EntityMap>(name: EntityName, newEntity: EntityMap[EntityName]) => ChimeraEntityId);
+	| ChimeraQueryDefaultEntityIdGetterFunction<EntityMap>;
 
 /**
  * Response types
@@ -106,8 +112,8 @@ export type ChimeraQueryEntityCollectionFetcherParams<
 	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
 	Meta = any,
 > = {
-	order: ChimeraSimplifiedOrderDescriptor<keyof Entity & string>;
-	filter: ChimeraSimplifiedFilter<FilterConfig, keyof Entity & string>;
+	order: ChimeraSimplifiedOrderDescriptor<keyof Entity & string>[] | null;
+	filter: ChimeraSimplifiedFilter<FilterConfig, keyof Entity & string> | null;
 	meta: Meta;
 };
 
@@ -134,13 +140,15 @@ export type ChimeraQueryEntityItemFetcher<Entity> = (
 export type ChimeraQueryDefaultCollectionFetcher<
 	EntityMap extends ChimeraEntityMap,
 	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
-> = <EntityName extends keyof EntityMap>(
+> = <EntityName extends StrKeys<EntityMap>>(
 	entityName: EntityName,
 	params: ChimeraQueryEntityCollectionFetcherParams<EntityMap[EntityName], FilterConfig>,
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
 ) => Promise<ChimeraQueryCollectionFetcherResponse<EntityMap[EntityName]>>;
 
-export type ChimeraQueryDefaultItemFetcher<EntityMap extends ChimeraEntityMap> = <EntityName extends keyof EntityMap>(
+export type ChimeraQueryDefaultItemFetcher<EntityMap extends ChimeraEntityMap> = <
+	EntityName extends StrKeys<EntityMap>,
+>(
 	entityName: EntityName,
 	params: ChimeraQueryEntityItemFetcherParams<EntityMap[EntityName]>,
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
@@ -160,14 +168,16 @@ export type ChimeraQueryEntityBatchedUpdater<Entity> = (
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
 ) => Promise<ChimeraQueryCollectionFetcherResponse<Entity>>;
 
-export type ChimeraQueryDefaultItemUpdater<EntityMap extends ChimeraEntityMap> = <EntityName extends keyof EntityMap>(
+export type ChimeraQueryDefaultItemUpdater<EntityMap extends ChimeraEntityMap> = <
+	EntityName extends StrKeys<EntityMap>,
+>(
 	entityName: EntityName,
 	updatedEntity: EntityMap[EntityName],
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
 ) => Promise<ChimeraQueryItemFetcherResponse<EntityMap[EntityName]>>;
 
 export type ChimeraQueryDefaultBatchedUpdater<EntityMap extends ChimeraEntityMap> = <
-	EntityName extends keyof EntityMap,
+	EntityName extends StrKeys<EntityMap>,
 >(
 	entityName: EntityName,
 	updatedEntities: EntityMap[EntityName][],
@@ -188,14 +198,16 @@ export type ChimeraQueryEntityBatchedDeleter = (
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
 ) => Promise<ChimeraQueryBatchedDeleteResponse>;
 
-export type ChimeraQueryDefaultItemDeleter<EntityMap extends ChimeraEntityMap> = <EntityName extends keyof EntityMap>(
+export type ChimeraQueryDefaultItemDeleter<EntityMap extends ChimeraEntityMap> = <
+	EntityName extends StrKeys<EntityMap>,
+>(
 	entityName: EntityName,
 	deleteId: ChimeraEntityId,
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
 ) => Promise<ChimeraQueryItemDeleteResponse>;
 
 export type ChimeraQueryDefaultBatchedDeleter<EntityMap extends ChimeraEntityMap> = <
-	EntityName extends keyof EntityMap,
+	EntityName extends StrKeys<EntityMap>,
 >(
 	entityName: EntityName,
 	deletedIds: ChimeraEntityId[],
@@ -216,14 +228,16 @@ export type ChimeraQueryEntityBatchedCreator<Entity> = (
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
 ) => Promise<ChimeraQueryCollectionFetcherResponse<Entity>>;
 
-export type ChimeraQueryDefaultItemCreator<EntityMap extends ChimeraEntityMap> = <EntityName extends keyof EntityMap>(
+export type ChimeraQueryDefaultItemCreator<EntityMap extends ChimeraEntityMap> = <
+	EntityName extends StrKeys<EntityMap>,
+>(
 	entityName: EntityName,
 	item: DeepPartial<EntityMap[EntityName]>,
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
 ) => Promise<ChimeraQueryItemFetcherResponse<EntityMap[EntityName]>>;
 
 export type ChimeraQueryDefaultBatchedCreator<EntityMap extends ChimeraEntityMap> = <
-	EntityName extends keyof EntityMap,
+	EntityName extends StrKeys<EntityMap>,
 >(
 	entityName: EntityName,
 	items: DeepPartial<EntityMap[EntityName]>[],
@@ -234,7 +248,7 @@ export type ChimeraQueryDefaultBatchedCreator<EntityMap extends ChimeraEntityMap
  * Config types
  */
 
-export type QueryEntityConfig<Entity> = {
+export type QueryEntityConfig<Entity extends object> = {
 	name: string;
 
 	devMode: boolean;

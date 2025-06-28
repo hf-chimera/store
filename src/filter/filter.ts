@@ -17,7 +17,7 @@ import type {
 
 const compileOperator = <Config extends ChimeraFilterConfig, Entity>(
 	config: Config,
-	{op, value, test}: ChimeraFilterOperatorDescriptor<Config, Entity>,
+	{ op, value, test }: ChimeraFilterOperatorDescriptor<Config, Entity>,
 ): ChimeraFilterChecker<Entity> => {
 	const operatorFunc = config.operators[op];
 	if (!operatorFunc) throw new ChimeraFilterOperatorNotFoundError(op);
@@ -27,7 +27,7 @@ const compileOperator = <Config extends ChimeraFilterConfig, Entity>(
 
 export const compileConjunction = <Config extends ChimeraFilterConfig, Entity>(
 	config: Config,
-	{kind, operations}: ChimeraConjunctionDescriptor<Config, Entity>,
+	{ kind, operations }: ChimeraConjunctionDescriptor<Config, Entity>,
 ): ChimeraFilterChecker<Entity> => {
 	const conjunction = config.conjunctions[kind];
 	if (!conjunction) throw new ChimeraFilterConjunctionNotFoundError(kind);
@@ -48,10 +48,10 @@ export const compileConjunction = <Config extends ChimeraFilterConfig, Entity>(
 };
 
 export const simplifyOperator = <Config extends ChimeraFilterConfig, Entity>({
-	                                                                             op,
-	                                                                             value,
-	                                                                             test,
-                                                                             }: ChimeraFilterOperatorDescriptor<Config, Entity>): SimplifiedOperator<Config> => ({
+	op,
+	value,
+	test,
+}: ChimeraFilterOperatorDescriptor<Config, Entity>): SimplifiedOperator<Config> => ({
 	type: ChimeraOperatorSymbol,
 	key: simplifyPropertyGetter(value),
 	op,
@@ -59,9 +59,9 @@ export const simplifyOperator = <Config extends ChimeraFilterConfig, Entity>({
 });
 
 export const simplifyConjunction = <Config extends ChimeraFilterConfig, Entity>({
-	                                                                                kind,
-	                                                                                operations,
-                                                                                }: ChimeraConjunctionDescriptor<Config, Entity>): SimplifiedConjunction<Config> => ({
+	kind,
+	operations,
+}: ChimeraConjunctionDescriptor<Config, Entity>): SimplifiedConjunction<Config> => ({
 	type: ChimeraConjunctionSymbol,
 	kind,
 	operations: operations.map((op) => {
@@ -92,9 +92,9 @@ export const chimeraCreateOperator = <
 	op,
 	value: (typeof value === "string"
 		? {
-			key: value,
-			get: value,
-		}
+				key: value,
+				get: value,
+			}
 		: value) as ChimeraPropertyGetter<Entity, Parameters<Config["operators"][Op]>[0]>,
 	test,
 });
@@ -114,9 +114,9 @@ export const chimeraCreateConjunction = <
 
 export const compileFilter = <Entity, Config extends ChimeraFilterConfig = ChimeraFilterConfig>(
 	config: Config,
-	descriptor: ChimeraFilterDescriptor<Config, Entity>,
-): ChimeraFilterChecker<Entity> => compileConjunction(config, descriptor);
+	descriptor?: ChimeraFilterDescriptor<Config, Entity>,
+): ChimeraFilterChecker<Entity> => (descriptor ? compileConjunction(config, descriptor) : () => true);
 
 export const simplifyFilter = <Entity, Config extends ChimeraFilterConfig = ChimeraFilterConfig>(
-	descriptor: ChimeraFilterDescriptor<Config, Entity>,
-): ChimeraSimplifiedFilter<Config> => simplifyConjunction(descriptor);
+	descriptor?: ChimeraFilterDescriptor<Config, Entity>,
+): ChimeraSimplifiedFilter<Config> => (descriptor ? simplifyConjunction(descriptor) : null);

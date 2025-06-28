@@ -17,4 +17,5 @@ const store = new ChimeraStore<TestEntityMap>({
 	}
 });
 
-store;
+const _ = store.from(TestEntityName.Post).getItem('1');
+_

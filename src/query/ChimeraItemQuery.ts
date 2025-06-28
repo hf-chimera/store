@@ -17,8 +17,8 @@ import {
 
 import { EventEmitter } from "eventemitter3";
 import { ChimeraInternalError } from "../shared/errors.ts";
-import { deepObjectAssign, makeCancellablePromise } from "../shared/shared.ts";
-import { ChimeraDeleteOneSym, ChimeraSetOneSym, IN_PROGRESS_STATES } from "./constants.ts";
+import { deepObjectAssign, deepObjectFreeze, makeCancellablePromise, none, some } from "../shared/shared.ts";
+import { ChimeraDeleteOneSym, ChimeraGetParamsSym, ChimeraSetOneSym, IN_PROGRESS_STATES } from "./constants.ts";
 import {
 	ChimeraQueryAlreadyRunningError,
 	ChimeraQueryDeletedItemError,
@@ -32,29 +32,34 @@ import {
 	ChimeraQueryUnsuccessfulDeletionError,
 } from "./errors.ts";
 
-export type ChimeraStoreItemEventMap<Item> = {
+export type ChimeraItemQueryEventMap<Item extends object> = {
 	/** Once the query is initialized */
-	initialized: [ChimeraStoreItemQuery<Item>];
+	initialized: [ChimeraItemQuery<Item>];
 
 	/** Once the query data was created */
-	created: [ChimeraStoreItemQuery<Item>];
+	created: [ChimeraItemQuery<Item>];
 
 	/** Once the query data is ready (will be followed by 'update') */
-	ready: [ChimeraStoreItemQuery<Item>];
+	ready: [ChimeraItemQuery<Item>];
 
 	/** Each time the query was updated */
-	updated: [ChimeraStoreItemQuery<Item>, Option<Item>];
+	updated: [ChimeraItemQuery<Item>, Item, Option<Item>];
+	/** Each time the query was an initiator of update */
+	selfUpdated: [ChimeraItemQuery<Item>, Item, Option<Item>];
 
 	/** Once the query data was deleted */
-	deleted: [ChimeraStoreItemQuery<Item>];
+	deleted: [ChimeraItemQuery<Item>, ChimeraEntityId];
+	/** Once the query was an initiator of deletion */
+	selfDeleted: [ChimeraItemQuery<Item>, ChimeraEntityId];
 
-	/** Each time fetcher produces an error */
-	error: [ChimeraStoreItemQuery<Item>, unknown];
+	/** Each time the fetcher produces an error */
+	error: [ChimeraItemQuery<Item>, unknown];
 };
 
-export class ChimeraStoreItemQuery<Item>
-	extends EventEmitter<ChimeraStoreItemEventMap<Item>>
-	implements ChimeraQueryFetchingStatable {
+export class ChimeraItemQuery<Item extends object>
+	extends EventEmitter<ChimeraItemQueryEventMap<Item>>
+	implements ChimeraQueryFetchingStatable
+{
 	#item: Option<Item>;
 	#mutable: Item | null;
 	#state: ChimeraQueryFetchingState;
@@ -64,9 +69,9 @@ export class ChimeraStoreItemQuery<Item>
 	readonly #idGetter: ChimeraIdGetterFunc<Item>;
 	readonly #params: ChimeraQueryEntityItemFetcherParams<Item>;
 
-	#emit<T extends EventEmitter.EventNames<ChimeraStoreItemEventMap<Item>>>(
+	#emit<T extends EventEmitter.EventNames<ChimeraItemQueryEventMap<Item>>>(
 		event: T,
-		...args: EventEmitter.EventArgs<ChimeraStoreItemEventMap<Item>, T>
+		...args: EventEmitter.EventArgs<ChimeraItemQueryEventMap<Item>, T>
 	) {
 		queueMicrotask(() => super.emit(event, ...args));
 	}
@@ -118,14 +123,20 @@ export class ChimeraStoreItemQuery<Item>
 	#setItem(item: Item) {
 		!this.#item.some && this.#emit("ready", this);
 		const old = this.#item;
-		this.#item = {some: true, value: item};
+		this.#item = some(item);
 		this.#resetMutable();
-		this.#emit("updated", this, old);
+		this.#emit("updated", this, item, old);
+	}
+
+	#setNewItem(item: Item) {
+		deepObjectFreeze(item);
+		this.#setItem(item);
+		this.#emit("selfUpdated", this, item, this.#item);
 	}
 
 	#deleteItem() {
 		this.#state = ChimeraQueryFetchingState.Deleted;
-		this.#emit("deleted", this);
+		this.#emit("deleted", this, this.#params.id);
 	}
 
 	#setError(error: unknown, source: ChimeraQueryError) {
@@ -139,9 +150,9 @@ export class ChimeraStoreItemQuery<Item>
 		promise: ChimeraCancellablePromise<ChimeraQueryItemFetcherResponse<Item>>,
 	): ChimeraCancellablePromise<ChimeraQueryItemFetcherResponse<Item>> {
 		promise
-			.then(({data}) => {
+			.then(({ data }) => {
 				if (this.#config.trustQuery && !this.#config.devMode) {
-					this.#setItem(data);
+					this.#setNewItem(data);
 					this.#state = ChimeraQueryFetchingState.Fetched;
 					return;
 				}
@@ -150,12 +161,12 @@ export class ChimeraStoreItemQuery<Item>
 				const newId = this.#idGetter(data);
 
 				if (localId === newId) {
-					this.#setItem(data);
+					this.#setNewItem(data);
 					this.#state = ChimeraQueryFetchingState.Fetched;
 				} else {
 					this.#config.devMode &&
-					this.#config.trustQuery &&
-					console.warn(new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, newId));
+						this.#config.trustQuery &&
+						console.warn(new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, newId));
 
 					if (!this.#config.trustQuery) throw new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, newId);
 				}
@@ -175,36 +186,38 @@ export class ChimeraStoreItemQuery<Item>
 		}
 
 		this.#state = ChimeraQueryFetchingState.Updating;
-		const {controller} = this.#prepareRequestParams();
-		const promise = this.#config.itemUpdater(newItem, {signal: controller.signal});
+		const { controller } = this.#prepareRequestParams();
+		const promise = this.#config.itemUpdater(newItem, { signal: controller.signal });
 		this.#setPromise(this.#watchPromise(makeCancellablePromise(promise, controller)));
 		return promise;
 	}
 
 	#requestDelete(): Promise<ChimeraQueryItemDeleteResponse> {
 		this.#state = ChimeraQueryFetchingState.Deleting;
-		const {controller} = this.#prepareRequestParams();
+		const { controller } = this.#prepareRequestParams();
 
-		const promise = this.#config.itemDeleter(this.#params.id, {signal: controller.signal});
+		const promise = this.#config.itemDeleter(this.#params.id, { signal: controller.signal });
 
 		const cancellablePromise = makeCancellablePromise(promise, controller);
 		this.#setPromise(cancellablePromise);
 		cancellablePromise.then(
-			({result: {id, success}}) => {
+			({ result: { id, success } }) => {
 				if (this.#config.trustQuery && !this.#config.devMode && success) return this.#deleteItem();
 
 				const localId = this.#params.id;
 
 				if (localId !== id) {
 					this.#config.devMode &&
-					this.#config.trustQuery &&
-					console.warn(new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, id));
+						this.#config.trustQuery &&
+						console.warn(new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, id));
 
 					if (!this.#config.trustQuery) throw new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, id);
 				}
 
-				if (success) this.#deleteItem();
-				else {
+				if (success) {
+					this.#deleteItem();
+					this.#emit("selfDeleted", this, id);
+				} else {
 					const error = new ChimeraQueryUnsuccessfulDeletionError(this.#config.name, this.#params.id);
 					this.#state = ChimeraQueryFetchingState.ReErrored;
 					this.#lastError = error;
@@ -229,7 +242,7 @@ export class ChimeraStoreItemQuery<Item>
 		this.#idGetter = config.idGetter;
 		this.#params = params;
 		this.#promise = null;
-		this.#item = {some: false};
+		this.#item = none();
 		this.#mutable = null;
 		this.#state = ChimeraQueryFetchingState.Initialized;
 
@@ -248,23 +261,30 @@ export class ChimeraStoreItemQuery<Item>
 			this.#state = ChimeraQueryFetchingState.Prefetched;
 		} else if (toCreate.some) {
 			this.#state = ChimeraQueryFetchingState.Creating;
-			const {controller} = this.#prepareRequestParams();
+			const { controller } = this.#prepareRequestParams();
 			this.#setPromise(
 				this.#watchPromise(
-					makeCancellablePromise(config.itemCreator(toCreate.value, {signal: controller.signal}), controller),
+					makeCancellablePromise(config.itemCreator(toCreate.value, { signal: controller.signal }), controller),
 				),
-			).then(() => this.#emit("created", this));
+			).then(({ data }) => {
+				this.#params.id = this.#idGetter(data);
+				this.#emit("created", this);
+			});
 		} else {
 			this.#state = ChimeraQueryFetchingState.Fetching;
-			const {controller} = this.#prepareRequestParams();
+			const { controller } = this.#prepareRequestParams();
 			this.#setPromise(
 				this.#watchPromise(
-					makeCancellablePromise(config.itemFetcher(params, {signal: controller.signal}), controller),
+					makeCancellablePromise(config.itemFetcher(params, { signal: controller.signal }), controller),
 				),
 			);
 		}
 
 		this.#emit("initialized", this);
+	}
+
+	get [ChimeraGetParamsSym](): ChimeraQueryEntityItemFetcherParams<Item> {
+		return this.#params;
 	}
 
 	[ChimeraSetOneSym](item: Item) {
@@ -296,6 +316,10 @@ export class ChimeraStoreItemQuery<Item>
 		return this.#lastError;
 	}
 
+	get id(): ChimeraEntityId {
+		return this.#params.id;
+	}
+
 	/** Return item if it is ready, throw error otherwise */
 	get data(): Item {
 		return this.#readyItem();
@@ -309,7 +333,7 @@ export class ChimeraStoreItemQuery<Item>
 
 	/**
 	 *  Trigger refetch, return existing refetch promise if already running
-	 *  @param {boolean} force If true cancels any running process and starts a new one
+	 *  @param force If true cancels any running process and starts a new one
 	 *  @throws {ChimeraQueryAlreadyRunningError} If deleting or updating already in progress
 	 */
 	refetch(force = false): Promise<ChimeraQueryItemFetcherResponse<Item>> {
@@ -326,15 +350,15 @@ export class ChimeraStoreItemQuery<Item>
 			throw new ChimeraQueryAlreadyRunningError(this.#config.name, this.#state);
 
 		this.#state = ChimeraQueryFetchingState.Refetching;
-		const {controller} = this.#prepareRequestParams();
-		const promise = this.#config.itemFetcher(this.#params, {signal: controller.signal});
+		const { controller } = this.#prepareRequestParams();
+		const promise = this.#config.itemFetcher(this.#params, { signal: controller.signal });
 		return this.#setPromise(this.#watchPromise(makeCancellablePromise(promise, controller)));
 	}
 
 	/**
 	 * Update item using updated copy, a running update process will be cancelled
 	 * @param newItem new item to replace existing
-	 * @param {boolean} force if true cancels any running process including fetch and delete
+	 * @param force if true cancels any running process including fetch and delete
 	 * @throws {ChimeraQueryAlreadyRunningError} If deleting or updating already in progress
 	 */
 	update(newItem: Item, force = false): Promise<ChimeraQueryItemFetcherResponse<Item>> {
@@ -359,7 +383,7 @@ export class ChimeraStoreItemQuery<Item>
 	 * that can be used to patch item in place or return a patched value,
 	 * a running update process will be cancelled
 	 * @param mutator mutator function
-	 * @param {boolean} force if true cancels any running process including fetch and delete
+	 * @param force if true cancels any running process including fetch and delete
 	 * @throws {ChimeraQueryAlreadyRunningError} If deleting or updating already in progress
 	 */
 	mutate(mutator: (draft: Item) => Item, force = false): Promise<ChimeraQueryItemFetcherResponse<Item>> {

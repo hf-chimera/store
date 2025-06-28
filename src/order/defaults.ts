@@ -1,10 +1,5 @@
 import { ChimeraOrderTypeComparisonError } from "./errors.ts";
-import type {
-	ChimeraKeyFromOrderGetter,
-	ChimeraOrderConfig,
-	ChimeraPrimitiveComparator,
-	ChimeraSimplifiedOrderDescriptor,
-} from "./types.ts";
+import type { ChimeraKeyFromOrderGetter, ChimeraOrderConfig, ChimeraPrimitiveComparator } from "./types.ts";
 import { ChimeraOrderNulls } from "./types.ts";
 
 export const chimeraDefaultComparator: ChimeraPrimitiveComparator = (
@@ -31,9 +26,7 @@ export const chimeraDefaultComparator: ChimeraPrimitiveComparator = (
 	return result;
 };
 
-export const chimeraDefaultKeyFromOrder: ChimeraKeyFromOrderGetter = (
-	order: ChimeraSimplifiedOrderDescriptor[],
-): string => JSON.stringify(order);
+export const chimeraDefaultKeyFromOrder: ChimeraKeyFromOrderGetter = (order): string => JSON.stringify(order);
 
 export const chimeraDefaultOrderConfig = {
 	primitiveComparator: chimeraDefaultComparator,

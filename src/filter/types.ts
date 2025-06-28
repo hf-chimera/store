@@ -11,11 +11,6 @@ export type ChimeraConjunctionMap<Conjunctions extends string = string> = {
 export type ChimeraOperatorFunction = (itemValue: any, testValue: any) => boolean;
 export type ChimeraOperatorMap = Record<string, ChimeraOperatorFunction>;
 
-export type ChimeraFilterConfig = {
-	conjunctions: ChimeraConjunctionMap;
-	operators: ChimeraOperatorMap;
-};
-
 export type ChimeraFilterOperatorDescriptor<
 	Config extends ChimeraFilterConfig,
 	Entity,
@@ -77,8 +72,14 @@ export type SimplifiedConjunction<
 export type ChimeraSimplifiedFilter<
 	Config extends ChimeraFilterConfig = ChimeraFilterConfig,
 	Keys extends string = string,
-> = SimplifiedConjunction<Config, Keys>;
+> = SimplifiedConjunction<Config, Keys> | null;
 
 export type ChimeraKeyFromFilterGetter = <Config extends ChimeraFilterConfig = ChimeraFilterConfig>(
-	filter: ChimeraSimplifiedFilter<Config>,
+	filter: ChimeraSimplifiedFilter<Config> | null,
 ) => string;
+
+export type ChimeraFilterConfig = {
+	conjunctions: ChimeraConjunctionMap;
+	operators: ChimeraOperatorMap;
+	getKey: ChimeraKeyFromFilterGetter;
+};

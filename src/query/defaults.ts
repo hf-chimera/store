@@ -1,6 +1,6 @@
 import type { ChimeraEntityMap } from "../shared/types.ts";
+import type { ChimeraQueryConfig, ChimeraQueryDefaultsConfig } from "./types.ts";
 import { ChimeraQueryNotSpecifiedError } from "./errors.ts";
-import type { ChimeraQueryConfig } from "./types.ts";
 
 export const chimeraDefaultQueryConfig = {
 	defaults: {
@@ -38,6 +38,6 @@ export const chimeraDefaultQueryConfig = {
 		batchedCreator: (entity: string) => {
 			throw new ChimeraQueryNotSpecifiedError(entity, "batchedCreator");
 		},
-	},
+	} as Required<ChimeraQueryDefaultsConfig<ChimeraEntityMap>>,
 	entities: {},
 } satisfies ChimeraQueryConfig<ChimeraEntityMap>;

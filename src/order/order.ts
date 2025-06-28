@@ -11,10 +11,10 @@ import type {
 import { ChimeraOrderNulls } from "./types.ts";
 
 export const compileOrderDescriptor = <Entity>({
-	                                               key,
-	                                               desc,
-	                                               nulls,
-                                               }: ChimeraOrderDescriptor<Entity>): CompiledOrderDescriptor<Entity> => ({
+	key,
+	desc,
+	nulls,
+}: ChimeraOrderDescriptor<Entity>): CompiledOrderDescriptor<Entity> => ({
 	get: compilePropertyGetter(key),
 	desc,
 	nulls,
@@ -25,15 +25,17 @@ export const chimeraCreateOrderBy = <Entity>(
 	desc = false,
 	nulls: ChimeraOrderNulls = ChimeraOrderNulls.Last,
 ): ChimeraOrderDescriptor<Entity> => ({
-	key: (typeof key === "string" ? {key, get: key} : key) as ChimeraPropertyGetter<Entity>,
+	key: (typeof key === "string" ? { key, get: key } : key) as ChimeraPropertyGetter<Entity>,
 	desc,
 	nulls,
 });
 
 export const buildComparator = <Entity>(
-	orderBy: ChimeraOrderPriority<Entity>,
 	comparator: ChimeraPrimitiveComparator,
+	orderBy?: ChimeraOrderPriority<Entity>,
 ): ChimeraOrderByComparator<Entity> => {
+	if (!orderBy) return () => 0;
+
 	const compiledPriority = orderBy.map((ob) => compileOrderDescriptor(ob));
 	return (a: Entity, b: Entity) => {
 		let result = 0;
@@ -47,6 +49,6 @@ export const buildComparator = <Entity>(
 };
 
 export const simplifyOrderBy = <Entity>(
-	orderBy: ChimeraOrderPriority<Entity>,
-): ChimeraSimplifiedOrderDescriptor<keyof Entity & string>[] =>
-	orderBy.map((ob) => ({get: ob.key.key, desc: ob.desc, nulls: ob.nulls}));
+	orderBy?: ChimeraOrderPriority<Entity>,
+): ChimeraSimplifiedOrderDescriptor<keyof Entity & string>[] | null =>
+	orderBy ? orderBy.map((ob) => ({ get: ob.key.key, desc: ob.desc, nulls: ob.nulls })) : null;

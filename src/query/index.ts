@@ -27,8 +27,8 @@ export {
 	ChimeraQueryTrustIdMismatchError,
 	ChimeraQueryTrustFetchedCollectionError,
 } from "./errors.ts";
-export type { ChimeraStoreItemEventMap } from "./item.ts";
-export type { ChimeraStoreCollectionEventMap } from "./collection.ts";
+export type { ChimeraItemQueryEventMap } from "./ChimeraItemQuery.ts";
+export type { ChimeraCollectionQueryEventMap } from "./ChimeraCollectionQuery.ts";
 
-export { ChimeraStoreItemQuery } from "./item.ts";
-export { ChimeraStoreCollectionQuery } from "./collection.ts";
+export { ChimeraItemQuery } from "./ChimeraItemQuery.ts";
+export { ChimeraCollectionQuery } from "./ChimeraCollectionQuery.ts";

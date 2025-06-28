@@ -9,16 +9,18 @@ export type OneOf<T> = {
 	[K in keyof T]-?: Pick<T, K> & Partial<T>;
 }[keyof T];
 
+export type StrKeys<T> = keyof T & string & {};
+
 export type DeepPartial<T> = T extends object
 	? {
-		[P in keyof T]?: DeepPartial<T[P]>;
-	}
+			[P in keyof T]?: DeepPartial<T[P]>;
+		}
 	: T;
 
-type Primitive = string | number | boolean | null | undefined;
-type DeepValue = Primitive | DeepObject | DeepArray;
-type DeepObject = { [key: string]: DeepValue };
-type DeepArray = DeepValue[];
+export type Primitive = string | number | symbol | boolean | null | undefined;
+export type DeepValue = Primitive | DeepObject | DeepArray | ((...args: any) => any);
+export type DeepObject = { [key: string | symbol]: DeepValue };
+export type DeepArray = DeepValue[];
 export type AnyObject = Record<string, DeepValue>;
 
 export type OptionSome<T> = { some: true; value: T };

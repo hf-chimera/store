@@ -1,5 +1,6 @@
 import { ChimeraQueryFetchingState } from "./types.ts";
 
+export const ChimeraGetParamsSym = Symbol("ChimeraGetParamsSym");
 export const ChimeraSetOneSym = Symbol("ChimeraSetOneSym");
 export const ChimeraSetManySym = Symbol("ChimeraSetManySym");
 export const ChimeraDeleteOneSym = Symbol("ChimeraDeleteOneSym");
