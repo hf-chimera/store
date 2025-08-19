@@ -27,7 +27,10 @@ export type OptionSome<T> = { some: true; value: T };
 export type OptionNone = { some: false };
 export type Option<T> = OptionSome<T> | OptionNone;
 
-export type ChimeraCancellablePromise<Result = unknown> = Promise<Result> & { cancel(): void };
+export type ChimeraCancellablePromise<Result = unknown> = Promise<Result> & {
+	cancel(): void;
+	cancelled(cb: () => void): void;
+};
 
 export type ChimeraEntityId = string | number;
 

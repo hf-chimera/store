@@ -52,17 +52,16 @@ export const simplifyOperator = <Config extends ChimeraFilterConfig, Entity>({
 	value,
 	test,
 }: ChimeraFilterOperatorDescriptor<Config, Entity>): SimplifiedOperator<Config> => ({
-	type: ChimeraOperatorSymbol,
 	key: simplifyPropertyGetter(value),
 	op,
 	test,
+	type: ChimeraOperatorSymbol,
 });
 
 export const simplifyConjunction = <Config extends ChimeraFilterConfig, Entity>({
 	kind,
 	operations,
 }: ChimeraConjunctionDescriptor<Config, Entity>): SimplifiedConjunction<Config> => ({
-	type: ChimeraConjunctionSymbol,
 	kind,
 	operations: operations.map((op) => {
 		switch (op.type) {
@@ -75,6 +74,7 @@ export const simplifyConjunction = <Config extends ChimeraFilterConfig, Entity>(
 				throw new ChimeraInternalError(`Invalid filter operation ${op.type}`);
 		}
 	}),
+	type: ChimeraConjunctionSymbol,
 });
 
 export const chimeraCreateOperator = <
@@ -88,15 +88,15 @@ export const chimeraCreateOperator = <
 		| (KeysOfType<Entity, Parameters<Config["operators"][Op]>[0]> & string),
 	test: Parameters<Config["operators"][Op]>[1],
 ): ChimeraFilterOperatorDescriptor<Config, Entity, Op> => ({
-	type: ChimeraOperatorSymbol,
 	op,
+	test,
+	type: ChimeraOperatorSymbol,
 	value: (typeof value === "string"
 		? {
-				key: value,
 				get: value,
+				key: value,
 			}
 		: value) as ChimeraPropertyGetter<Entity, Parameters<Config["operators"][Op]>[0]>,
-	test,
 });
 
 export const chimeraCreateConjunction = <
@@ -107,9 +107,9 @@ export const chimeraCreateConjunction = <
 	kind: Conj,
 	operations: ChimeraConjunctionOperation<Config, Entity>[],
 ): ChimeraConjunctionDescriptor<Config, Entity, Conj> => ({
-	type: ChimeraConjunctionSymbol,
 	kind,
 	operations,
+	type: ChimeraConjunctionSymbol,
 });
 
 export const compileFilter = <Entity, Config extends ChimeraFilterConfig = ChimeraFilterConfig>(

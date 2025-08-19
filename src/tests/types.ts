@@ -63,3 +63,21 @@ export interface User {
 	website: string;
 	company: UserCompany;
 }
+
+export enum TestEntityName {
+	Post = "post",
+	Comment = "comment",
+	Album = "album",
+	Photo = "photo",
+	Todo = "todo",
+	User = "user",
+}
+
+export type TestEntityMap = {
+	[TestEntityName.Post]: Post;
+	[TestEntityName.Comment]: Comment;
+	[TestEntityName.Album]: Album;
+	[TestEntityName.Photo]: Photo;
+	[TestEntityName.Todo]: Todo;
+	[TestEntityName.User]: User;
+};

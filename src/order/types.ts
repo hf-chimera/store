@@ -15,7 +15,7 @@ export type ChimeraOrderPriority<Entity> = ChimeraOrderDescriptor<Entity>[];
 
 export type ChimeraOrderByComparator<Entity> = (a: Entity, b: Entity) => number;
 
-export type ChimeraPrimitiveComparator = (a: unknown, b: unknown, nulls: ChimeraOrderNulls) => number;
+export type ChimeraPrimitiveComparator = (a: unknown, b: unknown) => number;
 
 export type CompiledOrderDescriptor<Entity> = {
 	get: ChimeraEntityGetter<Entity>;

@@ -1,3 +1,6 @@
+import { EventEmitter } from "eventemitter3";
+import { ChimeraInternalError } from "../shared/errors.ts";
+import { deepObjectAssign, deepObjectFreeze, makeCancellablePromise, none, some } from "../shared/shared.ts";
 import type {
 	AnyObject,
 	ChimeraCancellablePromise,
@@ -6,18 +9,6 @@ import type {
 	DeepPartial,
 	Option,
 } from "../shared/types.ts";
-import {
-	type ChimeraQueryEntityItemFetcherParams,
-	type ChimeraQueryFetchingStatable,
-	ChimeraQueryFetchingState,
-	type ChimeraQueryItemDeleteResponse,
-	type ChimeraQueryItemFetcherResponse,
-	type QueryEntityConfig,
-} from "./types.ts";
-
-import { EventEmitter } from "eventemitter3";
-import { ChimeraInternalError } from "../shared/errors.ts";
-import { deepObjectAssign, deepObjectFreeze, makeCancellablePromise, none, some } from "../shared/shared.ts";
 import { ChimeraDeleteOneSym, ChimeraGetParamsSym, ChimeraSetOneSym, IN_PROGRESS_STATES } from "./constants.ts";
 import {
 	ChimeraQueryAlreadyRunningError,
@@ -31,6 +22,14 @@ import {
 	ChimeraQueryTrustIdMismatchError,
 	ChimeraQueryUnsuccessfulDeletionError,
 } from "./errors.ts";
+import {
+	type ChimeraQueryEntityItemFetcherParams,
+	type ChimeraQueryFetchingStatable,
+	ChimeraQueryFetchingState,
+	type ChimeraQueryItemDeleteResponse,
+	type ChimeraQueryItemFetcherResponse,
+	type QueryEntityConfig,
+} from "./types.ts";
 
 export type ChimeraItemQueryEventMap<Item extends object> = {
 	/** Once the query is initialized */
@@ -65,9 +64,9 @@ export class ChimeraItemQuery<Item extends object>
 	#state: ChimeraQueryFetchingState;
 	#promise: ChimeraCancellablePromise | null;
 	#lastError: unknown;
+	readonly #params: ChimeraQueryEntityItemFetcherParams<Item>;
 	readonly #config: QueryEntityConfig<Item>;
 	readonly #idGetter: ChimeraIdGetterFunc<Item>;
-	readonly #params: ChimeraQueryEntityItemFetcherParams<Item>;
 
 	#emit<T extends EventEmitter.EventNames<ChimeraItemQueryEventMap<Item>>>(
 		event: T,
@@ -110,7 +109,9 @@ export class ChimeraItemQuery<Item extends object>
 
 	#setMutable(item: Item) {
 		if (typeof item === "object" && item != null) {
-			deepObjectAssign(this.#mutable as AnyObject, item as AnyObject);
+			this.#mutable
+				? deepObjectAssign(this.#mutable as AnyObject, item as AnyObject)
+				: (this.#mutable = structuredClone(item));
 		} else this.#mutable = item;
 	}
 
@@ -139,7 +140,7 @@ export class ChimeraItemQuery<Item extends object>
 		this.#emit("deleted", this, this.#params.id);
 	}
 
-	#setError(error: unknown, source: ChimeraQueryError) {
+	#setError(error: unknown, source: ChimeraQueryError): never {
 		this.#state = this.#item.some ? ChimeraQueryFetchingState.ReErrored : ChimeraQueryFetchingState.Errored;
 		this.#lastError = error;
 		this.#emit("error", this, error);
@@ -147,32 +148,42 @@ export class ChimeraItemQuery<Item extends object>
 	}
 
 	#watchPromise(
-		promise: ChimeraCancellablePromise<ChimeraQueryItemFetcherResponse<Item>>,
+		promise: Promise<ChimeraQueryItemFetcherResponse<Item>>,
+		controller: AbortController,
 	): ChimeraCancellablePromise<ChimeraQueryItemFetcherResponse<Item>> {
-		promise
-			.then(({ data }) => {
-				if (this.#config.trustQuery && !this.#config.devMode) {
-					this.#setNewItem(data);
-					this.#state = ChimeraQueryFetchingState.Fetched;
-					return;
-				}
+		return makeCancellablePromise(
+			promise
+				.then(({ data }) => {
+					if (this.#config.trustQuery && !this.#config.devMode) {
+						this.#setNewItem(data);
+						this.#state = ChimeraQueryFetchingState.Fetched;
+						return { data };
+					}
 
-				const localId = this.#params.id;
-				const newId = this.#idGetter(data);
+					const localId = this.#params.id;
+					const newId = this.#idGetter(data);
 
-				if (localId === newId) {
-					this.#setNewItem(data);
-					this.#state = ChimeraQueryFetchingState.Fetched;
-				} else {
-					this.#config.devMode &&
-						this.#config.trustQuery &&
-						console.warn(new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, newId));
+					if (localId === newId || this.#state === ChimeraQueryFetchingState.Creating) {
+						this.#setNewItem(data);
+						this.#state = ChimeraQueryFetchingState.Fetched;
+					} else {
+						this.#config.devMode &&
+							this.#config.trustQuery &&
+							console.warn(new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, newId));
 
-					if (!this.#config.trustQuery) throw new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, newId);
-				}
-			})
-			.catch((error) => this.#setError(error, new ChimeraQueryFetchingError(this.#config.name, error)));
-		return promise;
+						if (!this.#config.trustQuery) {
+							throw new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, newId);
+						}
+						this.#setNewItem(data);
+						this.#params.id = newId;
+						this.#state = ChimeraQueryFetchingState.Fetched;
+					}
+
+					return { data };
+				})
+				.catch((error) => this.#setError(error, new ChimeraQueryFetchingError(this.#config.name, error))),
+			controller,
+		);
 	}
 
 	#updateItem(newItem: Item): Promise<ChimeraQueryItemFetcherResponse<Item>> {
@@ -180,7 +191,7 @@ export class ChimeraItemQuery<Item extends object>
 		const oldId = this.#idGetter(
 			this.#readyItem(`Trying to update not ready item (${this.#config.name}[${this.#params.id}])`),
 		);
-		if (newId !== oldId) {
+		if (newId !== oldId && !this.#config.trustQuery) {
 			this.#resetMutable();
 			throw new ChimeraQueryIdMismatchError(this.#config.name, oldId, newId);
 		}
@@ -188,46 +199,52 @@ export class ChimeraItemQuery<Item extends object>
 		this.#state = ChimeraQueryFetchingState.Updating;
 		const { controller } = this.#prepareRequestParams();
 		const promise = this.#config.itemUpdater(newItem, { signal: controller.signal });
-		this.#setPromise(this.#watchPromise(makeCancellablePromise(promise, controller)));
-		return promise;
+		return this.#setPromise(this.#watchPromise(makeCancellablePromise(promise, controller), controller));
 	}
 
 	#requestDelete(): Promise<ChimeraQueryItemDeleteResponse> {
 		this.#state = ChimeraQueryFetchingState.Deleting;
 		const { controller } = this.#prepareRequestParams();
 
-		const promise = this.#config.itemDeleter(this.#params.id, { signal: controller.signal });
+		return this.#setPromise(
+			makeCancellablePromise(
+				makeCancellablePromise(
+					this.#config.itemDeleter(this.#params.id, { signal: controller.signal }),
+					controller,
+				).then(
+					({ result }) => {
+						const { id, success } = result;
+						if (this.#config.trustQuery && !this.#config.devMode && success) {
+							this.#deleteItem();
+							return { result };
+						}
 
-		const cancellablePromise = makeCancellablePromise(promise, controller);
-		this.#setPromise(cancellablePromise);
-		cancellablePromise.then(
-			({ result: { id, success } }) => {
-				if (this.#config.trustQuery && !this.#config.devMode && success) return this.#deleteItem();
+						const localId = this.#params.id;
 
-				const localId = this.#params.id;
+						if (localId !== id) {
+							this.#config.devMode &&
+								this.#config.trustQuery &&
+								console.warn(new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, id));
 
-				if (localId !== id) {
-					this.#config.devMode &&
-						this.#config.trustQuery &&
-						console.warn(new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, id));
+							if (!this.#config.trustQuery) throw new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, id);
+						}
 
-					if (!this.#config.trustQuery) throw new ChimeraQueryTrustIdMismatchError(this.#config.name, localId, id);
-				}
+						if (success) {
+							this.#deleteItem();
+							this.#emit("selfDeleted", this, id);
+						} else {
+							const error = new ChimeraQueryUnsuccessfulDeletionError(this.#config.name, this.#params.id);
+							this.#state = ChimeraQueryFetchingState.ReErrored;
+							this.#lastError = error;
+							throw error;
+						}
 
-				if (success) {
-					this.#deleteItem();
-					this.#emit("selfDeleted", this, id);
-				} else {
-					const error = new ChimeraQueryUnsuccessfulDeletionError(this.#config.name, this.#params.id);
-					this.#state = ChimeraQueryFetchingState.ReErrored;
-					this.#lastError = error;
-					throw error;
-				}
-			},
-			(error) => this.#setError(error, new ChimeraQueryDeletingError(this.#config.name, error)),
+						return { result };
+					},
+					(error) => this.#setError(error, new ChimeraQueryDeletingError(this.#config.name, error)),
+				),
+			),
 		);
-
-		return promise;
 	}
 
 	constructor(
@@ -264,18 +281,23 @@ export class ChimeraItemQuery<Item extends object>
 			const { controller } = this.#prepareRequestParams();
 			this.#setPromise(
 				this.#watchPromise(
-					makeCancellablePromise(config.itemCreator(toCreate.value, { signal: controller.signal }), controller),
+					makeCancellablePromise(config.itemCreator(toCreate.value, { signal: controller.signal }), controller).then(
+						({ data }) => {
+							this.#params.id = this.#idGetter(data);
+							this.#emit("created", this);
+							return { data };
+						},
+					),
+					controller,
 				),
-			).then(({ data }) => {
-				this.#params.id = this.#idGetter(data);
-				this.#emit("created", this);
-			});
+			);
 		} else {
 			this.#state = ChimeraQueryFetchingState.Fetching;
 			const { controller } = this.#prepareRequestParams();
 			this.#setPromise(
 				this.#watchPromise(
 					makeCancellablePromise(config.itemFetcher(params, { signal: controller.signal }), controller),
+					controller,
 				),
 			);
 		}
@@ -331,6 +353,21 @@ export class ChimeraItemQuery<Item extends object>
 		return this.#mutable as Item;
 	}
 
+	get promise(): Promise<unknown> | null {
+		return this.#promise;
+	}
+
+	/**
+	 * Wait for the current progress process to complete (both success or error)
+	 */
+	get progress(): Promise<void> {
+		return new Promise((res) => {
+			const resolve = () => queueMicrotask(() => res());
+			this.#promise?.then(resolve, resolve);
+			this.#promise?.cancelled(resolve);
+		});
+	}
+
 	/**
 	 *  Trigger refetch, return existing refetch promise if already running
 	 *  @param force If true cancels any running process and starts a new one
@@ -352,7 +389,7 @@ export class ChimeraItemQuery<Item extends object>
 		this.#state = ChimeraQueryFetchingState.Refetching;
 		const { controller } = this.#prepareRequestParams();
 		const promise = this.#config.itemFetcher(this.#params, { signal: controller.signal });
-		return this.#setPromise(this.#watchPromise(makeCancellablePromise(promise, controller)));
+		return this.#setPromise(this.#watchPromise(makeCancellablePromise(promise, controller), controller));
 	}
 
 	/**

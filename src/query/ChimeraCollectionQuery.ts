@@ -305,7 +305,18 @@ export class ChimeraCollectionQuery<Item extends object>
 		return this.#lastError;
 	}
 
-	/** Return item if it is ready, throw error otherwise */
+	/**
+	 * Wait for the current progress process to complete (both success or error)
+	 */
+	get progress(): Promise<void> {
+		return new Promise((res) => {
+			const resolve = () => queueMicrotask(() => res());
+			this.#promise?.then(resolve, resolve);
+			this.#promise?.cancelled(resolve);
+		});
+	}
+
+	/** Return an item if it is ready, throw error otherwise */
 	getById(id: ChimeraEntityId): Item | undefined {
 		return this.#readyItems().find((item) => this.#idGetter(item) === id);
 	}
@@ -382,7 +393,6 @@ export class ChimeraCollectionQuery<Item extends object>
 		const { controller } = this.#prepareRequestParams();
 		const promise = this.#config.itemDeleter(id, { signal: controller.signal });
 		promise.then(
-			// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: TODO: have no idea how to fix it yet
 			({ result: { id: newId, success } }) => {
 				if (!this.#items.some) {
 					success && this.#emit("selfItemDeleted", this, newId);

@@ -1,19 +1,19 @@
-export type {
-	ChimeraOperatorMap,
-	ChimeraFilterConfig,
-	ChimeraFilterChecker,
-	ChimeraConjunctionMap,
-	ChimeraOperatorFunction,
-	ChimeraFilterDescriptor,
-	ChimeraConjunctionOperation,
-	ChimeraConjunctionDescriptor,
-	ChimeraFilterOperatorDescriptor,
-} from "./types.ts";
 export {
+	ChimeraFilterConjunctionError,
+	ChimeraFilterConjunctionNotFoundError,
 	ChimeraFilterError,
 	ChimeraFilterOperatorError,
-	ChimeraFilterConjunctionError,
 	ChimeraFilterOperatorNotFoundError,
-	ChimeraFilterConjunctionNotFoundError,
 } from "./errors.ts";
-export { chimeraCreateOperator, chimeraCreateConjunction } from "./filter.ts";
+export { chimeraCreateConjunction, chimeraCreateOperator } from "./filter.ts";
+export type {
+	ChimeraConjunctionDescriptor,
+	ChimeraConjunctionMap,
+	ChimeraConjunctionOperation,
+	ChimeraFilterChecker,
+	ChimeraFilterConfig,
+	ChimeraFilterDescriptor,
+	ChimeraFilterOperatorDescriptor,
+	ChimeraOperatorFunction,
+	ChimeraOperatorMap,
+} from "./types.ts";

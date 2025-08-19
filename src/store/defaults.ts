@@ -6,8 +6,8 @@ import type { ChimeraEntityMap } from "../shared/types.ts";
 import type { ChimeraStoreConfig } from "./types.ts";
 
 export const chimeraDefaultStoreConfig = {
-	order: chimeraDefaultOrderConfig,
-	filter: chimeraDefaultFilterConfig,
-	query: chimeraDefaultQueryConfig,
 	debug: chimeraDefaultDebugConfig,
+	filter: chimeraDefaultFilterConfig,
+	order: chimeraDefaultOrderConfig,
+	query: chimeraDefaultQueryConfig,
 } satisfies ChimeraStoreConfig<ChimeraEntityMap>;

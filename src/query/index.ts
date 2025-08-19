@@ -1,34 +1,33 @@
-export type {
-	ChimeraQueryConfig,
-	ChimeraEntityConfigMap,
-	ChimeraQueryEntityItemFetcher,
-	ChimeraQueryEntityItemUpdater,
-	ChimeraQueryEntityConfig,
-	ChimeraQueryFetchingState,
-	ChimeraQueryDefaultsConfig,
-	ChimeraQueryEntityIdGetter,
-	ChimeraQueryEntityBatchedUpdater,
-	ChimeraQueryEntityItemFetcherParams,
-	ChimeraQueryEntityCollectionFetcher,
-	ChimeraQueryDefaultItemUpdater,
-	ChimeraQueryDefaultItemFetcher,
-	ChimeraQueryItemFetcherResponse,
-	ChimeraQueryDefaultEntityIdGetter,
-	ChimeraQueryDefaultBatchedUpdater,
-	ChimeraQueryDefaultCollectionFetcher,
-	ChimeraQueryEntityCollectionFetcherParams,
-	ChimeraQueryCollectionFetcherResponse,
-} from "./types.ts";
+export type { ChimeraCollectionQueryEventMap } from "./ChimeraCollectionQuery.ts";
+export { ChimeraCollectionQuery } from "./ChimeraCollectionQuery.ts";
+export type { ChimeraItemQueryEventMap } from "./ChimeraItemQuery.ts";
+export { ChimeraItemQuery } from "./ChimeraItemQuery.ts";
 export {
 	ChimeraQueryError,
-	ChimeraQueryTrustError,
 	ChimeraQueryIdMismatchError,
 	ChimeraQueryNotSpecifiedError,
-	ChimeraQueryTrustIdMismatchError,
+	ChimeraQueryTrustError,
 	ChimeraQueryTrustFetchedCollectionError,
+	ChimeraQueryTrustIdMismatchError,
 } from "./errors.ts";
-export type { ChimeraItemQueryEventMap } from "./ChimeraItemQuery.ts";
-export type { ChimeraCollectionQueryEventMap } from "./ChimeraCollectionQuery.ts";
-
-export { ChimeraItemQuery } from "./ChimeraItemQuery.ts";
-export { ChimeraCollectionQuery } from "./ChimeraCollectionQuery.ts";
+export type {
+	ChimeraEntityConfigMap,
+	ChimeraQueryCollectionFetcherResponse,
+	ChimeraQueryConfig,
+	ChimeraQueryDefaultBatchedUpdater,
+	ChimeraQueryDefaultCollectionFetcher,
+	ChimeraQueryDefaultEntityIdGetter,
+	ChimeraQueryDefaultItemFetcher,
+	ChimeraQueryDefaultItemUpdater,
+	ChimeraQueryDefaultsConfig,
+	ChimeraQueryEntityBatchedUpdater,
+	ChimeraQueryEntityCollectionFetcher,
+	ChimeraQueryEntityCollectionFetcherParams,
+	ChimeraQueryEntityConfig,
+	ChimeraQueryEntityIdGetter,
+	ChimeraQueryEntityItemFetcher,
+	ChimeraQueryEntityItemFetcherParams,
+	ChimeraQueryEntityItemUpdater,
+	ChimeraQueryFetchingState,
+	ChimeraQueryItemFetcherResponse,
+} from "./types.ts";

@@ -1,22 +1,22 @@
-import type { ChimeraEntityId, ChimeraEntityMap, ChimeraIdGetterFunc, StrKeys } from "../shared/types.ts";
-import type { ChimeraFilterConfig } from "../filter/types.ts";
-import type { ChimeraRepositoryMap, ChimeraStoreConfig } from "./types.ts";
-import type { ChimeraOrderConfig } from "../order/types.ts";
+import { EventEmitter } from "eventemitter3";
+import { chimeraDefaultDebugConfig } from "../debug/defaults.ts";
 import type { ChimeraDebugConfig } from "../debug/types.ts";
+import { chimeraDefaultFilterConfig } from "../filter/defaults.ts";
+import type { ChimeraFilterConfig } from "../filter/types.ts";
+import { chimeraDefaultOrderConfig } from "../order/defaults.ts";
+import type { ChimeraOrderConfig } from "../order/types.ts";
+import { ChimeraDeleteManySym, ChimeraDeleteOneSym, ChimeraSetManySym, ChimeraSetOneSym } from "../query/constants.ts";
+import { chimeraDefaultQueryConfig } from "../query/defaults.ts";
 import type {
 	ChimeraQueryDefaultEntityIdGetter,
 	ChimeraQueryDefaultsConfig,
 	ChimeraQueryEntityConfig,
 	ChimeraQueryEntityIdGetter,
 } from "../query/types.ts";
-import { chimeraDefaultQueryConfig } from "../query/defaults.ts";
-import { EventEmitter } from "eventemitter3";
-import { ChimeraEntityRepository } from "./ChimeraEntityRepository.ts";
 import { deepObjectAssign } from "../shared/shared.ts";
-import { chimeraDefaultDebugConfig } from "../debug/defaults.ts";
-import { chimeraDefaultFilterConfig } from "../filter/defaults.ts";
-import { chimeraDefaultOrderConfig } from "../order/defaults.ts";
-import { ChimeraDeleteManySym, ChimeraDeleteOneSym, ChimeraSetManySym, ChimeraSetOneSym } from "../query/constants.ts";
+import type { ChimeraEntityId, ChimeraEntityMap, ChimeraIdGetterFunc, StrKeys } from "../shared/types.ts";
+import { ChimeraEntityRepository } from "./ChimeraEntityRepository.ts";
+import type { ChimeraRepositoryMap, ChimeraStoreConfig } from "./types.ts";
 
 const resolveIdGetter = <EntityMap extends ChimeraEntityMap>(
 	key: string,
@@ -67,23 +67,6 @@ export class ChimeraStore<
 				key,
 				new ChimeraEntityRepository<object, ChimeraFilterConfig>(
 					{
-						name: key,
-
-						devMode: debug.devMode,
-						trustQuery: value.trustQuery ?? query.trustQuery,
-						updateDebounceTimeout: value.updateDebounceTimeout ?? query.updateDebounceTimeout,
-
-						idGetter: resolveIdGetter(key, query.idGetter, value.idGetter),
-
-						collectionFetcher: value.collectionFetcher
-							? value.collectionFetcher
-							: (...args) => query.collectionFetcher(key, ...args),
-						itemFetcher: value.itemFetcher ? value.itemFetcher : (...args) => query.itemFetcher(key, ...args),
-
-						itemCreator: value.itemCreator ? value.itemCreator : (...args) => query.itemCreator(key, ...args),
-						itemUpdater: value.itemUpdater ? value.itemUpdater : (...args) => query.itemUpdater(key, ...args),
-						itemDeleter: value.itemDeleter ? value.itemDeleter : (...args) => query.itemDeleter(key, ...args),
-
 						batchedCreator: value.batchedCreator
 							? value.batchedCreator
 							: (...args) => query.batchedCreator(key, ...args),
@@ -93,6 +76,22 @@ export class ChimeraStore<
 						batchedUpdater: value.batchedUpdater
 							? value.batchedUpdater
 							: (...args) => query.batchedUpdater(key, ...args),
+
+						collectionFetcher: value.collectionFetcher
+							? value.collectionFetcher
+							: (...args) => query.collectionFetcher(key, ...args),
+
+						devMode: debug.devMode,
+
+						idGetter: resolveIdGetter(key, query.idGetter, value.idGetter),
+
+						itemCreator: value.itemCreator ? value.itemCreator : (...args) => query.itemCreator(key, ...args),
+						itemDeleter: value.itemDeleter ? value.itemDeleter : (...args) => query.itemDeleter(key, ...args),
+						itemFetcher: value.itemFetcher ? value.itemFetcher : (...args) => query.itemFetcher(key, ...args),
+						itemUpdater: value.itemUpdater ? value.itemUpdater : (...args) => query.itemUpdater(key, ...args),
+						name: key,
+						trustQuery: value.trustQuery ?? query.trustQuery,
+						updateDebounceTimeout: value.updateDebounceTimeout ?? query.updateDebounceTimeout,
 					},
 					filter,
 					order,
