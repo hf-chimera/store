@@ -2,11 +2,14 @@ import { ChimeraError } from "../shared/errors.ts";
 import type { ChimeraEntityId } from "../shared/types.ts";
 import type { ChimeraQueryFetchingState } from "./types.ts";
 
+const formatDeepErrorMessage = (message: string, cause: unknown): string =>
+	`${message}: ${cause instanceof Error ? `\n  ${cause.stack}` : cause}`;
+
 export class ChimeraQueryError extends ChimeraError {
 	readonly entityName: string;
 
-	constructor(entityName: string, message: string) {
-		super(message);
+	constructor(entityName: string, message: string, options?: ErrorOptions) {
+		super(message, options);
 		this.entityName = entityName;
 	}
 }
@@ -85,15 +88,13 @@ export class ChimeraQueryTrustFetchedCollectionError extends ChimeraQueryTrustEr
 
 export class ChimeraQueryFetchingError extends ChimeraQueryError {
 	constructor(entityName: string, cause: unknown) {
-		super(entityName, `Something went wrong: ${cause}.`);
-		this.cause = cause;
+		super(entityName, formatDeepErrorMessage("Something went wrong", cause), { cause });
 	}
 }
 
 export class ChimeraQueryDeletingError extends ChimeraQueryError {
 	constructor(entityName: string, cause: unknown) {
-		super(entityName, `Something went wrong: ${cause}.`);
-		this.cause = cause;
+		super(entityName, formatDeepErrorMessage("Something went wrong", cause), { cause });
 	}
 }
 

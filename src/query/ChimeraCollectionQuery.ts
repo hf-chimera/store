@@ -209,7 +209,7 @@ export class ChimeraCollectionQuery<Item extends object>
 		return input;
 	}
 
-	#setError(error: unknown, source: ChimeraQueryError) {
+	#setError(error: unknown, source: ChimeraQueryError): never {
 		this.#state = this.#items.some ? ChimeraQueryFetchingState.ReErrored : ChimeraQueryFetchingState.Errored;
 		this.#lastError = error;
 		this.#emit("error", this, error);
@@ -218,14 +218,18 @@ export class ChimeraCollectionQuery<Item extends object>
 
 	#watchPromise(
 		promise: ChimeraCancellablePromise<ChimeraQueryCollectionFetcherResponse<Item>>,
+		controller: AbortController,
 	): ChimeraCancellablePromise<ChimeraQueryCollectionFetcherResponse<Item>> {
-		promise
-			.then(({ data }) => {
-				this.#setNewItems(this.#validate(data));
-				this.#state = ChimeraQueryFetchingState.Fetched;
-			})
-			.catch((error) => this.#setError(error, new ChimeraQueryFetchingError(this.#config.name, error)));
-		return promise;
+		return makeCancellablePromise(
+			promise
+				.then((response) => {
+					this.#setNewItems(this.#validate(response.data));
+					this.#state = ChimeraQueryFetchingState.Fetched;
+					return response;
+				})
+				.catch((error) => this.#setError(error, new ChimeraQueryFetchingError(this.#config.name, error))),
+			controller,
+		);
 	}
 
 	constructor(
@@ -257,6 +261,7 @@ export class ChimeraCollectionQuery<Item extends object>
 			this.#setPromise(
 				this.#watchPromise(
 					makeCancellablePromise(config.collectionFetcher(params, { signal: controller.signal }), controller),
+					controller,
 				),
 			);
 		}
@@ -311,8 +316,23 @@ export class ChimeraCollectionQuery<Item extends object>
 	get progress(): Promise<void> {
 		return new Promise((res) => {
 			const resolve = () => queueMicrotask(() => res());
-			this.#promise?.then(resolve, resolve);
-			this.#promise?.cancelled(resolve);
+			if (this.#promise) {
+				this.#promise.then(resolve, resolve);
+				this.#promise.cancelled(resolve);
+			} else resolve();
+		});
+	}
+
+	/**
+	 * Wait for the current progress process to complete, throw an error if it fails
+	 */
+	get result(): Promise<void> {
+		return new Promise((res, rej) => {
+			const resolve = () => queueMicrotask(() => res());
+			if (this.#promise) {
+				this.#promise.then(resolve, rej);
+				this.#promise.cancelled(() => rej("cancelled"));
+			} else resolve();
 		});
 	}
 
@@ -350,8 +370,7 @@ export class ChimeraCollectionQuery<Item extends object>
 		this.#state = ChimeraQueryFetchingState.Refetching;
 		const { controller } = this.#prepareRequestParams();
 		const promise = this.#config.collectionFetcher(this.#params, { signal: controller.signal });
-		this.#setPromise(this.#watchPromise(makeCancellablePromise(promise, controller)));
-		return promise;
+		return this.#setPromise(this.#watchPromise(makeCancellablePromise(promise, controller), controller));
 	}
 
 	/**
@@ -361,11 +380,12 @@ export class ChimeraCollectionQuery<Item extends object>
 	update(newItem: Item): Promise<ChimeraQueryItemFetcherResponse<Item>> {
 		const { controller } = this.#prepareRequestParams();
 		const promise = this.#config.itemUpdater(newItem, { signal: controller.signal });
-		promise.then(({ data }) => {
+		return promise.then((response) => {
+			const { data } = response;
 			this.#items.some && this.#setNewOne(data);
 			this.#emit("selfItemUpdated", this, data);
+			return response;
 		});
-		return promise;
 	}
 
 	/**
@@ -375,14 +395,14 @@ export class ChimeraCollectionQuery<Item extends object>
 	batchedUpdate(newItems: Iterable<Item>): Promise<ChimeraQueryCollectionFetcherResponse<Item>> {
 		const { controller } = this.#prepareRequestParams();
 		const promise = this.#config.batchedUpdater(Array.from(newItems), { signal: controller.signal });
-		promise.then(({ data }) => {
+		return promise.then((response) => {
 			const ready = this.#items.some;
-			data.forEach((item) => {
+			response.data.forEach((item) => {
 				ready && this.#setNewOne(item);
 				this.#emit("selfItemUpdated", this, item);
 			});
+			return response;
 		});
-		return promise;
 	}
 
 	/**
@@ -392,17 +412,20 @@ export class ChimeraCollectionQuery<Item extends object>
 	delete(id: ChimeraEntityId): Promise<ChimeraQueryItemDeleteResponse> {
 		const { controller } = this.#prepareRequestParams();
 		const promise = this.#config.itemDeleter(id, { signal: controller.signal });
-		promise.then(
-			({ result: { id: newId, success } }) => {
+		return promise.then(
+			(response) => {
+				const {
+					result: { id: newId, success },
+				} = response;
 				if (!this.#items.some) {
 					success && this.#emit("selfItemDeleted", this, newId);
-					return;
+					return response;
 				}
 
 				if (this.#config.trustQuery && !this.#config.devMode && success) {
 					this.#deleteById(newId);
 					this.#emit("selfItemDeleted", this, newId);
-					return;
+					return response;
 				}
 
 				if (id !== newId) {
@@ -419,16 +442,15 @@ export class ChimeraCollectionQuery<Item extends object>
 				if (success) {
 					this.#deleteById(newId);
 					this.#emit("selfItemDeleted", this, newId);
-				} else {
-					const error = new ChimeraQueryUnsuccessfulDeletionError(this.#config.name, id);
-					this.#state = ChimeraQueryFetchingState.ReErrored;
-					this.#lastError = error;
-					throw error;
+					return response;
 				}
+				const error = new ChimeraQueryUnsuccessfulDeletionError(this.#config.name, id);
+				this.#state = ChimeraQueryFetchingState.ReErrored;
+				this.#lastError = error;
+				throw error;
 			},
 			(error) => this.#setError(error, new ChimeraQueryDeletingError(this.#config.name, error)),
 		);
-		return promise;
 	}
 
 	/**
@@ -439,10 +461,10 @@ export class ChimeraCollectionQuery<Item extends object>
 		const { controller } = this.#prepareRequestParams();
 		const idsArr = Array.from(ids);
 		const promise = this.#config.batchedDeleter(idsArr, { signal: controller.signal });
-		promise.then(
-			({ result }) => {
+		return promise.then(
+			(response) => {
 				this.#items.some &&
-					result.forEach(({ id: newId, success }) => {
+					response.result.forEach(({ id: newId, success }) => {
 						if (success) {
 							this.#deleteById(newId);
 							this.#emit("selfItemDeleted", this, newId);
@@ -453,10 +475,10 @@ export class ChimeraCollectionQuery<Item extends object>
 							throw error;
 						}
 					});
+				return response;
 			},
 			(error) => this.#setError(error, new ChimeraQueryDeletingError(this.#config.name, error)),
 		);
-		return promise;
 	}
 
 	/**
@@ -466,14 +488,15 @@ export class ChimeraCollectionQuery<Item extends object>
 	create(item: DeepPartial<Item>): Promise<ChimeraQueryItemFetcherResponse<Item>> {
 		const { controller } = this.#prepareRequestParams();
 		const promise = this.#config.itemCreator(item, { signal: controller.signal });
-		promise.then(
-			({ data }) => {
+		return promise.then(
+			(response) => {
+				const { data } = response;
 				this.#items.some && this.#setNewOne(data);
 				this.#emit("selfItemCreated", this, data);
+				return response;
 			},
 			(error) => this.#setError(error, new ChimeraQueryFetchingError(this.#config.name, error)),
 		);
-		return promise;
 	}
 
 	/**
@@ -483,17 +506,17 @@ export class ChimeraCollectionQuery<Item extends object>
 	batchedCreate(items: Iterable<DeepPartial<Item>>): Promise<ChimeraQueryCollectionFetcherResponse<Item>> {
 		const { controller } = this.#prepareRequestParams();
 		const promise = this.#config.batchedCreator(Array.from(items), { signal: controller.signal });
-		promise.then(
-			({ data }) => {
+		return promise.then(
+			(response) => {
 				this.#items.some &&
-					data.forEach((item) => {
+					response.data.forEach((item) => {
 						this.#setNewOne(item);
 						this.#emit("selfItemCreated", this, item);
 					});
+				return response;
 			},
 			(error) => this.#setError(error, new ChimeraQueryFetchingError(this.#config.name, error)),
 		);
-		return promise;
 	}
 
 	/**
@@ -512,21 +535,23 @@ export class ChimeraCollectionQuery<Item extends object>
 		return this.#readyItems().at(idx);
 	}
 
-	entries(): Iterator<[number, Item]> {
+	entries(): ArrayIterator<[number, Item]> {
 		return this.#readyItems().entries();
 	}
 
-	values(): Iterator<Item> {
+	values(): ArrayIterator<Item> {
 		return this.#readyItems().values();
 	}
 
-	keys(): Iterator<number> {
+	keys(): ArrayIterator<number> {
 		return this.#readyItems().keys();
 	}
 
 	every<S extends Item>(
 		predicate: (value: Item, index: number, query: this) => value is S,
-	): this is ChimeraCollectionQuery<S> {
+	): this is ChimeraCollectionQuery<S>;
+	every(predicate: (value: Item, index: number, query: this) => unknown): boolean;
+	every(predicate: (value: Item, index: number, query: this) => unknown): boolean {
 		return this.#readyItems().every((item, idx) => predicate(item, idx, this));
 	}
 
@@ -534,22 +559,32 @@ export class ChimeraCollectionQuery<Item extends object>
 		return this.#readyItems().some((item, idx) => predicate(item, idx, this));
 	}
 
+	filter<S extends Item>(predicate: (value: Item, index: number, query: this) => value is S): S[];
+	filter(predicate: (value: Item, index: number, query: this) => boolean): Item[];
 	filter<S extends Item>(predicate: (value: Item, index: number, query: this) => value is S): S[] {
 		return this.#readyItems().filter((item, idx) => predicate(item, idx, this));
 	}
 
+	find<S extends Item>(predicate: (value: Item, index: number, query: this) => value is S): S | undefined;
+	find(predicate: (value: Item, index: number, query: this) => unknown): Item | undefined;
 	find<S extends Item>(predicate: (value: Item, index: number, query: this) => value is S): S | undefined {
 		return this.#readyItems().find((item, idx) => predicate(item, idx, this));
 	}
 
+	findIndex<S extends Item>(predicate: (value: Item, index: number, query: this) => value is S): number;
+	findIndex(predicate: (value: Item, index: number, query: this) => boolean): number;
 	findIndex<S extends Item>(predicate: (value: Item, index: number, query: this) => value is S): number {
 		return this.#readyItems().findIndex((item, idx) => predicate(item, idx, this));
 	}
 
+	findLast<S extends Item>(predicate: (value: Item, index: number, query: this) => value is S): S | undefined;
+	findLast(predicate: (value: Item, index: number, query: this) => boolean): Item | undefined;
 	findLast<S extends Item>(predicate: (value: Item, index: number, query: this) => value is S): S | undefined {
 		return this.#readyItems().findLast((item, idx) => predicate(item, idx, this));
 	}
 
+	findLastIndex<S extends Item>(predicate: (value: Item, index: number, query: this) => value is S): number;
+	findLastIndex(predicate: (value: Item, index: number, query: this) => boolean): number;
 	findLastIndex<S extends Item>(predicate: (value: Item, index: number, query: this) => value is S): number {
 		return this.#readyItems().findLastIndex((item, idx) => predicate(item, idx, this));
 	}
