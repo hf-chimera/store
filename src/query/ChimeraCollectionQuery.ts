@@ -1,6 +1,7 @@
-import { EventEmitter } from "eventemitter3";
 import type { ChimeraFilterChecker } from "../filter/types.ts";
 import type { ChimeraOrderByComparator } from "../order/types.ts";
+import type { EventArgs, EventNames } from "../shared/ChimeraEventEmitter";
+import { ChimeraEventEmitter } from "../shared/ChimeraEventEmitter";
 import { ChimeraInternalError } from "../shared/errors.ts";
 import { deepObjectFreeze, makeCancellablePromise, none, some } from "../shared/shared.ts";
 import type {
@@ -73,7 +74,7 @@ export type ChimeraCollectionQueryEventMap<Item extends object> = {
 };
 
 export class ChimeraCollectionQuery<Item extends object>
-	extends EventEmitter<ChimeraCollectionQueryEventMap<Item>>
+	extends ChimeraEventEmitter<ChimeraCollectionQueryEventMap<Item>>
 	implements ChimeraQueryFetchingStatable
 {
 	#state: ChimeraQueryFetchingState;
@@ -86,9 +87,9 @@ export class ChimeraCollectionQuery<Item extends object>
 	readonly #order: ChimeraOrderByComparator<Item>;
 	readonly #filter: ChimeraFilterChecker<Item>;
 
-	#emit<T extends EventEmitter.EventNames<ChimeraCollectionQueryEventMap<Item>>>(
+	#emit<T extends EventNames<ChimeraCollectionQueryEventMap<Item>>>(
 		event: T,
-		...args: EventEmitter.EventArgs<ChimeraCollectionQueryEventMap<Item>, T>
+		...args: EventArgs<ChimeraCollectionQueryEventMap<Item>, T>
 	) {
 		queueMicrotask(() => super.emit(event, ...args));
 	}

@@ -1,4 +1,3 @@
-import { EventEmitter } from "eventemitter3";
 import { compileFilter, simplifyFilter } from "../filter/filter.ts";
 import type { ChimeraFilterConfig } from "../filter/types.ts";
 import { buildComparator, simplifyOrderBy } from "../order/order.ts";
@@ -14,6 +13,8 @@ import {
 	ChimeraUpdateMixedSym,
 } from "../query/constants.ts";
 import type { ChimeraQueryEntityCollectionFetcherParams, QueryEntityConfig } from "../query/types.ts";
+import type { EventArgs, EventNames } from "../shared/ChimeraEventEmitter";
+import { ChimeraEventEmitter } from "../shared/ChimeraEventEmitter";
 import { ChimeraWeakValueMap } from "../shared/ChimeraWeakValueMap/index.ts";
 import { ChimeraInternalError } from "../shared/errors.ts";
 import { none, optionFromNullish, some } from "../shared/shared.ts";
@@ -41,7 +42,7 @@ type SkipParams<Item extends object> = {
 export class ChimeraEntityRepository<
 	Item extends object,
 	FilterConfig extends ChimeraFilterConfig,
-> extends EventEmitter<ChimeraEntityRepositoryEventMap<Item, FilterConfig>> {
+> extends ChimeraEventEmitter<ChimeraEntityRepositoryEventMap<Item, FilterConfig>> {
 	readonly #entityConfig: QueryEntityConfig<Item>;
 	readonly #filterConfig: FilterConfig;
 	readonly #orderConfig: ChimeraOrderConfig;
@@ -52,9 +53,9 @@ export class ChimeraEntityRepository<
 	readonly #collectionQueryMap: ChimeraWeakValueMap<string, ChimeraCollectionQuery<Item>>;
 	readonly #itemQueryMap: ChimeraWeakValueMap<ChimeraEntityId, ChimeraItemQuery<Item>>;
 
-	#emit<T extends EventEmitter.EventNames<ChimeraEntityRepositoryEventMap<Item, FilterConfig>>>(
+	#emit<T extends EventNames<ChimeraEntityRepositoryEventMap<Item, FilterConfig>>>(
 		event: T,
-		...args: EventEmitter.EventArgs<ChimeraEntityRepositoryEventMap<Item, FilterConfig>, T>
+		...args: EventArgs<ChimeraEntityRepositoryEventMap<Item, FilterConfig>, T>
 	) {
 		queueMicrotask(() => super.emit(event, ...args));
 	}

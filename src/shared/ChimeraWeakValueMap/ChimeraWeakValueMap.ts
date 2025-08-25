@@ -1,4 +1,5 @@
-import { EventEmitter } from "eventemitter3";
+import type { EventArgs, EventNames } from "../ChimeraEventEmitter";
+import { ChimeraEventEmitter } from "../ChimeraEventEmitter";
 import { ChimeraInternalError } from "../errors.ts";
 
 export type ChimeraWeakValueMapEventMap<K, V extends object> = {
@@ -15,14 +16,14 @@ export type ChimeraWeakValueMapEventMap<K, V extends object> = {
 	clear: [ChimeraWeakValueMap<K, V>];
 };
 
-export class ChimeraWeakValueMap<K, V extends object> extends EventEmitter<ChimeraWeakValueMapEventMap<K, V>> {
+export class ChimeraWeakValueMap<K, V extends object> extends ChimeraEventEmitter<ChimeraWeakValueMapEventMap<K, V>> {
 	readonly #map: Map<K, WeakRef<V>>;
 	readonly #registry: FinalizationRegistry<K>;
 	#cleanupScheduled = false;
 
-	#emit<T extends EventEmitter.EventNames<ChimeraWeakValueMapEventMap<K, V>>>(
+	#emit<T extends EventNames<ChimeraWeakValueMapEventMap<K, V>>>(
 		event: T,
-		...args: EventEmitter.EventArgs<ChimeraWeakValueMapEventMap<K, V>, T>
+		...args: EventArgs<ChimeraWeakValueMapEventMap<K, V>, T>
 	) {
 		queueMicrotask(() => super.emit(event, ...args));
 	}

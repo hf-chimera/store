@@ -1,4 +1,3 @@
-import { EventEmitter } from "eventemitter3";
 import { chimeraDefaultDebugConfig } from "../debug/defaults.ts";
 import type { ChimeraDebugConfig } from "../debug/types.ts";
 import { chimeraDefaultFilterConfig } from "../filter/defaults.ts";
@@ -13,6 +12,8 @@ import type {
 	ChimeraQueryEntityConfig,
 	ChimeraQueryEntityIdGetter,
 } from "../query/types.ts";
+import { ChimeraInternalError } from "../shared";
+import { ChimeraEventEmitter } from "../shared/ChimeraEventEmitter";
 import { deepObjectAssign } from "../shared/shared.ts";
 import type { ChimeraEntityId, ChimeraEntityMap, ChimeraIdGetterFunc, StrKeys } from "../shared/types.ts";
 import { ChimeraEntityRepository } from "./ChimeraEntityRepository.ts";
@@ -37,8 +38,12 @@ export class ChimeraStore<
 	EntityMap extends ChimeraEntityMap,
 	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
 	Config extends ChimeraStoreConfig<EntityMap, FilterConfig> = ChimeraStoreConfig<EntityMap, FilterConfig>,
-> extends EventEmitter<ChimeraStoreEventMap> {
+> extends ChimeraEventEmitter<ChimeraStoreEventMap> {
 	readonly #reposMap: ChimeraRepositoryMap<EntityMap, FilterConfig>;
+
+	override emit(): never {
+		throw new ChimeraInternalError("External events dispatching is not supported.");
+	}
 
 	constructor({ query: queryConfig, order: orderConfig, filter: filterConfig, debug: debugConfig }: Config) {
 		super();

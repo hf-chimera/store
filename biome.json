@@ -33,6 +33,7 @@
 				"noForEach": "off"
 			},
 			"correctness": {
+				"noInnerDeclarations": "off",
 				"noUndeclaredDependencies": "off",
 				"noUnusedFunctionParameters": "off",
 				"noUnusedPrivateClassMembers": "off",
