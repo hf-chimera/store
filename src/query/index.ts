@@ -1,7 +1,7 @@
-export type { ChimeraCollectionQueryEventMap } from "./ChimeraCollectionQuery.ts";
-export { ChimeraCollectionQuery } from "./ChimeraCollectionQuery.ts";
-export type { ChimeraItemQueryEventMap } from "./ChimeraItemQuery.ts";
-export { ChimeraItemQuery } from "./ChimeraItemQuery.ts";
+export type { ChimeraCollectionQueryEventMap } from "./ChimeraCollectionQuery/ChimeraCollectionQuery.ts";
+export { ChimeraCollectionQuery } from "./ChimeraCollectionQuery/ChimeraCollectionQuery.ts";
+export type { ChimeraItemQueryEventMap } from "./ChimeraItemQuery/ChimeraItemQuery.ts";
+export { ChimeraItemQuery } from "./ChimeraItemQuery/ChimeraItemQuery.ts";
 export {
 	ChimeraQueryError,
 	ChimeraQueryIdMismatchError,

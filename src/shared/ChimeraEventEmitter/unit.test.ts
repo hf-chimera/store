@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ChimeraEventEmitter } from "./ChimeraEventEmitter.ts";
 
-describe("ChimeraEventEmitter - Unit Tests", function tests() {
+describe("ChimeraEventEmitter - Unit Tests", () => {
 	describe("ChimeraEventEmitter#emit", () => {
 		it("should return false when there are not events to emit", () => {
 			var e = new ChimeraEventEmitter();
@@ -10,50 +10,46 @@ describe("ChimeraEventEmitter - Unit Tests", function tests() {
 			expect(e.emit("bar")).equals(false);
 		});
 
-		it("can emit the function with multiple arguments", () => {
+		it("can emit the function with single argument", () => {
 			var e = new ChimeraEventEmitter();
 
 			for (var i = 0; i < 100; i++) {
 				((j) => {
-					for (var i = 0, args = []; i < j; i++) {
-						args.push(j);
-					}
+					const argValue = j;
 
-					e.once("args", (...args1) => {
-						expect(args1.length).equals(args.length);
+					e.once("args", (arg) => {
+						expect(arg).equals(argValue);
 					});
 
-					e.emit.apply(e, ["args", ...args]);
+					e.emit("args", argValue);
 				})(i);
 			}
 		});
 
-		it("can emit the function with multiple arguments, multiple listeners", () => {
+		it("can emit the function with single argument, multiple listeners", () => {
 			var e = new ChimeraEventEmitter();
 
 			for (var i = 0; i < 100; i++) {
 				((j) => {
-					for (var i = 0, args = []; i < j; i++) {
-						args.push(j);
-					}
+					const argValue = j;
 
-					e.once("args", (...args1) => {
-						expect(args1.length).equals(args.length);
+					e.once("args", (arg) => {
+						expect(arg).equals(argValue);
 					});
 
-					e.once("args", (...args1) => {
-						expect(args1.length).equals(args.length);
+					e.once("args", (arg) => {
+						expect(arg).equals(argValue);
 					});
 
-					e.once("args", (...args1) => {
-						expect(args1.length).equals(args.length);
+					e.once("args", (arg) => {
+						expect(arg).equals(argValue);
 					});
 
-					e.once("args", (...args1) => {
-						expect(args1.length).equals(args.length);
+					e.once("args", (arg) => {
+						expect(arg).equals(argValue);
 					});
 
-					e.emit.apply(e, ["args", ...args]);
+					e.emit("args", argValue);
 				})(i);
 			}
 		});
@@ -73,16 +69,16 @@ describe("ChimeraEventEmitter - Unit Tests", function tests() {
 
 		it("receives the emitted events", (ctx) => {
 			var e = new ChimeraEventEmitter();
+			var testDate = new Date();
 
-			e.on("data", (...args) => {
-				expect(args[0]).equals("foo");
-				expect(args[1]).equals(e);
-				expect(args[2]).is.instanceOf(Date);
-				expect(args[4]).equals(undefined);
-				expect(args.length).equals(3);
+			e.on("data", (eventData) => {
+				expect(eventData.message).equals("foo");
+				expect(eventData.emitter).equals(e);
+				expect(eventData.timestamp).equals(testDate);
+				expect(eventData.extra).equals(undefined);
 			});
 
-			e.emit("data", "foo", e, new Date());
+			e.emit("data", {emitter: e, extra: undefined, message: "foo", timestamp: testDate});
 		});
 
 		it("emits to all event listeners", () => {

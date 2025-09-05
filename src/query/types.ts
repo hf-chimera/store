@@ -37,12 +37,12 @@ export enum ChimeraQueryFetchingState {
 	ReErrored = "reErrored",
 
 	/**
-	 * Only for the item query, data is deleted, but local value is still present,
+	 * Only for the item query, data is deleted, but the local value is still present,
 	 * no longer allows updates, but `refetch` still works (in case of strange errors, allows recovering state)
 	 */
 	Deleted = "deleted",
 
-	/** Only for the item query, data was actualized from external event */
+	/** Only for the item query, data was actualized from an external event */
 	Actualized = "actualized",
 }
 

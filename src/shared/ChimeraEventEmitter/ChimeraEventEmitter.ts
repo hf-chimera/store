@@ -3,14 +3,14 @@ type ValidEventTypes = string | object;
 export type EventNames<T extends ValidEventTypes> = T extends string ? T : keyof T;
 
 type ArgumentMap<T extends object> = {
-	[K in keyof T]: T[K] extends (...args: any[]) => void ? Parameters<T[K]> : T[K] extends any[] ? T[K] : any[];
+	[K in keyof T]: T[K] extends (...args: any[]) => void ? Parameters<T[K]>[0] : T[K] extends any[] ? T[K][0] : T[K];
 };
 
 type EventListener<T extends ValidEventTypes, K extends EventNames<T>> = T extends string
-	? (...args: any[]) => void
-	: (...args: ArgumentMap<Exclude<T, string | symbol>>[Extract<K, keyof T>]) => void;
+	? (arg: any) => void
+	: (arg: ArgumentMap<Exclude<T, string | symbol>>[Extract<K, keyof T>]) => void;
 
-export type EventArgs<T extends ValidEventTypes, K extends EventNames<T>> = Parameters<EventListener<T, K>>;
+export type EventArgs<T extends ValidEventTypes, K extends EventNames<T>> = Parameters<EventListener<T, K>>[0];
 
 type EventRecord<T extends ValidEventTypes, K extends EventNames<T>> = {
 	fn: EventListener<T, K>;
@@ -110,7 +110,7 @@ export class ChimeraEventEmitter<EventTypes extends ValidEventTypes = string> {
 		return this;
 	}
 
-	emit<T extends EventNames<EventTypes>>(event: T, ...args: EventArgs<EventTypes, T>): boolean {
+	emit<T extends EventNames<EventTypes>>(event: T, arg?: EventArgs<EventTypes, T>): boolean {
 		if (!this._events[event]) return false;
 
 		var listeners = this._events[event];
@@ -118,12 +118,12 @@ export class ChimeraEventEmitter<EventTypes extends ValidEventTypes = string> {
 		if ((listeners as EventRecord<EventTypes, T>).fn) {
 			if ((listeners as EventRecord<EventTypes, T>).once)
 				this.removeListener(event, (listeners as EventRecord<EventTypes, T>).fn, true);
-			(listeners as EventRecord<any, any>).fn.apply(this, args);
+			(listeners as EventRecord<any, any>).fn.call(this, arg);
 		} else {
 			for (var i = 0, length = (listeners as []).length; i < length; i++) {
 				if ((listeners as [EventRecord<EventTypes, T>])[i as 0].once)
 					this.removeListener(event, (listeners as [EventRecord<EventTypes, T>])[i as 0].fn, true);
-				(listeners as [EventRecord<any, any>])[i as 0].fn.apply(this, args);
+				(listeners as [EventRecord<any, any>])[i as 0].fn.call(this, arg);
 			}
 		}
 

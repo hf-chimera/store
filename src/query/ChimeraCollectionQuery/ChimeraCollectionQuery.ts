@@ -1,16 +1,16 @@
-import type { ChimeraFilterChecker } from "../filter/types.ts";
-import type { ChimeraOrderByComparator } from "../order/types.ts";
-import type { EventArgs, EventNames } from "../shared/ChimeraEventEmitter";
-import { ChimeraEventEmitter } from "../shared/ChimeraEventEmitter";
-import { ChimeraInternalError } from "../shared/errors.ts";
-import { deepObjectFreeze, makeCancellablePromise, none, some } from "../shared/shared.ts";
+import type { ChimeraFilterChecker } from "../../filter/types.ts";
+import type { ChimeraOrderByComparator } from "../../order/types.ts";
+import type { EventArgs, EventNames } from "../../shared/ChimeraEventEmitter";
+import { ChimeraEventEmitter } from "../../shared/ChimeraEventEmitter";
+import { ChimeraInternalError } from "../../shared/errors.ts";
+import { deepObjectFreeze, makeCancellablePromise, none, some } from "../../shared/shared.ts";
 import type {
 	ChimeraCancellablePromise,
 	ChimeraEntityId,
 	ChimeraIdGetterFunc,
 	DeepPartial,
 	Option,
-} from "../shared/types.ts";
+} from "../../shared/types.ts";
 import {
 	ChimeraDeleteManySym,
 	ChimeraDeleteOneSym,
@@ -19,7 +19,7 @@ import {
 	ChimeraSetOneSym,
 	ChimeraUpdateMixedSym,
 	IN_PROGRESS_STATES,
-} from "./constants.ts";
+} from "../constants.ts";
 import {
 	ChimeraQueryAlreadyRunningError,
 	ChimeraQueryDeletingError,
@@ -29,7 +29,7 @@ import {
 	ChimeraQueryTrustFetchedCollectionError,
 	ChimeraQueryTrustIdMismatchError,
 	ChimeraQueryUnsuccessfulDeletionError,
-} from "./errors.ts";
+} from "../errors.ts";
 import {
 	type ChimeraQueryBatchedDeleteResponse,
 	type ChimeraQueryCollectionFetcherResponse,
@@ -39,38 +39,38 @@ import {
 	type ChimeraQueryItemDeleteResponse,
 	type ChimeraQueryItemFetcherResponse,
 	type QueryEntityConfig,
-} from "./types.ts";
+} from "../types.ts";
 
 export type ChimeraCollectionQueryEventMap<Item extends object> = {
 	/** Once the query is initialized */
-	initialized: [ChimeraCollectionQuery<Item>];
+	initialized: { instance: ChimeraCollectionQuery<Item> };
 
 	/** Once the query data is ready (will be followed by 'update') */
-	ready: [ChimeraCollectionQuery<Item>];
+	ready: { instance: ChimeraCollectionQuery<Item> };
 
 	/** Each time the query was updated */
-	updated: [ChimeraCollectionQuery<Item>, Item[], Option<Item[]>];
+	updated: { instance: ChimeraCollectionQuery<Item>; items: Item[]; oldItems: Option<Item[]> };
 	/** Each time the query was an initiator of update */
-	selfUpdated: [ChimeraCollectionQuery<Item>, Item[], Option<Item[]>];
+	selfUpdated: { instance: ChimeraCollectionQuery<Item>; items: Item[]; oldItems: Option<Item[]> };
 
 	/** Each time item created */
-	selfItemCreated: [ChimeraCollectionQuery<Item>, Item];
+	selfItemCreated: { instance: ChimeraCollectionQuery<Item>; item: Item };
 
 	/** Each time item added */
-	itemAdded: [ChimeraCollectionQuery<Item>, Item];
+	itemAdded: { instance: ChimeraCollectionQuery<Item>; item: Item };
 
 	/** Each time item updated */
-	itemUpdated: [ChimeraCollectionQuery<Item>, Item, Item];
+	itemUpdated: { instance: ChimeraCollectionQuery<Item>; oldItem: Item; newItem: Item };
 	/** Each time the query was an initiator of an item update */
-	selfItemUpdated: [ChimeraCollectionQuery<Item>, Item];
+	selfItemUpdated: { instance: ChimeraCollectionQuery<Item>; item: Item };
 
 	/** Each time item deleted */
-	itemDeleted: [ChimeraCollectionQuery<Item>, Item];
+	itemDeleted: { instance: ChimeraCollectionQuery<Item>; item: Item };
 	/** Each time the query was an initiator of item deletion */
-	selfItemDeleted: [ChimeraCollectionQuery<Item>, ChimeraEntityId];
+	selfItemDeleted: { instance: ChimeraCollectionQuery<Item>; id: ChimeraEntityId };
 
-	/** Each time fetcher produces an error */
-	error: [ChimeraCollectionQuery<Item>, unknown];
+	/** Each time the fetcher produces an error */
+	error: { instance: ChimeraCollectionQuery<Item>; error: unknown };
 };
 
 export class ChimeraCollectionQuery<Item extends object>
@@ -89,9 +89,9 @@ export class ChimeraCollectionQuery<Item extends object>
 
 	#emit<T extends EventNames<ChimeraCollectionQueryEventMap<Item>>>(
 		event: T,
-		...args: EventArgs<ChimeraCollectionQueryEventMap<Item>, T>
+		arg: EventArgs<ChimeraCollectionQueryEventMap<Item>, T>,
 	) {
-		queueMicrotask(() => super.emit(event, ...args));
+		queueMicrotask(() => super.emit(event, arg));
 	}
 
 	override emit(): never {
@@ -115,19 +115,19 @@ export class ChimeraCollectionQuery<Item extends object>
 		const items = this.#readyItems("Trying to update not ready collection");
 		const foundIndex = items.findIndex((el) => this.#order(el, item) > 0);
 		items.splice(foundIndex !== -1 ? foundIndex : items.length, 0, item);
-		this.#emit("itemAdded", this, item);
+		this.#emit("itemAdded", {instance: this, item});
 	}
 
 	#setItems(items: Item[]) {
-		!this.#items.some && this.#emit("ready", this);
+		!this.#items.some && this.#emit("ready", {instance: this});
 		const old = this.#items;
 		this.#items = some(items);
-		this.#emit("updated", this, items, old);
+		this.#emit("updated", {instance: this, items, oldItems: old});
 	}
 
 	#setNewItems(items: Item[]) {
 		items.forEach((i) => deepObjectFreeze(i));
-		this.#emit("selfUpdated", this, items, this.#items);
+		this.#emit("selfUpdated", {instance: this, items, oldItems: this.#items});
 		this.#setItems(items);
 	}
 
@@ -140,7 +140,7 @@ export class ChimeraCollectionQuery<Item extends object>
 	#deleteAtIndex(index: number) {
 		if (index === -1) return;
 		const { 0: old } = this.#readyItems("Trying to update not ready collection").splice(index, 1);
-		this.#emit("itemDeleted", this, old as Item);
+		this.#emit("itemDeleted", {instance: this, item: old as Item});
 	}
 
 	#deleteItem(item: Item) {
@@ -158,7 +158,7 @@ export class ChimeraCollectionQuery<Item extends object>
 		const index = items.indexOf(oldItem);
 		const old = items[index];
 		items[index] = newItem;
-		this.#emit("itemUpdated", this, old as Item, newItem);
+		this.#emit("itemUpdated", {instance: this, newItem: newItem, oldItem: old as Item});
 	}
 
 	#getById(id: ChimeraEntityId) {
@@ -213,7 +213,7 @@ export class ChimeraCollectionQuery<Item extends object>
 	#setError(error: unknown, source: ChimeraQueryError): never {
 		this.#state = this.#items.some ? ChimeraQueryFetchingState.ReErrored : ChimeraQueryFetchingState.Errored;
 		this.#lastError = error;
-		this.#emit("error", this, error);
+		this.#emit("error", {error, instance: this});
 		throw source;
 	}
 
@@ -267,7 +267,7 @@ export class ChimeraCollectionQuery<Item extends object>
 			);
 		}
 
-		this.#emit("initialized", this);
+		this.#emit("initialized", {instance: this});
 	}
 
 	get [ChimeraGetParamsSym](): ChimeraQueryEntityCollectionFetcherParams<Item> {
@@ -370,8 +370,12 @@ export class ChimeraCollectionQuery<Item extends object>
 
 		this.#state = ChimeraQueryFetchingState.Refetching;
 		const { controller } = this.#prepareRequestParams();
-		const promise = this.#config.collectionFetcher(this.#params, { signal: controller.signal });
-		return this.#setPromise(this.#watchPromise(makeCancellablePromise(promise, controller), controller));
+		return this.#setPromise(
+			this.#watchPromise(
+				makeCancellablePromise(this.#config.collectionFetcher(this.#params, {signal: controller.signal}), controller),
+				controller,
+			),
+		);
 	}
 
 	/**
@@ -380,11 +384,10 @@ export class ChimeraCollectionQuery<Item extends object>
 	 */
 	update(newItem: Item): Promise<ChimeraQueryItemFetcherResponse<Item>> {
 		const { controller } = this.#prepareRequestParams();
-		const promise = this.#config.itemUpdater(newItem, { signal: controller.signal });
-		return promise.then((response) => {
+		return this.#config.itemUpdater(newItem, {signal: controller.signal}).then((response) => {
 			const { data } = response;
 			this.#items.some && this.#setNewOne(data);
-			this.#emit("selfItemUpdated", this, data);
+			this.#emit("selfItemUpdated", {instance: this, item: data});
 			return response;
 		});
 	}
@@ -395,12 +398,11 @@ export class ChimeraCollectionQuery<Item extends object>
 	 */
 	batchedUpdate(newItems: Iterable<Item>): Promise<ChimeraQueryCollectionFetcherResponse<Item>> {
 		const { controller } = this.#prepareRequestParams();
-		const promise = this.#config.batchedUpdater(Array.from(newItems), { signal: controller.signal });
-		return promise.then((response) => {
+		return this.#config.batchedUpdater(Array.from(newItems), {signal: controller.signal}).then((response) => {
 			const ready = this.#items.some;
 			response.data.forEach((item) => {
 				ready && this.#setNewOne(item);
-				this.#emit("selfItemUpdated", this, item);
+				this.#emit("selfItemUpdated", {instance: this, item});
 			});
 			return response;
 		});
@@ -412,20 +414,19 @@ export class ChimeraCollectionQuery<Item extends object>
 	 */
 	delete(id: ChimeraEntityId): Promise<ChimeraQueryItemDeleteResponse> {
 		const { controller } = this.#prepareRequestParams();
-		const promise = this.#config.itemDeleter(id, { signal: controller.signal });
-		return promise.then(
+		return this.#config.itemDeleter(id, {signal: controller.signal}).then(
 			(response) => {
 				const {
 					result: { id: newId, success },
 				} = response;
 				if (!this.#items.some) {
-					success && this.#emit("selfItemDeleted", this, newId);
+					success && this.#emit("selfItemDeleted", {id: newId, instance: this});
 					return response;
 				}
 
 				if (this.#config.trustQuery && !this.#config.devMode && success) {
 					this.#deleteById(newId);
-					this.#emit("selfItemDeleted", this, newId);
+					this.#emit("selfItemDeleted", {id: newId, instance: this});
 					return response;
 				}
 
@@ -435,14 +436,14 @@ export class ChimeraCollectionQuery<Item extends object>
 						console.warn(new ChimeraQueryTrustIdMismatchError(this.#config.name, id, newId));
 
 					if (!this.#config.trustQuery) {
-						success && this.#emit("selfItemDeleted", this, newId);
+						success && this.#emit("selfItemDeleted", {id: newId, instance: this});
 						throw new ChimeraQueryTrustIdMismatchError(this.#config.name, id, newId);
 					}
 				}
 
 				if (success) {
 					this.#deleteById(newId);
-					this.#emit("selfItemDeleted", this, newId);
+					this.#emit("selfItemDeleted", {id: newId, instance: this});
 					return response;
 				}
 				const error = new ChimeraQueryUnsuccessfulDeletionError(this.#config.name, id);
@@ -460,15 +461,13 @@ export class ChimeraCollectionQuery<Item extends object>
 	 */
 	batchedDelete(ids: Iterable<ChimeraEntityId>): Promise<ChimeraQueryBatchedDeleteResponse> {
 		const { controller } = this.#prepareRequestParams();
-		const idsArr = Array.from(ids);
-		const promise = this.#config.batchedDeleter(idsArr, { signal: controller.signal });
-		return promise.then(
+		return this.#config.batchedDeleter(Array.from(ids), {signal: controller.signal}).then(
 			(response) => {
 				this.#items.some &&
 					response.result.forEach(({ id: newId, success }) => {
 						if (success) {
 							this.#deleteById(newId);
-							this.#emit("selfItemDeleted", this, newId);
+							this.#emit("selfItemDeleted", {id: newId, instance: this});
 						} else {
 							const error = new ChimeraQueryUnsuccessfulDeletionError(this.#config.name, newId);
 							this.#state = ChimeraQueryFetchingState.ReErrored;
@@ -488,12 +487,11 @@ export class ChimeraCollectionQuery<Item extends object>
 	 */
 	create(item: DeepPartial<Item>): Promise<ChimeraQueryItemFetcherResponse<Item>> {
 		const { controller } = this.#prepareRequestParams();
-		const promise = this.#config.itemCreator(item, { signal: controller.signal });
-		return promise.then(
+		return this.#config.itemCreator(item, {signal: controller.signal}).then(
 			(response) => {
 				const { data } = response;
 				this.#items.some && this.#setNewOne(data);
-				this.#emit("selfItemCreated", this, data);
+				this.#emit("selfItemCreated", {instance: this, item: data});
 				return response;
 			},
 			(error) => this.#setError(error, new ChimeraQueryFetchingError(this.#config.name, error)),
@@ -506,13 +504,12 @@ export class ChimeraCollectionQuery<Item extends object>
 	 */
 	batchedCreate(items: Iterable<DeepPartial<Item>>): Promise<ChimeraQueryCollectionFetcherResponse<Item>> {
 		const { controller } = this.#prepareRequestParams();
-		const promise = this.#config.batchedCreator(Array.from(items), { signal: controller.signal });
-		return promise.then(
+		return this.#config.batchedCreator(Array.from(items), {signal: controller.signal}).then(
 			(response) => {
 				this.#items.some &&
 					response.data.forEach((item) => {
 						this.#setNewOne(item);
-						this.#emit("selfItemCreated", this, item);
+						this.#emit("selfItemCreated", {instance: this, item});
 					});
 				return response;
 			},

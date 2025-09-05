@@ -81,10 +81,14 @@ describe("ChimeraWeakValueMap - Unit Tests", () => {
 				const obj = {id: 1};
 				weakMap.set("key1", obj);
 
-				// Wait for microtask to complete
+				// Wait for a microtask to complete
 				return new Promise((resolve) => {
 					setTimeout(() => {
-						expect(setSpy).toHaveBeenCalledWith(weakMap, "key1", obj);
+						expect(setSpy).toHaveBeenCalledWith({
+							instance: weakMap,
+							key: "key1",
+							value: obj,
+						});
 						resolve(undefined);
 					}, 0);
 				});
@@ -165,7 +169,11 @@ describe("ChimeraWeakValueMap - Unit Tests", () => {
 
 				return new Promise((resolve) => {
 					setTimeout(() => {
-						expect(deleteSpy).toHaveBeenCalledWith(weakMap, "key1", obj);
+						expect(deleteSpy).toHaveBeenCalledWith({
+							instance: weakMap,
+							key: "key1",
+							value: obj,
+						});
 						resolve(undefined);
 					}, 0);
 				});
@@ -217,7 +225,9 @@ describe("ChimeraWeakValueMap - Unit Tests", () => {
 
 				return new Promise((resolve) => {
 					setTimeout(() => {
-						expect(clearSpy).toHaveBeenCalledWith(weakMap);
+						expect(clearSpy).toHaveBeenCalledWith({
+							instance: weakMap,
+						});
 						resolve(undefined);
 					}, 0);
 				});
@@ -438,8 +448,16 @@ describe("ChimeraWeakValueMap - Unit Tests", () => {
 
 				return new Promise((resolve) => {
 					setTimeout(() => {
-						expect(listener1).toHaveBeenCalledWith(weakMap, "key1", obj);
-						expect(listener2).toHaveBeenCalledWith(weakMap, "key1", obj);
+						expect(listener1).toHaveBeenCalledWith({
+							instance: weakMap,
+							key: "key1",
+							value: obj,
+						});
+						expect(listener2).toHaveBeenCalledWith({
+							instance: weakMap,
+							key: "key1",
+							value: obj,
+						});
 						resolve(undefined);
 					}, 0);
 				});
