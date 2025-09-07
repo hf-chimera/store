@@ -1,16 +1,15 @@
-import type { EventArgs, EventNames } from "../../shared/ChimeraEventEmitter";
-import { ChimeraEventEmitter } from "../../shared/ChimeraEventEmitter";
-import { ChimeraInternalError } from "../../shared/errors.ts";
-import { deepObjectAssign, deepObjectFreeze, makeCancellablePromise, none, some } from "../../shared/shared.ts";
+import type { EventArgs, EventNames } from "../shared/ChimeraEventEmitter";
+import { ChimeraEventEmitter } from "../shared/ChimeraEventEmitter";
+import { ChimeraInternalError } from "../shared/errors.ts";
+import { deepObjectAssign, deepObjectFreeze, makeCancellablePromise } from "../shared/shared.ts";
 import type {
 	AnyObject,
 	ChimeraCancellablePromise,
 	ChimeraEntityId,
 	ChimeraIdGetterFunc,
 	DeepPartial,
-	Option,
-} from "../../shared/types.ts";
-import { ChimeraDeleteOneSym, ChimeraGetParamsSym, ChimeraSetOneSym, IN_PROGRESS_STATES } from "../constants.ts";
+} from "../shared/types.ts";
+import { ChimeraDeleteOneSym, ChimeraGetParamsSym, ChimeraSetOneSym, IN_PROGRESS_STATES } from "./constants.ts";
 import {
 	ChimeraQueryAlreadyRunningError,
 	ChimeraQueryDeletedItemError,
@@ -22,7 +21,7 @@ import {
 	ChimeraQueryNotReadyError,
 	ChimeraQueryTrustIdMismatchError,
 	ChimeraQueryUnsuccessfulDeletionError,
-} from "../errors.ts";
+} from "./errors.ts";
 import {
 	type ChimeraQueryEntityItemFetcherParams,
 	type ChimeraQueryFetchingStatable,
@@ -30,7 +29,7 @@ import {
 	type ChimeraQueryItemDeleteResponse,
 	type ChimeraQueryItemFetcherResponse,
 	type QueryEntityConfig,
-} from "../types.ts";
+} from "./types.ts";
 
 export type ChimeraItemQueryEventMap<Item extends object> = {
 	/** Once the query is initialized */
@@ -43,9 +42,9 @@ export type ChimeraItemQueryEventMap<Item extends object> = {
 	ready: [{ instance: ChimeraItemQuery<Item> }];
 
 	/** Each time the query was updated */
-	updated: [{ instance: ChimeraItemQuery<Item>; item: Item; oldItem: Option<Item> }];
+	updated: [{ instance: ChimeraItemQuery<Item>; item: Item; oldItem: Item | null }];
 	/** Each time the query was an initiator of update */
-	selfUpdated: [{ instance: ChimeraItemQuery<Item>; item: Item; oldItem: Option<Item> }];
+	selfUpdated: [{ instance: ChimeraItemQuery<Item>; item: Item; oldItem: Item | null }];
 
 	/** Once the query data was deleted */
 	deleted: [{ instance: ChimeraItemQuery<Item>; id: ChimeraEntityId }];
@@ -60,7 +59,7 @@ export class ChimeraItemQuery<Item extends object>
 	extends ChimeraEventEmitter<ChimeraItemQueryEventMap<Item>>
 	implements ChimeraQueryFetchingStatable
 {
-	#item: Option<Item>;
+	#item: Item | null;
 	#mutable: Item | null;
 	#state: ChimeraQueryFetchingState;
 	#promise: ChimeraCancellablePromise | null;
@@ -93,7 +92,7 @@ export class ChimeraItemQuery<Item extends object>
 	}
 
 	#readyItem(internalMessage?: string): Item {
-		if (this.#item.some) return this.#item.value;
+		if (this.#item) return this.#item;
 		throw internalMessage
 			? new ChimeraInternalError(internalMessage)
 			: new ChimeraQueryNotReadyError(this.#config.name);
@@ -123,9 +122,9 @@ export class ChimeraItemQuery<Item extends object>
 	}
 
 	#setItem(item: Item) {
-		!this.#item.some && this.#emit("ready", {instance: this});
+		!this.#item && this.#emit("ready", {instance: this});
 		const oldItem = this.#item;
-		this.#item = some(item);
+		this.#item = item;
 		this.#resetMutable();
 		this.#emit("updated", {instance: this, item, oldItem});
 	}
@@ -143,7 +142,7 @@ export class ChimeraItemQuery<Item extends object>
 	}
 
 	#setError(error: unknown, source: ChimeraQueryError): never {
-		this.#state = this.#item.some ? ChimeraQueryFetchingState.ReErrored : ChimeraQueryFetchingState.Errored;
+		this.#state = this.#item ? ChimeraQueryFetchingState.ReErrored : ChimeraQueryFetchingState.Errored;
 		this.#lastError = error;
 		this.#emit("error", {error, instance: this});
 		throw source;
@@ -256,8 +255,8 @@ export class ChimeraItemQuery<Item extends object>
 	constructor(
 		config: QueryEntityConfig<Item>,
 		params: ChimeraQueryEntityItemFetcherParams<Item>,
-		maybeItem: Option<Item>,
-		toCreate: Option<DeepPartial<Item>>,
+		existingItem: Item | null,
+		toCreateItem: DeepPartial<Item> | null,
 	) {
 		super();
 
@@ -265,12 +264,12 @@ export class ChimeraItemQuery<Item extends object>
 		this.#idGetter = config.idGetter;
 		this.#params = params;
 		this.#promise = null;
-		this.#item = none();
+		this.#item = null;
 		this.#mutable = null;
 		this.#state = ChimeraQueryFetchingState.Initialized;
 
-		if (maybeItem.some) {
-			const item = maybeItem.value;
+		if (existingItem) {
+			const item = existingItem;
 
 			this.#setItem(item);
 
@@ -282,12 +281,12 @@ export class ChimeraItemQuery<Item extends object>
 			}
 
 			this.#state = ChimeraQueryFetchingState.Prefetched;
-		} else if (toCreate.some) {
+		} else if (toCreateItem) {
 			this.#state = ChimeraQueryFetchingState.Creating;
 			const { controller } = this.#prepareRequestParams();
 			this.#setPromise(
 				this.#watchPromise(
-					makeCancellablePromise(config.itemCreator(toCreate.value, { signal: controller.signal }), controller).then(
+					makeCancellablePromise(config.itemCreator(toCreateItem, {signal: controller.signal}), controller).then(
 						({ data }) => {
 							this.#params.id = this.#idGetter(data);
 							this.#emit("created", {instance: this});
@@ -337,7 +336,7 @@ export class ChimeraItemQuery<Item extends object>
 	}
 
 	get ready(): boolean {
-		return this.#item.some;
+		return this.#item !== null;
 	}
 
 	get lastError(): unknown {

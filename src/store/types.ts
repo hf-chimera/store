@@ -3,7 +3,7 @@ import type { ChimeraFilterConfig, ChimeraFilterDescriptor } from "../filter/typ
 import type { ChimeraOrderConfig, ChimeraOrderPriority } from "../order/types.ts";
 import type { ChimeraQueryConfig } from "../query/types.ts";
 import type { ChimeraEntityMap } from "../shared/types.ts";
-import type { ChimeraEntityRepository } from "./ChimeraEntityRepository/ChimeraEntityRepository.ts";
+import type { ChimeraEntityRepository } from "./ChimeraEntityRepository.ts";
 
 export type ChimeraRepositoryMap<EntityMap extends ChimeraEntityMap, FilterConfig extends ChimeraFilterConfig> = {
 	[K in keyof EntityMap]: ChimeraEntityRepository<EntityMap[K], FilterConfig>;

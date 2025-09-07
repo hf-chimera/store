@@ -1,11 +1,4 @@
-import type {
-	AnyObject,
-	ChimeraCancellablePromise,
-	ChimeraEntityGetter,
-	ChimeraPropertyGetter,
-	Option,
-	OptionNone,
-} from "./types.ts";
+import type { AnyObject, ChimeraCancellablePromise, ChimeraEntityGetter, ChimeraPropertyGetter } from "./types.ts";
 
 export const deepObjectAssign = <T>(dst: AnyObject, srcObj: AnyObject, visited = new WeakSet()): T => {
 	for (const { 0: key, 1: srcVal } of Object.entries(srcObj)) {
@@ -66,10 +59,3 @@ export const makeCancellablePromise = <Result>(
 	}
 	return newPromise;
 };
-
-export const optionFromNullish = <T>(value: T | null | undefined): Option<T> =>
-	value == null ? { some: false } : { some: true, value };
-
-export const none = (): OptionNone => ({ some: false });
-
-export const some = <T>(value: T): Option<T> => ({ some: true, value });

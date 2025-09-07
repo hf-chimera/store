@@ -23,10 +23,6 @@ export type DeepObject = { [key: string | symbol]: DeepValue };
 export type DeepArray = DeepValue[];
 export type AnyObject = Record<string, DeepValue>;
 
-export type OptionSome<T> = { some: true; value: T };
-export type OptionNone = { some: false };
-export type Option<T> = OptionSome<T> | OptionNone;
-
 export type ChimeraCancellablePromise<Result = unknown> = Promise<Result> & {
 	cancel(): void;
 	cancelled(cb: () => void): void;

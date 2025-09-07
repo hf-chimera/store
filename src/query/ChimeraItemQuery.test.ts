@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from "vitest";
-import { none, some } from "../../shared/shared.ts";
-import type { ChimeraCancellablePromise } from "../../shared/types.ts";
-import { ChimeraDeleteOneSym, ChimeraSetOneSym } from "../constants.ts";
+import type { ChimeraCancellablePromise } from "../shared/types.ts";
+import { ChimeraItemQuery } from "./ChimeraItemQuery.ts";
+import { ChimeraDeleteOneSym, ChimeraSetOneSym } from "./constants.ts";
 import {
 	ChimeraQueryAlreadyRunningError,
 	ChimeraQueryDeletedItemError,
 	ChimeraQueryNotCreatedError,
 	ChimeraQueryNotReadyError,
-} from "../errors.ts";
+} from "./errors.ts";
 import {
 	type ChimeraQueryEntityItemCreator,
 	type ChimeraQueryEntityItemDeleter,
@@ -15,10 +15,8 @@ import {
 	type ChimeraQueryEntityItemUpdater,
 	ChimeraQueryFetchingState,
 	type QueryEntityConfig,
-} from "../types.ts";
-import { ChimeraItemQuery } from "./ChimeraItemQuery.ts";
+} from "./types.ts";
 
-// Test data types
 interface TestItem {
 	id: string;
 	name: string;
@@ -33,7 +31,7 @@ interface TestItemWithNumberId {
 	name: string;
 }
 
-describe("ChimeraItemQuery - Unit Tests", () => {
+describe("ChimeraItemQuery", () => {
 	let mockConfig: QueryEntityConfig<TestItem>;
 	let mockParams: { id: string; meta: any };
 	let mockFetcher: Mock<ChimeraQueryEntityItemFetcher<TestItem>>;
@@ -76,7 +74,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 	describe("Constructor and Initialization", () => {
 		it("should initialize with prefetched item", () => {
 			const item: TestItem = { id: "test-1", name: "Test Item", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			expect(query.state).toBe(ChimeraQueryFetchingState.Prefetched);
 			expect(query.ready).toBe(true);
@@ -90,7 +88,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 			mockCreator.mockResolvedValue({ data: createdItem });
 
-			const query = new ChimeraItemQuery(mockConfig, mockParams, none(), some(createData));
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, createData);
 
 			expect(query.state).toBe(ChimeraQueryFetchingState.Creating);
 			expect(query.inProgress).toBe(true);
@@ -107,7 +105,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 			const fetchedItem: TestItem = { id: "test-1", name: "Fetched Item", value: 42 };
 			mockFetcher.mockResolvedValue({ data: fetchedItem });
 
-			const query = new ChimeraItemQuery(mockConfig, mockParams, none(), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, null);
 
 			expect(query.state).toBe(ChimeraQueryFetchingState.Fetching);
 			expect(query.inProgress).toBe(true);
@@ -124,7 +122,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 			const item: TestItem = { id: "different-id", name: "Test Item", value: 42 };
 
 			expect(() => {
-				new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+				new ChimeraItemQuery(mockConfig, mockParams, item, null);
 			}).toThrow();
 		});
 	});
@@ -133,7 +131,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 		it("should track inProgress states correctly", async () => {
 			mockFetcher.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
 
-			const query = new ChimeraItemQuery(mockConfig, mockParams, none(), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, null);
 
 			expect(query.inProgress).toBe(true); // Fetching
 
@@ -144,7 +142,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should handle ready state correctly", () => {
 			const item: TestItem = { id: "test-1", name: "Test Item", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			expect(query.ready).toBe(true);
 			expect(query.data).toEqual(item);
@@ -152,7 +150,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should throw when accessing data before ready", async () => {
 			mockFetcher.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
-			const query = new ChimeraItemQuery(mockConfig, mockParams, none(), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, null);
 
 			expect(() => query.data).toThrow(ChimeraQueryNotReadyError);
 		});
@@ -161,7 +159,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 	describe("Refetch Functionality", () => {
 		it("should refetch data successfully", async () => {
 			const initialItem: TestItem = { id: "test-1", name: "Initial", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(initialItem), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, initialItem, null);
 
 			const newItem: TestItem = { id: "test-1", name: "Updated", value: 100 };
 			mockFetcher.mockResolvedValue({ data: newItem });
@@ -177,7 +175,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should return existing promise when refetch already running", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			mockFetcher.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: item }), 100)));
 
@@ -189,7 +187,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should force refetch when force=true", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			mockFetcher.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: item }), 100)));
 
@@ -201,14 +199,14 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should throw error when refetching during creation", () => {
 			mockCreator.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
-			const query = new ChimeraItemQuery(mockConfig, mockParams, none(), some({ name: "New", value: 42 }));
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, {name: "New", value: 42});
 
 			expect(() => query.refetch()).toThrow(ChimeraQueryNotCreatedError);
 		});
 
 		it("should throw error when refetching during update", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			mockUpdater.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: item }), 100)));
 
@@ -220,7 +218,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 	describe("Update Functionality", () => {
 		it("should update item successfully", async () => {
 			const initialItem: TestItem = { id: "test-1", name: "Initial", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(initialItem), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, initialItem, null);
 
 			const updatedItem: TestItem = { id: "test-1", name: "Updated", value: 100 };
 			mockUpdater.mockResolvedValue({ data: structuredClone(updatedItem) });
@@ -234,7 +232,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should throw error when updating with different id", () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			const wrongItem: TestItem = { id: "different-id", name: "Wrong", value: 100 };
 
@@ -243,7 +241,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should throw error when updating during creation", () => {
 			mockCreator.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
-			const query = new ChimeraItemQuery(mockConfig, mockParams, none(), some({ name: "New", value: 42 }));
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, {name: "New", value: 42});
 
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
 			expect(() => query.update(item)).toThrow(ChimeraQueryNotCreatedError);
@@ -251,7 +249,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should throw error when updating deleted item", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			mockDeleter.mockResolvedValue({ result: { id: "test-1", success: true } });
 			await query.delete();
@@ -263,7 +261,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 	describe("Mutate Functionality", () => {
 		it("should mutate item successfully", async () => {
 			const initialItem: TestItem = { id: "test-1", name: "Initial", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(initialItem), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, initialItem, null);
 
 			const expectedUpdated: TestItem = { id: "test-1", name: "Mutated", value: 84 };
 			mockUpdater.mockResolvedValue({ data: structuredClone(expectedUpdated) });
@@ -277,7 +275,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should handle null return from mutator", async () => {
 			const initialItem: TestItem = { id: "test-1", name: "Initial", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(initialItem), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, initialItem, null);
 
 			mockUpdater.mockResolvedValue({ data: structuredClone(initialItem) });
 
@@ -291,7 +289,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 	describe("Mutable Reference", () => {
 		it("should provide mutable reference", () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			const mutable = query.mutable;
 			expect(mutable).toEqual(item);
@@ -300,14 +298,14 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should throw when accessing mutable before ready", () => {
 			mockFetcher.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
-			const query = new ChimeraItemQuery(mockConfig, mockParams, none(), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, null);
 
 			expect(() => query.mutable).toThrow(ChimeraQueryNotReadyError);
 		});
 
 		it("should commit mutable changes", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			const mutable = query.mutable;
 			mutable.name = "Updated";
@@ -326,7 +324,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 	describe("Delete Functionality", () => {
 		it("should delete item successfully", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			mockDeleter.mockResolvedValue({ result: { id: "test-1", success: true } });
 
@@ -339,7 +337,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should handle unsuccessful deletion", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			mockDeleter.mockResolvedValue({ result: { id: "test-1", success: false } });
 
@@ -349,14 +347,14 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should throw error when deleting during creation", () => {
 			mockCreator.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
-			const query = new ChimeraItemQuery(mockConfig, mockParams, none(), some({ name: "New", value: 42 }));
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, {name: "New", value: 42});
 
 			expect(() => query.delete()).toThrow(ChimeraQueryNotCreatedError);
 		});
 
 		it("should throw error when deleting during update", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			mockUpdater.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: item }), 100)));
 
@@ -368,7 +366,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 	describe("Event System", () => {
 		it("should emit selfUpdated event on update", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			const events: any[] = [];
 			query.on("selfUpdated", (event) => events.push({ event, type: "selfUpdated" }));
@@ -383,7 +381,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should emit selfDeleted event on delete", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			const events: any[] = [];
 			query.on("selfDeleted", (event) => events.push({ event, type: "selfDeleted" }));
@@ -398,7 +396,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should emit error event on fetch failure", async () => {
 			mockFetcher.mockRejectedValue(new Error("Fetch failed"));
-			const query = new ChimeraItemQuery(mockConfig, mockParams, none(), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, null);
 
 			const events: any[] = [];
 			query.on("error", (event) => events.push({ event, type: "error" }));
@@ -412,7 +410,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should prevent external event emission", () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			// @ts-expect-error
 			expect(() => query.emit("test")).toThrow();
@@ -423,7 +421,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 		it("should trust query provider in trust mode", async () => {
 			const config = { ...mockConfig, devMode: false, trustQuery: true };
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(config, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(config, mockParams, item, null);
 
 			const differentIdItem: TestItem = { id: "different-id", name: "Different", value: 100 };
 			mockUpdater.mockResolvedValue({ data: structuredClone(differentIdItem) });
@@ -436,7 +434,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 		it("should warn in dev mode with trust query", async () => {
 			const config = { ...mockConfig, devMode: true, trustQuery: true };
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(config, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(config, mockParams, item, null);
 
 			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
@@ -458,7 +456,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 				nested: { prop: "original" },
 				value: 42,
 			};
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			const mutable = query.mutable;
 			// biome-ignore lint/style/noNonNullAssertion: mocked to be valid
@@ -477,7 +475,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 			const item: TestItemWithNumberId = { id: 1, name: "Test" };
 			const params = { id: 1, meta: {} };
 
-			const query = new ChimeraItemQuery(config, params, some(item), none());
+			const query = new ChimeraItemQuery(config, params, item, null);
 
 			expect(query.id).toBe(1);
 			expect(query.data).toEqual(item);
@@ -485,7 +483,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should handle cancellation of promises", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			mockUpdater.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: item }), 100)));
 			mockFetcher.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: item }), 100)));
@@ -502,7 +500,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should handle toJSON and toString", () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			expect(query.toJSON()).toEqual(item);
 			expect(query.toString()).toBe(item.toString());
@@ -510,7 +508,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should handle external updates via symbol", () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			const updatedItem: TestItem = { id: "test-1", name: "External Update", value: 100 };
 
@@ -523,7 +521,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should handle external deletion via symbol", () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			// Simulate external deletion
 			query[ChimeraDeleteOneSym]("test-1");
@@ -533,7 +531,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should ignore external deletion for different id", () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			const originalState = query.state;
 
@@ -547,7 +545,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 	describe("Error Handling", () => {
 		it("should handle fetch errors", async () => {
 			mockFetcher.mockRejectedValue(new Error("Network error"));
-			const query = new ChimeraItemQuery(mockConfig, mockParams, none(), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, null);
 
 			await query.progress;
 
@@ -557,7 +555,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should handle update errors", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			mockUpdater.mockRejectedValue(new Error("Update failed"));
 
@@ -567,7 +565,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 
 		it("should handle delete errors", async () => {
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
-			const query = new ChimeraItemQuery(mockConfig, mockParams, some(item), none());
+			const query = new ChimeraItemQuery(mockConfig, mockParams, item, null);
 
 			mockDeleter.mockRejectedValue(new Error("Delete failed"));
 
@@ -578,7 +576,7 @@ describe("ChimeraItemQuery - Unit Tests", () => {
 		it("should handle creation errors", async () => {
 			mockCreator.mockRejectedValue(new Error("Creation failed"));
 
-			const query = new ChimeraItemQuery(mockConfig, mockParams, none(), some({ name: "New", value: 42 }));
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, {name: "New", value: 42});
 
 			await expect(query.promise).rejects.toThrow();
 			await query.progress;

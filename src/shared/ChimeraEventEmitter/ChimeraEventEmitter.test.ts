@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ChimeraEventEmitter } from "./ChimeraEventEmitter.ts";
 
-describe("ChimeraEventEmitter - Unit Tests", () => {
+describe("ChimeraEventEmitter", () => {
 	describe("ChimeraEventEmitter#emit", () => {
 		it("should return false when there are not events to emit", () => {
 			var e = new ChimeraEventEmitter();
@@ -67,7 +67,7 @@ describe("ChimeraEventEmitter - Unit Tests", () => {
 			expect(called).equals(1);
 		});
 
-		it("receives the emitted events", (ctx) => {
+		it("receives the emitted events", () => {
 			var e = new ChimeraEventEmitter();
 			var testDate = new Date();
 

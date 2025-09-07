@@ -4,13 +4,10 @@ import {
 	deepObjectAssign,
 	deepObjectFreeze,
 	makeCancellablePromise,
-	none,
-	optionFromNullish,
 	simplifyPropertyGetter,
-	some,
 } from "./shared.ts";
 
-describe("Shared Module - Unit Tests", () => {
+describe("Shared Module", () => {
 	describe("deepObjectAssign", () => {
 		it("should merge simple objects correctly", () => {
 			const dst = {a: 1, b: 2};
@@ -331,82 +328,6 @@ describe("Shared Module - Unit Tests", () => {
 
 			// The promise should remain pending
 			expect(cancellable).toBeInstanceOf(Promise);
-		});
-	});
-
-	describe("optionFromNullish", () => {
-		it("should return none for null", () => {
-			const result = optionFromNullish(null);
-			expect(result).toEqual({some: false});
-		});
-
-		it("should return none for undefined", () => {
-			const result = optionFromNullish(undefined);
-			expect(result).toEqual({some: false});
-		});
-
-		it("should return some for valid values", () => {
-			const result = optionFromNullish("test");
-			expect(result).toEqual({some: true, value: "test"});
-		});
-
-		it("should return some for zero", () => {
-			const result = optionFromNullish(0);
-			expect(result).toEqual({some: true, value: 0});
-		});
-
-		it("should return some for empty string", () => {
-			const result = optionFromNullish("");
-			expect(result).toEqual({some: true, value: ""});
-		});
-
-		it("should return some for false", () => {
-			const result = optionFromNullish(false);
-			expect(result).toEqual({some: true, value: false});
-		});
-
-		it("should return some for objects", () => {
-			const obj = {test: true};
-			const result = optionFromNullish(obj);
-			expect(result).toEqual({some: true, value: obj});
-		});
-
-		it("should return some for arrays", () => {
-			const arr = [1, 2, 3];
-			const result = optionFromNullish(arr);
-			expect(result).toEqual({some: true, value: arr});
-		});
-	});
-
-	describe("none", () => {
-		it("should return none option", () => {
-			const result = none();
-			expect(result).toEqual({some: false});
-		});
-
-		it("should return consistent none values", () => {
-			const result1 = none();
-			const result2 = none();
-			expect(result1).toEqual(result2);
-		});
-	});
-
-	describe("some", () => {
-		it("should return some option with value", () => {
-			const result = some("test");
-			expect(result).toEqual({some: true, value: "test"});
-		});
-
-		it("should handle various value types", () => {
-			expect(some(42)).toEqual({some: true, value: 42});
-			expect(some(true)).toEqual({some: true, value: true});
-			expect(some({key: "value"})).toEqual({some: true, value: {key: "value"}});
-			expect(some([1, 2, 3])).toEqual({some: true, value: [1, 2, 3]});
-		});
-
-		it("should handle null and undefined as values", () => {
-			expect(some(null)).toEqual({some: true, value: null});
-			expect(some(undefined)).toEqual({some: true, value: undefined});
 		});
 	});
 });
