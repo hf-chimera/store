@@ -1,22 +1,12 @@
 import type {
-	ChimeraConjunctionMap,
 	ChimeraFilterConfig,
 	ChimeraKeyFromFilterGetter,
+	ChimeraKeyFromOperatorGetter,
 	ChimeraOperatorMap,
 } from "./types.ts";
 
+export const getKeyFromOperation: ChimeraKeyFromOperatorGetter = (operator) => JSON.stringify(operator);
 export const chimeraDefaultGetKeyFromFilter: ChimeraKeyFromFilterGetter = (filter) => JSON.stringify(filter);
-
-export const chimeraDefaultFilterConjunctions = {
-	and: (operations) => {
-		for (const operation of operations) if (!operation()) return false;
-		return true;
-	},
-	or: (operations) => {
-		for (const operation of operations) if (operation()) return true;
-		return false;
-	},
-} satisfies ChimeraConjunctionMap;
 
 export const chimeraDefaultFilterOperators = {
 	contains: <
@@ -44,7 +34,7 @@ export const chimeraDefaultFilterOperators = {
 } satisfies ChimeraOperatorMap;
 
 export const chimeraDefaultFilterConfig = {
-	conjunctions: chimeraDefaultFilterConjunctions,
-	getKey: chimeraDefaultGetKeyFromFilter,
+	getFilterKey: chimeraDefaultGetKeyFromFilter,
+	getOperatorKey: getKeyFromOperation,
 	operators: chimeraDefaultFilterOperators,
 } satisfies ChimeraFilterConfig;

@@ -15,12 +15,6 @@ export class ChimeraFilterOperatorNotFoundError extends ChimeraFilterOperatorErr
 	}
 }
 
-export class ChimeraFilterConjunctionError extends ChimeraFilterError {
-	constructor(conjunction: string, message: string) {
-		super(`Conjunction "${conjunction}" ${message}`);
-	}
-}
-
 export class ChimeraFilterConjunctionNotFoundError extends ChimeraFilterOperatorError {
 	constructor(conjunction: string) {
 		super(conjunction, "not found");

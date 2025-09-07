@@ -29,7 +29,7 @@
 		"lint": "tsc && pnpm biome check --write",
 		"prepare": "husky",
 		"release": "pnpm run build && changeset publish",
-		"test": "vitest --passWithNoTests",
+		"test": "vitest run --passWithNoTests",
 		"test:coverage": "vitest run --coverage",
 		"test:run": "vitest run"
 	},

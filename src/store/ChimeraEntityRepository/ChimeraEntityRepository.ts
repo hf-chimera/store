@@ -132,7 +132,7 @@ export class ChimeraEntityRepository<
 		};
 	}
 	#getCollectionKey({ order, filter }: ChimeraQueryEntityCollectionFetcherParams<Item, FilterConfig>): string {
-		return `ORDER<${order ? this.#orderConfig.getKey(order) : ""}>\nFILTER<${filter ? this.#filterConfig.getKey(filter) : ""}>`;
+		return `ORDER<${order ? this.#orderConfig.getKey(order) : ""}>\nFILTER<${filter ? this.#filterConfig.getFilterKey(filter) : ""}>`;
 	}
 
 	#collectionUpdateHandler(query: ChimeraCollectionQuery<Item>, items: Item[]) {

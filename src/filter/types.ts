@@ -3,9 +3,11 @@ import type { ChimeraConjunctionSymbol, ChimeraOperatorSymbol } from "./constant
 
 export type ChimeraFilterChecker<Entity> = (item: Entity) => boolean;
 
-export type ConjunctionFunction = (operations: Iterable<() => boolean>) => boolean;
-export type ChimeraConjunctionMap<Conjunctions extends string = string> = {
-	[K in Conjunctions]: ConjunctionFunction;
+export type ChimeraConjunctionType = "and" | "or";
+
+export type ConjunctionFunction = (operations: Array<() => boolean>) => boolean;
+export type ChimeraConjunctionMap = {
+	[K in ChimeraConjunctionType]: ConjunctionFunction;
 };
 
 export type ChimeraOperatorFunction = (itemValue: any, testValue: any) => boolean;
@@ -30,7 +32,7 @@ export type ChimeraConjunctionOperation<Config extends ChimeraFilterConfig, Enti
 export type ChimeraConjunctionDescriptor<
 	Config extends ChimeraFilterConfig,
 	Entity,
-	Conj extends keyof Config["conjunctions"] & string = keyof Config["conjunctions"] & string,
+	Conj extends ChimeraConjunctionType = ChimeraConjunctionType,
 > = {
 	[K in Conj]: {
 		type: typeof ChimeraConjunctionSymbol;
@@ -44,7 +46,7 @@ export type ChimeraFilterDescriptor<Config extends ChimeraFilterConfig, Entity> 
 	Entity
 >;
 
-export type SimplifiedOperator<
+export type ChimeraSimplifiedOperator<
 	Config extends ChimeraFilterConfig = ChimeraFilterConfig,
 	Keys extends string = string,
 	Op extends keyof Config["operators"] & string = keyof Config["operators"] & string,
@@ -60,12 +62,12 @@ export type SimplifiedOperator<
 export type SimplifiedConjunction<
 	Config extends ChimeraFilterConfig = ChimeraFilterConfig,
 	Keys extends string = string,
-	Conj extends keyof Config["conjunctions"] & string = keyof Config["conjunctions"] & string,
+	Conj extends ChimeraConjunctionType = ChimeraConjunctionType,
 > = {
 	[K in Conj]: {
 		type: typeof ChimeraConjunctionSymbol;
 		kind: K;
-		operations: (SimplifiedOperator<Config, Keys> | SimplifiedConjunction<Config, Keys>)[];
+		operations: (ChimeraSimplifiedOperator<Config, Keys> | SimplifiedConjunction<Config, Keys>)[];
 	};
 }[Conj];
 
@@ -78,8 +80,12 @@ export type ChimeraKeyFromFilterGetter = <Config extends ChimeraFilterConfig = C
 	filter: ChimeraSimplifiedFilter<Config> | null,
 ) => string;
 
+export type ChimeraKeyFromOperatorGetter = <Config extends ChimeraFilterConfig = ChimeraFilterConfig>(
+	operator: ChimeraSimplifiedOperator<Config> | null,
+) => string;
+
 export type ChimeraFilterConfig = {
-	conjunctions: ChimeraConjunctionMap;
 	operators: ChimeraOperatorMap;
-	getKey: ChimeraKeyFromFilterGetter;
+	getFilterKey: ChimeraKeyFromFilterGetter;
+	getOperatorKey: ChimeraKeyFromOperatorGetter;
 };
