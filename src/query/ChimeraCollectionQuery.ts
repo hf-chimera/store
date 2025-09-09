@@ -3,7 +3,7 @@ import type { ChimeraOrderByComparator } from "../order/types.ts";
 import type { EventArgs, EventNames } from "../shared/ChimeraEventEmitter";
 import { ChimeraEventEmitter } from "../shared/ChimeraEventEmitter";
 import { ChimeraInternalError } from "../shared/errors.ts";
-import { deepObjectFreeze, makeCancellablePromise } from "../shared/shared.ts";
+import { deepObjectClone, deepObjectFreeze, makeCancellablePromise } from "../shared/shared.ts";
 import type { ChimeraCancellablePromise, ChimeraEntityId, ChimeraIdGetterFunc, DeepPartial } from "../shared/types.ts";
 import {
 	ChimeraDeleteManySym,
@@ -338,12 +338,12 @@ export class ChimeraCollectionQuery<Item extends object>
 
 	/** Return mutable ref to item by idx if it is ready, throw error otherwise */
 	mutableAt(idx: number): Item | undefined {
-		return structuredClone(this.#readyItems().at(idx));
+		return deepObjectClone(this.#readyItems().at(idx));
 	}
 
 	/** Return mutable ref to item by [id] if it is ready, throw error otherwise */
 	mutableGetById(id: ChimeraEntityId): Item | undefined {
-		return structuredClone(this.#readyItems().find((item) => this.#idGetter(item) === id));
+		return deepObjectClone(this.#readyItems().find((item) => this.#idGetter(item) === id));
 	}
 
 	/**

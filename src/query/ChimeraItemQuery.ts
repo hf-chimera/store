@@ -1,7 +1,7 @@
 import type { EventArgs, EventNames } from "../shared/ChimeraEventEmitter";
 import { ChimeraEventEmitter } from "../shared/ChimeraEventEmitter";
 import { ChimeraInternalError } from "../shared/errors.ts";
-import { deepObjectAssign, deepObjectFreeze, makeCancellablePromise } from "../shared/shared.ts";
+import { deepObjectAssign, deepObjectClone, deepObjectFreeze, makeCancellablePromise } from "../shared/shared.ts";
 import type {
 	AnyObject,
 	ChimeraCancellablePromise,
@@ -111,7 +111,7 @@ export class ChimeraItemQuery<Item extends object>
 		if (typeof item === "object" && item != null) {
 			this.#mutable
 				? deepObjectAssign(this.#mutable as AnyObject, item as AnyObject)
-				: (this.#mutable = structuredClone(item));
+				: (this.#mutable = deepObjectClone(item));
 		} else this.#mutable = item;
 	}
 
@@ -122,29 +122,29 @@ export class ChimeraItemQuery<Item extends object>
 	}
 
 	#setItem(item: Item) {
-		!this.#item && this.#emit("ready", {instance: this});
+		!this.#item && this.#emit("ready", { instance: this });
 		const oldItem = this.#item;
 		this.#item = item;
 		this.#resetMutable();
-		this.#emit("updated", {instance: this, item, oldItem});
+		this.#emit("updated", { instance: this, item, oldItem });
 	}
 
 	#setNewItem(item: Item) {
 		deepObjectFreeze(item);
 		const oldItem = this.#item;
 		this.#setItem(item);
-		this.#emit("selfUpdated", {instance: this, item, oldItem});
+		this.#emit("selfUpdated", { instance: this, item, oldItem });
 	}
 
 	#deleteItem() {
 		this.#state = ChimeraQueryFetchingState.Deleted;
-		this.#emit("deleted", {id: this.#params.id, instance: this});
+		this.#emit("deleted", { id: this.#params.id, instance: this });
 	}
 
 	#setError(error: unknown, source: ChimeraQueryError): never {
 		this.#state = this.#item ? ChimeraQueryFetchingState.ReErrored : ChimeraQueryFetchingState.Errored;
 		this.#lastError = error;
-		this.#emit("error", {error, instance: this});
+		this.#emit("error", { error, instance: this });
 		throw source;
 	}
 
@@ -201,7 +201,7 @@ export class ChimeraItemQuery<Item extends object>
 		const { controller } = this.#prepareRequestParams();
 		return this.#setPromise(
 			this.#watchPromise(
-				makeCancellablePromise(this.#config.itemUpdater(newItem, {signal: controller.signal}), controller),
+				makeCancellablePromise(this.#config.itemUpdater(newItem, { signal: controller.signal }), controller),
 				controller,
 			),
 		);
@@ -236,7 +236,7 @@ export class ChimeraItemQuery<Item extends object>
 
 						if (success) {
 							this.#deleteItem();
-							this.#emit("selfDeleted", {id, instance: this});
+							this.#emit("selfDeleted", { id, instance: this });
 						} else {
 							const error = new ChimeraQueryUnsuccessfulDeletionError(this.#config.name, this.#params.id);
 							this.#state = ChimeraQueryFetchingState.ReErrored;
@@ -286,10 +286,10 @@ export class ChimeraItemQuery<Item extends object>
 			const { controller } = this.#prepareRequestParams();
 			this.#setPromise(
 				this.#watchPromise(
-					makeCancellablePromise(config.itemCreator(toCreateItem, {signal: controller.signal}), controller).then(
+					makeCancellablePromise(config.itemCreator(toCreateItem, { signal: controller.signal }), controller).then(
 						({ data }) => {
 							this.#params.id = this.#idGetter(data);
-							this.#emit("created", {instance: this});
+							this.#emit("created", { instance: this });
 							return { data };
 						},
 					),
@@ -307,7 +307,7 @@ export class ChimeraItemQuery<Item extends object>
 			);
 		}
 
-		this.#emit("initialized", {instance: this});
+		this.#emit("initialized", { instance: this });
 	}
 
 	get [ChimeraGetParamsSym](): ChimeraQueryEntityItemFetcherParams<Item> {
@@ -395,7 +395,7 @@ export class ChimeraItemQuery<Item extends object>
 		const { controller } = this.#prepareRequestParams();
 		return this.#setPromise(
 			this.#watchPromise(
-				makeCancellablePromise(this.#config.itemFetcher(this.#params, {signal: controller.signal}), controller),
+				makeCancellablePromise(this.#config.itemFetcher(this.#params, { signal: controller.signal }), controller),
 				controller,
 			),
 		);
@@ -445,7 +445,7 @@ export class ChimeraItemQuery<Item extends object>
 		)
 			throw new ChimeraQueryAlreadyRunningError(this.#config.name, this.#state);
 
-		const item = structuredClone(this.#mutableItem());
+		const item = deepObjectClone(this.#mutableItem());
 		return this.#updateItem(mutator(item) ?? item);
 	}
 

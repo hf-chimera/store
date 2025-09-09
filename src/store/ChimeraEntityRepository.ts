@@ -21,6 +21,9 @@ import type { ChimeraEntityId, ChimeraIdGetterFunc, DeepPartial } from "../share
 import type { ChimeraCollectionParams } from "./types.ts";
 
 export type ChimeraEntityRepositoryEventMap<Item extends object, FilterConfig extends ChimeraFilterConfig> = {
+	/** Once the repository is initialized */
+	initialized: { instance: ChimeraEntityRepository<Item, FilterConfig> };
+
 	/** Each time item added */
 	itemAdded: [{ instance: ChimeraEntityRepository<Item, FilterConfig>; item: Item }];
 
@@ -29,6 +32,8 @@ export type ChimeraEntityRepositoryEventMap<Item extends object, FilterConfig ex
 	/** Each time item updated */
 	itemUpdated: [{ instance: ChimeraEntityRepository<Item, FilterConfig>; item: Item; oldItem: Item | null }];
 
+	/** Each time many items deleted */
+	deleted: [{ instance: ChimeraEntityRepository<Item, FilterConfig>; ids: ChimeraEntityId[] }];
 	/** Each time item deleted */
 	itemDeleted: [{ instance: ChimeraEntityRepository<Item, FilterConfig>; oldItem: Item | null }];
 };
@@ -49,10 +54,7 @@ export class ChimeraEntityRepository<
 
 	readonly #itemsMap: ChimeraWeakValueMap<ChimeraEntityId, Item>;
 
-	readonly #collectionQueryMap: ChimeraWeakValueMap<
-		string,
-		{ query: ChimeraCollectionQuery<Item>; params: ChimeraQueryEntityCollectionFetcherParams<Item, FilterConfig> }
-	>;
+	readonly #collectionQueryMap: ChimeraWeakValueMap<string, ChimeraCollectionQuery<Item>>;
 	readonly #itemQueryMap: ChimeraWeakValueMap<ChimeraEntityId, ChimeraItemQuery<Item>>;
 
 	#emit<T extends EventNames<ChimeraEntityRepositoryEventMap<Item, FilterConfig>>>(
@@ -90,24 +92,23 @@ export class ChimeraEntityRepository<
 
 	#propagateUpdateOne(item: Item, { item: skipItem, collection: skipCollection }: SkipParams<Item> = {}) {
 		this.#registerUpdate(item, skipItem);
-		for (const c of this.#collectionQueryMap.values()) c.query !== skipCollection && c.query[ChimeraSetOneSym](item);
+		for (const c of this.#collectionQueryMap.values()) c !== skipCollection && c[ChimeraSetOneSym](item);
 	}
 	#propagateDeleteOne(id: ChimeraEntityId, { item: skipItem, collection: skipCollection }: SkipParams<Item> = {}) {
 		this.#registerDelete(id, skipItem);
-		for (const c of this.#collectionQueryMap.values()) c.query !== skipCollection && c.query[ChimeraDeleteOneSym](id);
+		for (const c of this.#collectionQueryMap.values()) c !== skipCollection && c[ChimeraDeleteOneSym](id);
 	}
 
-	#propagateUpdateMany(items: Iterable<Item>, { item: skipItem, collection: skipCollection }: SkipParams<Item> = {}) {
+	#propagateUpdateMany(items: Item[], {item: skipItem, collection: skipCollection}: SkipParams<Item> = {}) {
 		for (const item of items) this.#registerUpdate(item, skipItem);
-		this.#emit("updated", { instance: this, items: Array.from(items) });
-		for (const c of this.#collectionQueryMap.values()) c.query !== skipCollection && c.query[ChimeraSetManySym](items);
+		this.#emit("updated", {instance: this, items});
+		for (const c of this.#collectionQueryMap.values()) c !== skipCollection && c[ChimeraSetManySym](items);
 	}
-	#propagateDeleteMany(
-		ids: Iterable<ChimeraEntityId>,
-		{ item: skipItem, collection: skipCollection }: SkipParams<Item> = {},
-	) {
+
+	#propagateDeleteMany(ids: ChimeraEntityId[], {item: skipItem, collection: skipCollection}: SkipParams<Item> = {}) {
 		for (const id of ids) this.#registerDelete(id, skipItem);
-		for (const c of this.#collectionQueryMap.values()) c.query !== skipCollection && c.query[ChimeraDeleteManySym](ids);
+		this.#emit("deleted", {ids, instance: this});
+		for (const c of this.#collectionQueryMap.values()) c !== skipCollection && c[ChimeraDeleteManySym](ids);
 	}
 
 	#itemUpdateHandler(query: ChimeraItemQuery<Item>, item: Item) {
@@ -150,11 +151,8 @@ export class ChimeraEntityRepository<
 		this.#propagateDeleteOne(id, { collection: query });
 	}
 
-	#prepareCollectionQuery(
-		query: ChimeraCollectionQuery<Item>,
-		params: ChimeraQueryEntityCollectionFetcherParams<Item, FilterConfig>,
-	): ChimeraCollectionQuery<Item> {
-		this.#collectionQueryMap.set(this.#getCollectionKey(query[ChimeraGetParamsSym]), {params, query});
+	#prepareCollectionQuery(query: ChimeraCollectionQuery<Item>): ChimeraCollectionQuery<Item> {
+		this.#collectionQueryMap.set(this.#getCollectionKey(query[ChimeraGetParamsSym]), query);
 		query.on("selfUpdated", ({ instance, items }) => this.#collectionUpdateHandler(instance, items));
 		query.on("selfItemCreated", ({ instance, item }) => this.#collectionCreateHandler(instance, item));
 		query.on("selfItemUpdated", ({ instance, item }) => this.#collectionItemUpdated(instance, item));
@@ -166,7 +164,7 @@ export class ChimeraEntityRepository<
 		filter: ChimeraSimplifiedFilter<FilterConfig, keyof Item & string>,
 	): ChimeraCollectionQuery<Item> | null {
 		for (const q of this.#collectionQueryMap.values())
-			if (isFilterSubset(q.params.filter, filter, this.#filterConfig.getOperatorKey)) return q.query;
+			if (q.ready && isFilterSubset(q[ChimeraGetParamsSym].filter, filter, this.#filterConfig.getOperatorKey)) return q;
 		return null;
 	}
 
@@ -181,6 +179,8 @@ export class ChimeraEntityRepository<
 		this.#itemsMap = new ChimeraWeakValueMap();
 		this.#collectionQueryMap = new ChimeraWeakValueMap();
 		this.#itemQueryMap = new ChimeraWeakValueMap();
+
+		this.#emit("initialized", {instance: this});
 	}
 
 	[ChimeraSetOneSym](item: Item) {
@@ -189,13 +189,16 @@ export class ChimeraEntityRepository<
 	[ChimeraDeleteOneSym](id: ChimeraEntityId) {
 		this.#propagateDeleteOne(id);
 	}
-	[ChimeraSetManySym](items: Iterable<Item>) {
+
+	[ChimeraSetManySym](items: Item[]) {
 		this.#propagateUpdateMany(items);
 	}
-	[ChimeraDeleteManySym](ids: Iterable<ChimeraEntityId>) {
+
+	[ChimeraDeleteManySym](ids: ChimeraEntityId[]) {
 		this.#propagateDeleteMany(ids);
 	}
-	[ChimeraUpdateMixedSym](toAdd: Iterable<Item>, toDelete: Iterable<ChimeraEntityId>) {
+
+	[ChimeraUpdateMixedSym](toAdd: Item[], toDelete: ChimeraEntityId[]) {
 		this.#propagateUpdateMany(toAdd);
 		this.#propagateDeleteMany(toDelete);
 	}
@@ -216,8 +219,8 @@ export class ChimeraEntityRepository<
 	getCollection(params: ChimeraCollectionParams<FilterConfig, Item>): ChimeraCollectionQuery<Item> {
 		const simplifiedParams = this.#simplifyCollectionParams(params);
 		const key = this.#getCollectionKey(simplifiedParams);
-		const record = this.#collectionQueryMap.get(key);
-		if (record) return record.query;
+		const query = this.#collectionQueryMap.get(key);
+		if (query) return query;
 
 		return this.#prepareCollectionQuery(
 			new ChimeraCollectionQuery(
@@ -228,7 +231,6 @@ export class ChimeraEntityRepository<
 				compileFilter(this.#filterConfig, params.filter),
 				false,
 			),
-			simplifiedParams,
 		);
 	}
 }

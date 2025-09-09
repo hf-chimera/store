@@ -11,6 +11,10 @@ export type OneOf<T> = {
 
 export type StrKeys<T> = keyof T & string & {};
 
+export type Constructable = {
+	new (...args: any[]): any;
+};
+
 export type DeepPartial<T> = T extends object
 	? {
 			[P in keyof T]?: DeepPartial<T[P]>;
