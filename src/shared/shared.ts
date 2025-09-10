@@ -40,20 +40,22 @@ export const deepObjectFreeze = <T>(obj: T, frozenObjects = new WeakSet()): T =>
 
 const TypedArray = Object.getPrototypeOf(Int8Array);
 
-export const deepObjectClone = <T>(value: T, refs = new Map()): T => {
+export const deepObjectClone = <T>(value: T, refs?: Map<any, any>): T => {
 	if (value === null) return null as T;
 	if (value === undefined) return undefined as T;
 	if (typeof value !== "object") return value;
 
-	const ref = refs.get(value);
-	if (ref !== undefined) return ref;
+	if (refs) {
+		const ref = refs.get(value);
+		if (ref !== undefined) return ref;
+	}
 
 	if (value.constructor === Object) {
-		const keys: (string | symbol)[] = Object.keys(value).concat(
-			Object.getOwnPropertySymbols(value) as unknown as string[],
-		);
+		const keys = Object.keys(value).concat(Object.getOwnPropertySymbols(value) as unknown as string[]);
 		const length = keys.length;
 		const clone = {} as T;
+		// biome-ignore lint/style/noParameterAssign: ok
+		refs ??= new Map();
 		refs.set(value, clone);
 		for (let i = 0; i < length; i++) clone[keys[i] as keyof T] = deepObjectClone(value[keys[i] as keyof T], refs);
 		return clone;
@@ -61,24 +63,54 @@ export const deepObjectClone = <T>(value: T, refs = new Map()): T => {
 	if (Array.isArray(value)) {
 		const length = value.length;
 		const clone = new Array(length) as T;
+		// biome-ignore lint/style/noParameterAssign: ok
+		refs ??= new Map();
 		refs.set(value, clone);
 		for (let i = 0; i < length; i++) clone[i as keyof T] = deepObjectClone(value[i], refs);
 		return clone;
 	}
 	if (value instanceof Date) return new (value.constructor as Constructable)(value.valueOf());
-	if (value instanceof RegExp) return new (value.constructor as Constructable)(value);
-	if (value instanceof Map)
-		return new (value.constructor as Constructable)(value.entries().map(([k, v]) => [k, deepObjectClone(v, refs)]));
-	if (value instanceof Set)
-		return new (value.constructor as Constructable)(value.values().map((v) => deepObjectClone(v, refs)));
-	if (value instanceof Error) return Object.assign(new (value.constructor as Constructable)(value.message), value);
+	if (value instanceof RegExp) return value.constructor as Constructable as T;
+	if (value instanceof Map) {
+		const clone = new (value.constructor as Constructable)();
+		// biome-ignore lint/style/noParameterAssign: ok
+		refs ??= new Map();
+		refs.set(value, clone);
+		for (const entry of value.entries()) clone.set(entry[0], deepObjectClone(entry[1], refs));
+		return clone;
+	}
+	if (value instanceof Set) {
+		const clone = new (value.constructor as Constructable)();
+		// biome-ignore lint/style/noParameterAssign: ok
+		refs ??= new Map();
+		refs.set(value, clone);
+		for (const entry of value.values()) clone.add(deepObjectClone(entry, refs));
+		return clone;
+	}
+	if (value instanceof Error) {
+		const clone = new (value.constructor as Constructable)(value.message);
+		const keys = Object.keys(value).concat(Object.getOwnPropertySymbols(value) as unknown as string[]);
+		const length = keys.length;
+		// biome-ignore lint/style/noParameterAssign: ok
+		refs ??= new Map();
+		refs.set(value, clone);
+		for (let i = 0; i < length; i++) clone[keys[i] as keyof T] = deepObjectClone(value[keys[i] as keyof T], refs);
+		return clone;
+	}
 	if (value instanceof ArrayBuffer) return value.slice() as T;
 	if (value instanceof TypedArray) return (value as unknown as Int8Array).slice() as T;
 	if (value instanceof DataView) return new DataView(value.buffer.slice()) as T;
 	if (value instanceof WeakMap) return value;
 	if (value instanceof WeakSet) return value;
 
-	return Object.assign(Object.create(value.constructor.prototype), value);
+	const clone = Object.create(value.constructor.prototype) as T;
+	const keys = Object.keys(value).concat(Object.getOwnPropertySymbols(value) as unknown as string[]);
+	const length = keys.length;
+	// biome-ignore lint/style/noParameterAssign: ok
+	refs ??= new Map();
+	refs.set(value, clone);
+	for (let i = 0; i < length; i++) clone[keys[i] as keyof T] = deepObjectClone(value[keys[i] as keyof T], refs);
+	return clone;
 };
 
 export const compilePropertyGetter = <Entity>({ get }: ChimeraPropertyGetter<Entity>): ChimeraEntityGetter<Entity> =>
