@@ -28,8 +28,8 @@ export interface Photo {
 }
 
 export interface Todo {
-	userId: 1;
-	id: 1;
+	userId: number;
+	id: number;
 	title: string;
 	completed: boolean;
 }
@@ -74,10 +74,10 @@ export enum TestEntityName {
 }
 
 export type TestEntityMap = {
-	[TestEntityName.Post]: Post;
-	[TestEntityName.Comment]: Comment;
-	[TestEntityName.Album]: Album;
-	[TestEntityName.Photo]: Photo;
-	[TestEntityName.Todo]: Todo;
-	[TestEntityName.User]: User;
+	post: Post;
+	comment: Comment;
+	album: Album;
+	photo: Photo;
+	todo: Todo;
+	user: User;
 };

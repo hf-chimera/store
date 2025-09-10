@@ -6,8 +6,8 @@ export const chimeraDefaultComparator: ChimeraPrimitiveComparator = (a: unknown,
 
 	if (typeof a === "string" && typeof b === "string") {
 		result = a.localeCompare(b);
-	} else if (typeof a === "number" && typeof b === "number") {
-		result = a - b;
+	} else if ((typeof a === "number" && typeof b === "number") || (typeof a === "boolean" && typeof b === "boolean")) {
+		result = (a as number) - (b as number);
 	} else if (a instanceof Date && b instanceof Date) {
 		result = a.getTime() - b.getTime();
 	} else if (a == null || b == null) {

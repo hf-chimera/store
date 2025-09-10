@@ -119,7 +119,8 @@ export class ChimeraEntityRepository<
 		this.#propagateDeleteOne(id, { item: query });
 	}
 	#prepareItemQuery(query: ChimeraItemQuery<Item>): ChimeraItemQuery<Item> {
-		this.#itemQueryMap.set(query.id, query);
+		if (query.id !== "") this.#itemQueryMap.set(query.id, query);
+		query.on("selfCreated", ({instance}) => this.#itemQueryMap.set(instance.id, instance));
 		query.on("selfUpdated", ({ instance, item }) => this.#itemUpdateHandler(instance, item));
 		query.on("selfDeleted", ({ instance, id }) => this.#itemDeleteHandler(instance, id));
 		return query;

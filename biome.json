@@ -46,7 +46,6 @@
 			},
 			"style": {
 				"noInferrableTypes": "error",
-				"noParameterAssign": "error",
 				"noUnusedTemplateLiteral": "error",
 				"noUselessElse": "error",
 				"useAsConstAssertion": "error",

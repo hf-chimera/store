@@ -313,7 +313,7 @@ export class ChimeraCollectionQuery<Item extends object>
 			const resolve = () => queueMicrotask(() => res());
 			if (this.#promise) {
 				this.#promise.then(resolve, resolve);
-				this.#promise.cancelled(resolve);
+				this.#promise.cancelled(() => this.progress.then(resolve, resolve));
 			} else resolve();
 		});
 	}
@@ -326,7 +326,7 @@ export class ChimeraCollectionQuery<Item extends object>
 			const resolve = () => queueMicrotask(() => res());
 			if (this.#promise) {
 				this.#promise.then(resolve, rej);
-				this.#promise.cancelled(() => rej("cancelled"));
+				this.#promise.cancelled(() => (this.#promise ? this.result.then(res, rej) : rej("cancelled")));
 			} else resolve();
 		});
 	}

@@ -36,7 +36,7 @@ export type ChimeraItemQueryEventMap<Item extends object> = {
 	initialized: [{ instance: ChimeraItemQuery<Item> }];
 
 	/** Once the query data was created */
-	created: [{ instance: ChimeraItemQuery<Item> }];
+	selfCreated: [{ instance: ChimeraItemQuery<Item>; item: Item }];
 
 	/** Once the query data is ready (will be followed by 'update') */
 	ready: [{ instance: ChimeraItemQuery<Item> }];
@@ -108,10 +108,12 @@ export class ChimeraItemQuery<Item extends object>
 	}
 
 	#setMutable(item: Item) {
-		if (typeof item === "object" && item != null) {
-			this.#mutable
-				? deepObjectAssign(this.#mutable as AnyObject, item as AnyObject)
-				: (this.#mutable = deepObjectClone(item));
+		if (item != null) {
+			if (this.#mutable) {
+				deepObjectAssign(this.#mutable as AnyObject, item as AnyObject);
+			} else {
+				this.#mutable = deepObjectClone(item);
+			}
 		} else this.#mutable = item;
 	}
 
@@ -166,6 +168,9 @@ export class ChimeraItemQuery<Item extends object>
 
 					if (localId === newId || this.#state === ChimeraQueryFetchingState.Creating) {
 						this.#setNewItem(data);
+						if (this.#state === ChimeraQueryFetchingState.Creating) {
+							this.#emit("selfCreated", { instance: this, item: data });
+						}
 						this.#state = ChimeraQueryFetchingState.Fetched;
 					} else {
 						this.#config.devMode &&
@@ -289,7 +294,6 @@ export class ChimeraItemQuery<Item extends object>
 					makeCancellablePromise(config.itemCreator(toCreateItem, { signal: controller.signal }), controller).then(
 						({ data }) => {
 							this.#params.id = this.#idGetter(data);
-							this.#emit("created", { instance: this });
 							return { data };
 						},
 					),
@@ -368,8 +372,23 @@ export class ChimeraItemQuery<Item extends object>
 	get progress(): Promise<void> {
 		return new Promise((res) => {
 			const resolve = () => queueMicrotask(() => res());
-			this.#promise?.then(resolve, resolve);
-			this.#promise?.cancelled(resolve);
+			if (this.#promise) {
+				this.#promise.then(resolve, resolve);
+				this.#promise.cancelled(() => this.progress.then(resolve, resolve));
+			} else resolve();
+		});
+	}
+
+	/**
+	 * Wait for the current progress process to complete, throw an error if it fails
+	 */
+	get result(): Promise<void> {
+		return new Promise((res, rej) => {
+			const resolve = () => queueMicrotask(() => res());
+			if (this.#promise) {
+				this.#promise.then(resolve, rej);
+				this.#promise.cancelled(() => (this.#promise ? this.result.then(res, rej) : rej("cancelled")));
+			} else resolve();
 		});
 	}
 

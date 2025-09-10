@@ -28,6 +28,6 @@ export type {
 	ChimeraQueryEntityItemFetcher,
 	ChimeraQueryEntityItemFetcherParams,
 	ChimeraQueryEntityItemUpdater,
-	ChimeraQueryFetchingState,
 	ChimeraQueryItemFetcherResponse,
 } from "./types.ts";
+export { ChimeraQueryFetchingState } from "./types.ts";

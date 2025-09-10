@@ -172,7 +172,7 @@ export class ChimeraStore<
 
 		const query = deepObjectAssign<Required<ChimeraQueryDefaultsConfig<Record<string, object>>>>(
 			deepObjectClone(chimeraDefaultQueryConfig),
-			queryConfig ?? {},
+			queryConfig?.defaults ?? {},
 		);
 		this.#queryConfig = Object.fromEntries(
 			(

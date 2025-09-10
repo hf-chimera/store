@@ -54,7 +54,6 @@ export const deepObjectClone = <T>(value: T, refs?: Map<any, any>): T => {
 		const keys = Object.keys(value).concat(Object.getOwnPropertySymbols(value) as unknown as string[]);
 		const length = keys.length;
 		const clone = {} as T;
-		// biome-ignore lint/style/noParameterAssign: ok
 		refs ??= new Map();
 		refs.set(value, clone);
 		for (let i = 0; i < length; i++) clone[keys[i] as keyof T] = deepObjectClone(value[keys[i] as keyof T], refs);
@@ -63,7 +62,6 @@ export const deepObjectClone = <T>(value: T, refs?: Map<any, any>): T => {
 	if (Array.isArray(value)) {
 		const length = value.length;
 		const clone = new Array(length) as T;
-		// biome-ignore lint/style/noParameterAssign: ok
 		refs ??= new Map();
 		refs.set(value, clone);
 		for (let i = 0; i < length; i++) clone[i as keyof T] = deepObjectClone(value[i], refs);
@@ -73,7 +71,6 @@ export const deepObjectClone = <T>(value: T, refs?: Map<any, any>): T => {
 	if (value instanceof RegExp) return value.constructor as Constructable as T;
 	if (value instanceof Map) {
 		const clone = new (value.constructor as Constructable)();
-		// biome-ignore lint/style/noParameterAssign: ok
 		refs ??= new Map();
 		refs.set(value, clone);
 		for (const entry of value.entries()) clone.set(entry[0], deepObjectClone(entry[1], refs));
@@ -81,7 +78,6 @@ export const deepObjectClone = <T>(value: T, refs?: Map<any, any>): T => {
 	}
 	if (value instanceof Set) {
 		const clone = new (value.constructor as Constructable)();
-		// biome-ignore lint/style/noParameterAssign: ok
 		refs ??= new Map();
 		refs.set(value, clone);
 		for (const entry of value.values()) clone.add(deepObjectClone(entry, refs));
@@ -91,7 +87,6 @@ export const deepObjectClone = <T>(value: T, refs?: Map<any, any>): T => {
 		const clone = new (value.constructor as Constructable)(value.message);
 		const keys = Object.keys(value).concat(Object.getOwnPropertySymbols(value) as unknown as string[]);
 		const length = keys.length;
-		// biome-ignore lint/style/noParameterAssign: ok
 		refs ??= new Map();
 		refs.set(value, clone);
 		for (let i = 0; i < length; i++) clone[keys[i] as keyof T] = deepObjectClone(value[keys[i] as keyof T], refs);
@@ -106,7 +101,6 @@ export const deepObjectClone = <T>(value: T, refs?: Map<any, any>): T => {
 	const clone = Object.create(value.constructor.prototype) as T;
 	const keys = Object.keys(value).concat(Object.getOwnPropertySymbols(value) as unknown as string[]);
 	const length = keys.length;
-	// biome-ignore lint/style/noParameterAssign: ok
 	refs ??= new Map();
 	refs.set(value, clone);
 	for (let i = 0; i < length; i++) clone[keys[i] as keyof T] = deepObjectClone(value[keys[i] as keyof T], refs);
