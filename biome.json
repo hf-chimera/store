@@ -22,7 +22,8 @@
 			"**/package.json",
 			"**/tsconfig.json",
 			"**/tsdown.config.ts",
-			"vitest.config.ts"
+			"vitest.config.ts",
+			"!**/*.gen.ts"
 		]
 	},
 	"formatter": {
