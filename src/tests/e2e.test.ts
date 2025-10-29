@@ -11,7 +11,7 @@ const createStore = () =>
 	new ChimeraStore<TestEntityMap>({
 		debug: {
 			devMode: true,
-			logs: false,
+			logs: 'off',
 		},
 		query: {
 			defaults: {
@@ -290,7 +290,7 @@ describe("Store Module - e2e Tests", () => {
 			const customStore = new ChimeraStore<TestEntityMap>({
 				debug: {
 					devMode: false,
-					logs: false,
+					logs: 'off',
 				},
 				query: {
 					defaults: {
@@ -356,7 +356,7 @@ describe("Store Module - e2e Tests", () => {
 			const customStore = new ChimeraStore<TestEntityMap>({
 				debug: {
 					devMode: false,
-					logs: false,
+					logs: 'off',
 				},
 				query: {
 					defaults: {

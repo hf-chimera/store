@@ -1,17 +1,16 @@
 export {
-	ChimeraFilterConjunctionNotFoundError,
 	ChimeraFilterError,
 	ChimeraFilterOperatorError,
 	ChimeraFilterOperatorNotFoundError,
 } from "./errors.ts";
 export {
 	chimeraCreateConjunction,
+	chimeraCreateNot,
 	chimeraCreateOperator,
 	isFilterSubset,
 } from "./filter.ts";
 export type {
 	ChimeraConjunctionDescriptor,
-	ChimeraConjunctionMap,
 	ChimeraConjunctionOperation,
 	ChimeraConjunctionType,
 	ChimeraFilterChecker,
@@ -20,4 +19,5 @@ export type {
 	ChimeraFilterOperatorDescriptor,
 	ChimeraOperatorFunction,
 	ChimeraOperatorMap,
+	ConjunctionMap,
 } from "./types.ts";

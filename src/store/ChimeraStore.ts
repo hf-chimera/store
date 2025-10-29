@@ -21,7 +21,7 @@ import type {
 } from "../query/types.ts";
 import { ChimeraInternalError } from "../shared";
 import { ChimeraEventEmitter, type EventArgs, type EventNames } from "../shared/ChimeraEventEmitter";
-import { deepObjectAssign, deepObjectClone } from "../shared/shared.ts";
+import { deepObjectAssign, deepObjectClone, deepObjectFreeze } from '../shared/shared.ts';
 import type { ChimeraEntityId, ChimeraEntityMap, ChimeraIdGetterFunc, StrKeys } from "../shared/types.ts";
 import { ChimeraEntityRepository } from "./ChimeraEntityRepository.ts";
 import type { ChimeraRepositoryConfigMap, ChimeraRepositoryMap, ChimeraStoreConfig } from "./types.ts";
@@ -122,6 +122,7 @@ export class ChimeraStore<
 	readonly #filterConfig: FilterConfig;
 	readonly #orderConfig: ChimeraOrderConfig;
 	readonly #debugConfig: Required<ChimeraDebugConfig>;
+	readonly #initialConfig: Config;
 
 	#emit<T extends EventNames<ChimeraStoreEventMap<EntityMap, FilterConfig>>>(
 		event: T,
@@ -154,8 +155,11 @@ export class ChimeraStore<
 		return repo;
 	}
 
-	constructor({ query: queryConfig, order: orderConfig, filter: filterConfig, debug: debugConfig }: Config) {
+	constructor(config: Config) {
 		super();
+
+		this.#initialConfig = deepObjectFreeze(deepObjectClone(config));
+		const { query: queryConfig, order: orderConfig, filter: filterConfig, debug: debugConfig } = config;
 
 		this.#filterConfig = deepObjectAssign<FilterConfig>(
 			deepObjectClone(chimeraDefaultFilterConfig),
@@ -209,6 +213,10 @@ export class ChimeraStore<
 		this.#reposMap = {};
 
 		this.#emit("initialized", { instance: this });
+	}
+
+	get config(): Config {
+		return this.#initialConfig;
 	}
 
 	from<EntityName extends StrKeys<EntityMap>>(
@@ -292,3 +300,16 @@ export class ChimeraStore<
 		}
 	}
 }
+
+// Utility types
+export type AnyChimeraStore = ChimeraStore<any>;
+type ExtractsStoreGenerics<T extends AnyChimeraStore> = T extends ChimeraStore<infer E, infer F, infer C>
+	? { entityMap: E; filterConfig: F; config: C }
+	: never;
+export type ChimeraStoreEntityMap<T extends AnyChimeraStore> = ExtractsStoreGenerics<T>['entityMap'];
+export type ChimeraStoreFilter<T extends AnyChimeraStore> = ExtractsStoreGenerics<T>['filterConfig'];
+export type ChimeraStoreEntities<T extends AnyChimeraStore> = keyof ChimeraStoreEntityMap<T> & string;
+export type ChimeraStoreEntityType<
+	T extends AnyChimeraStore,
+	K extends ChimeraStoreEntities<T>,
+> = ChimeraStoreEntityMap<T>[K];

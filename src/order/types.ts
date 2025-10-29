@@ -24,7 +24,7 @@ export type CompiledOrderDescriptor<Entity> = {
 };
 
 export type ChimeraSimplifiedOrderDescriptor<Keys extends string = string> = {
-	get: Keys | string;
+	field: Keys | string;
 	desc: boolean;
 	nulls: ChimeraOrderNulls;
 };

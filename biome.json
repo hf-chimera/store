@@ -1,10 +1,9 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.2.7/schema.json",
 	"assist": {
 		"actions": {
 			"source": {
-				"organizeImports": "on",
-				"useSortedKeys": "on"
+				"organizeImports": "on"
 			}
 		},
 		"enabled": true
@@ -14,6 +13,12 @@
 		"includes": [
 			"src/**/*.ts",
 			"src/**/*.js",
+			"adapters/**/*.ts",
+			"adapters/**/*.js",
+			"adapters/**/*.tsx",
+			"adapters/**/*.jsx",
+			"examples/**/*.ts",
+			"examples/**/*.js",
 			"**/package.json",
 			"**/tsconfig.json",
 			"**/tsdown.config.ts",

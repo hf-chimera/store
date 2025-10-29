@@ -1,11 +1,9 @@
-import { ChimeraInternalError } from "../shared/errors.ts";
 import { compilePropertyGetter, simplifyPropertyGetter } from "../shared/shared.ts";
 import type { ChimeraPropertyGetter, KeysOfType } from "../shared/types.ts";
 import { ChimeraConjunctionSymbol, ChimeraOperatorSymbol } from "./constants.ts";
-import { ChimeraFilterConjunctionNotFoundError, ChimeraFilterOperatorNotFoundError } from "./errors.ts";
+import { ChimeraFilterOperatorNotFoundError } from "./errors.ts";
 import type {
 	ChimeraConjunctionDescriptor,
-	ChimeraConjunctionMap,
 	ChimeraConjunctionOperation,
 	ChimeraConjunctionType,
 	ChimeraFilterChecker,
@@ -15,13 +13,15 @@ import type {
 	ChimeraKeyFromOperatorGetter,
 	ChimeraSimplifiedFilter,
 	ChimeraSimplifiedOperator,
+	ConjunctionMap,
 	SimplifiedConjunction,
 } from "./types.ts";
 
-const chimeraFilterConjunctions = {
+const filterConjunctions = {
 	and: (operations) => operations.every((op) => op()),
+	not: (operations) => !operations.every((op) => op()),
 	or: (operations) => operations.some((op) => op()),
-} satisfies ChimeraConjunctionMap;
+} satisfies ConjunctionMap;
 
 const compileOperator = <Config extends ChimeraFilterConfig, Entity>(
 	config: Config,
@@ -37,20 +37,21 @@ export const compileConjunction = <Config extends ChimeraFilterConfig, Entity>(
 	config: Config,
 	{ kind, operations }: ChimeraConjunctionDescriptor<Config, Entity>,
 ): ChimeraFilterChecker<Entity> => {
-	const conjunction = chimeraFilterConjunctions[kind];
-	if (!conjunction) throw new ChimeraFilterConjunctionNotFoundError(kind);
+	const conjunction = filterConjunctions[kind];
 
-	const compiledOperations = operations.map((operation) => {
-		switch (operation.type) {
-			case ChimeraOperatorSymbol:
-				return compileOperator(config, operation);
-			case ChimeraConjunctionSymbol:
-				return compileConjunction(config, operation);
-			default:
-				// @ts-expect-error: `operation.type` should always be type `never` here
-				throw new ChimeraInternalError(`Invalid filter operation ${operation.type}`);
-		}
-	});
+	const compiledOperations = operations
+		.map((operation) => {
+			switch (operation.type) {
+				case ChimeraOperatorSymbol:
+					return compileOperator(config, operation);
+				case ChimeraConjunctionSymbol:
+					return compileConjunction(config, operation);
+				default:
+					// @ts-expect-error: `operation.type` should always be type `never` here
+					throw new ChimeraInternalError(`Invalid filter operation ${operation.type}`);
+			}
+		})
+		.filter(Boolean);
 
 	return (entity) => conjunction(compiledOperations.map((op) => () => op(entity)));
 };
@@ -59,7 +60,7 @@ export const simplifyOperator = <Config extends ChimeraFilterConfig, Entity>({
 	op,
 	value,
 	test,
-                                                                             }: ChimeraFilterOperatorDescriptor<Config, Entity>): ChimeraSimplifiedOperator<Config> => ({
+}: ChimeraFilterOperatorDescriptor<Config, Entity>): ChimeraSimplifiedOperator<Config> => ({
 	key: simplifyPropertyGetter(value),
 	op,
 	test,
@@ -89,11 +90,11 @@ const compareSimplifiedConjunction = <Config extends ChimeraFilterConfig>(
 	a: SimplifiedConjunction<Config>,
 	b: SimplifiedConjunction<Config>,
 ): number => {
-	const kindCompare = a.kind.localeCompare((b as SimplifiedConjunction).kind);
+	const kindCompare = a.kind.localeCompare(b.kind);
 	if (kindCompare !== 0) return kindCompare;
 
 	const aOps = a.operations;
-	const bOps = (b as SimplifiedConjunction).operations;
+	const bOps = b.operations;
 	const minLength = Math.min(aOps.length, bOps.length);
 
 	for (let i = 0; i < minLength; i++) {
@@ -111,7 +112,7 @@ const compareSimplifiedConjunction = <Config extends ChimeraFilterConfig>(
 export const simplifyConjunction = <Config extends ChimeraFilterConfig, Entity>({
 	kind,
 	operations,
-                                                                                }: ChimeraConjunctionDescriptor<Config, Entity>): SimplifiedConjunction<Config> => {
+}: ChimeraConjunctionDescriptor<Config, Entity>): SimplifiedConjunction<Config> => {
 	return {
 		kind,
 		operations: operations
@@ -126,6 +127,7 @@ export const simplifyConjunction = <Config extends ChimeraFilterConfig, Entity>(
 						throw new ChimeraInternalError(`Invalid filter operation ${op.type}`);
 				}
 			})
+			.filter(Boolean)
 			.sort((a, b) => compareSimplifiedOperation(a, b)),
 		type: ChimeraConjunctionSymbol,
 	};
@@ -163,6 +165,14 @@ export const chimeraCreateConjunction = <
 ): ChimeraConjunctionDescriptor<Config, Entity, Conj> => ({
 	kind,
 	operations,
+	type: ChimeraConjunctionSymbol,
+});
+
+export const chimeraCreateNot = <Entity, Config extends ChimeraFilterConfig>(
+	operation: ChimeraConjunctionOperation<Config, Entity>,
+): ChimeraConjunctionDescriptor<Config, Entity, "not"> => ({
+	kind: "not",
+	operations: [operation],
 	type: ChimeraConjunctionSymbol,
 });
 
@@ -206,21 +216,17 @@ const isConjunctionSubset = <Config extends ChimeraFilterConfig>(
 ): boolean => {
 	if (candidate.kind !== target.kind) return false;
 
-	if (candidate.kind === "and") {
-		// Each candidate operation must be a part of the target operations
-		return candidate.operations.every((candidateOp) =>
-			target.operations.some((targetOp) => isOperationSubset(candidateOp, targetOp, getOperatorKey)),
-		);
+	switch (candidate.kind) {
+		case "and":
+		case "not":
+			return candidate.operations.every((candidateOp) =>
+				target.operations.some((targetOp) => isOperationSubset(candidateOp, targetOp, getOperatorKey)),
+			);
+		case "or":
+			return target.operations.every((targetOp) =>
+				candidate.operations.some((candidateOp) => isOperationSubset(candidateOp, targetOp, getOperatorKey)),
+			);
 	}
-
-	if (candidate.kind === "or") {
-		// Each target operation must be a part of the candidate operations
-		return target.operations.every((targetOp) =>
-			candidate.operations.some((candidateOp) => isOperationSubset(candidateOp, targetOp, getOperatorKey)),
-		);
-	}
-
-	return false;
 };
 
 export const isFilterSubset = <Config extends ChimeraFilterConfig>(

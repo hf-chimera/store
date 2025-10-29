@@ -63,4 +63,4 @@ export const buildComparator = <Entity>(
 export const simplifyOrderBy = <Entity>(
 	orderBy?: ChimeraOrderPriority<Entity>,
 ): ChimeraSimplifiedOrderDescriptor<keyof Entity & string>[] | null =>
-	orderBy ? orderBy.map((ob) => ({ desc: ob.desc, get: ob.key.key, nulls: ob.nulls })) : null;
+	orderBy ? orderBy.map((ob) => ({ desc: ob.desc, field: ob.key.key, nulls: ob.nulls })) : null;

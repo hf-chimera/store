@@ -3,7 +3,10 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
 	clean: true,
 	dts: true,
-	entry: ["./src/index.ts"],
+	entry: {
+		main: "./src/index.ts",
+		react: "./adapters/react/index.ts",
+	},
 	format: ["cjs", "esm"],
 	shims: true,
 	skipNodeModulesBundle: true,

@@ -120,7 +120,7 @@ export class ChimeraCollectionQuery<Item extends object>
 	}
 
 	#setNewItems(items: Item[]) {
-		items.forEach((i) => deepObjectFreeze(i));
+		items.forEach((i) => void deepObjectFreeze(i));
 		this.#emit("selfUpdated", { instance: this, items, oldItems: this.#items });
 		this.#setItems(items);
 	}
@@ -582,7 +582,7 @@ export class ChimeraCollectionQuery<Item extends object>
 	}
 
 	forEach(cb: (value: Item, index: number, query: this) => void) {
-		this.#readyItems().forEach((item, idx) => cb(item, idx, this));
+		this.#readyItems().forEach((item, idx) => void cb(item, idx, this));
 	}
 
 	includes(item: Item): boolean {
