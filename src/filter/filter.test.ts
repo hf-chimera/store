@@ -1,4 +1,5 @@
 import { describe, expect, it, test } from 'vitest';
+import { ChimeraInternalError } from '../shared';
 import { ChimeraConjunctionSymbol, ChimeraOperatorSymbol } from './constants.ts';
 import { ChimeraFilterOperatorNotFoundError } from './errors.ts';
 import {
@@ -177,10 +178,8 @@ describe('Filter', () => {
 		it('throws on invalid operation type', () => {
 			const desc = { kind: 'and', operations: [{ type: 'badType' }], type: ChimeraConjunctionSymbol };
 			expect(() => {
-				const simplified = simplifyConjunction(desc as any);
-				// The error will occur when trying to access properties of undefined
-				simplified.operations[0]!.type;
-			}).toThrow();
+				simplifyConjunction(desc as any);
+			}).toThrow(ChimeraInternalError);
 		});
 
 		it('should sort operations consistently', () => {
