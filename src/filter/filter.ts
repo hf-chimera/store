@@ -11,6 +11,7 @@ import type {
 	ChimeraFilterDescriptor,
 	ChimeraFilterOperatorDescriptor,
 	ChimeraKeyFromOperatorGetter,
+	ChimeraOperatorMap,
 	ChimeraSimplifiedFilter,
 	ChimeraSimplifiedOperator,
 	ConjunctionMap,
@@ -23,9 +24,9 @@ const filterConjunctions = {
 	or: (operations) => operations.some((op) => op()),
 } satisfies ConjunctionMap;
 
-const compileOperator = <Config extends ChimeraFilterConfig, Entity>(
-	config: Config,
-	{ op, value, test }: ChimeraFilterOperatorDescriptor<Config, Entity>,
+const compileOperator = <OperatorsMap extends ChimeraOperatorMap, Entity>(
+	config: ChimeraFilterConfig<OperatorsMap>,
+	{ op, value, test }: ChimeraFilterOperatorDescriptor<OperatorsMap, Entity>,
 ): ChimeraFilterChecker<Entity> => {
 	const operatorFunc = config.operators[op];
 	if (!operatorFunc) throw new ChimeraFilterOperatorNotFoundError(op);
@@ -33,9 +34,9 @@ const compileOperator = <Config extends ChimeraFilterConfig, Entity>(
 	return (entity) => operatorFunc(getter(entity), test);
 };
 
-export const compileConjunction = <Config extends ChimeraFilterConfig, Entity>(
-	config: Config,
-	{ kind, operations }: ChimeraConjunctionDescriptor<Config, Entity>,
+export const compileConjunction = <OperatorsMap extends ChimeraOperatorMap, Entity>(
+	config: ChimeraFilterConfig<OperatorsMap>,
+	{ kind, operations }: ChimeraConjunctionDescriptor<OperatorsMap, Entity>,
 ): ChimeraFilterChecker<Entity> => {
 	const conjunction = filterConjunctions[kind];
 
@@ -56,28 +57,28 @@ export const compileConjunction = <Config extends ChimeraFilterConfig, Entity>(
 	return (entity) => conjunction(compiledOperations.map((op) => () => op(entity)));
 };
 
-export const simplifyOperator = <Config extends ChimeraFilterConfig, Entity>({
+export const simplifyOperator = <OperatorsMap extends ChimeraOperatorMap, Entity>({
 	op,
 	value,
 	test,
-}: ChimeraFilterOperatorDescriptor<Config, Entity>): ChimeraSimplifiedOperator<Config> => ({
+                                                                                  }: ChimeraFilterOperatorDescriptor<OperatorsMap, Entity>): ChimeraSimplifiedOperator<OperatorsMap> => ({
 	key: simplifyPropertyGetter(value),
 	op,
 	test,
 	type: ChimeraOperatorSymbol,
 });
 
-const compareSimplifiedOperator = <Config extends ChimeraFilterConfig>(
-	a: ChimeraSimplifiedOperator<Config>,
-	b: ChimeraSimplifiedOperator<Config>,
+const compareSimplifiedOperator = <OperatorsMap extends ChimeraOperatorMap>(
+	a: ChimeraSimplifiedOperator<OperatorsMap>,
+	b: ChimeraSimplifiedOperator<OperatorsMap>,
 ): number =>
 	a.key.localeCompare(b.key) ||
 	a.op.localeCompare(b.op) ||
 	JSON.stringify(a.test).localeCompare(JSON.stringify(b.test));
 
-const compareSimplifiedOperation = <Config extends ChimeraFilterConfig>(
-	a: ChimeraSimplifiedOperator<Config> | SimplifiedConjunction<Config>,
-	b: ChimeraSimplifiedOperator<Config> | SimplifiedConjunction<Config>,
+const compareSimplifiedOperation = <OperatorsMap extends ChimeraOperatorMap>(
+	a: ChimeraSimplifiedOperator<OperatorsMap> | SimplifiedConjunction<OperatorsMap>,
+	b: ChimeraSimplifiedOperator<OperatorsMap> | SimplifiedConjunction<OperatorsMap>,
 ): number => {
 	if (a.type !== b.type) return a.type === ChimeraOperatorSymbol ? -1 : 1;
 	if (a.type === ChimeraOperatorSymbol && b.type === ChimeraOperatorSymbol) return compareSimplifiedOperator(a, b);
@@ -86,9 +87,9 @@ const compareSimplifiedOperation = <Config extends ChimeraFilterConfig>(
 	return 0;
 };
 
-const compareSimplifiedConjunction = <Config extends ChimeraFilterConfig>(
-	a: SimplifiedConjunction<Config>,
-	b: SimplifiedConjunction<Config>,
+const compareSimplifiedConjunction = <OperatorsMap extends ChimeraOperatorMap>(
+	a: SimplifiedConjunction<OperatorsMap>,
+	b: SimplifiedConjunction<OperatorsMap>,
 ): number => {
 	const kindCompare = a.kind.localeCompare(b.kind);
 	if (kindCompare !== 0) return kindCompare;
@@ -109,10 +110,10 @@ const compareSimplifiedConjunction = <Config extends ChimeraFilterConfig>(
 	return aOps.length - bOps.length;
 };
 
-export const simplifyConjunction = <Config extends ChimeraFilterConfig, Entity>({
+export const simplifyConjunction = <OperatorsMap extends ChimeraOperatorMap, Entity>({
 	kind,
 	operations,
-}: ChimeraConjunctionDescriptor<Config, Entity>): SimplifiedConjunction<Config> => {
+                                                                                     }: ChimeraConjunctionDescriptor<OperatorsMap, Entity>): SimplifiedConjunction<OperatorsMap> => {
 	return {
 		kind,
 		operations: operations
@@ -135,15 +136,15 @@ export const simplifyConjunction = <Config extends ChimeraFilterConfig, Entity>(
 
 export const chimeraCreateOperator = <
 	Entity,
-	Config extends ChimeraFilterConfig,
-	Op extends keyof Config["operators"] & string,
+	OperatorsMap extends ChimeraOperatorMap,
+	Op extends keyof OperatorsMap & string,
 >(
 	op: Op,
 	value:
-		| ChimeraPropertyGetter<Entity, Parameters<Config["operators"][Op]>[0]>
-		| (KeysOfType<Entity, Parameters<Config["operators"][Op]>[0]> & string),
-	test: Parameters<Config["operators"][Op]>[1],
-): ChimeraFilterOperatorDescriptor<Config, Entity, Op> => ({
+		| ChimeraPropertyGetter<Entity, Parameters<OperatorsMap[Op]>[0]>
+		| (KeysOfType<Entity, Parameters<OperatorsMap[Op]>[0]> & string),
+	test: Parameters<OperatorsMap[Op]>[1],
+): ChimeraFilterOperatorDescriptor<OperatorsMap, Entity, Op> => ({
 	op,
 	test,
 	type: ChimeraOperatorSymbol,
@@ -152,42 +153,42 @@ export const chimeraCreateOperator = <
 				get: value,
 				key: value,
 			}
-		: value) as ChimeraPropertyGetter<Entity, Parameters<Config["operators"][Op]>[0]>,
+		: value) as ChimeraPropertyGetter<Entity, Parameters<OperatorsMap[Op]>[0]>,
 });
 
 export const chimeraCreateConjunction = <
 	Entity,
-	Config extends ChimeraFilterConfig,
-	Conj extends ChimeraConjunctionType = ChimeraConjunctionType,
+	OperatorsMap extends ChimeraOperatorMap,
+	Conj extends Exclude<ChimeraConjunctionType, 'not'> = Exclude<ChimeraConjunctionType, 'not'>,
 >(
 	kind: Conj,
-	operations: ChimeraConjunctionOperation<Config, Entity>[],
-): ChimeraConjunctionDescriptor<Config, Entity, Conj> => ({
+	operations: ChimeraConjunctionOperation<OperatorsMap, Entity>[],
+): ChimeraConjunctionDescriptor<OperatorsMap, Entity, Conj> => ({
 	kind,
 	operations,
 	type: ChimeraConjunctionSymbol,
 });
 
-export const chimeraCreateNot = <Entity, Config extends ChimeraFilterConfig>(
-	operation: ChimeraConjunctionOperation<Config, Entity>,
-): ChimeraConjunctionDescriptor<Config, Entity, "not"> => ({
+export const chimeraCreateNot = <Entity, OperatorsMap extends ChimeraOperatorMap>(
+	operation: ChimeraConjunctionOperation<OperatorsMap, Entity>,
+): ChimeraConjunctionDescriptor<OperatorsMap, Entity, 'not'> => ({
 	kind: "not",
 	operations: [operation],
 	type: ChimeraConjunctionSymbol,
 });
 
-export const compileFilter = <Entity, Config extends ChimeraFilterConfig = ChimeraFilterConfig>(
-	config: Config,
-	descriptor?: ChimeraFilterDescriptor<Config, Entity>,
+export const compileFilter = <Entity, OperatorsMap extends ChimeraOperatorMap>(
+	config: ChimeraFilterConfig<OperatorsMap>,
+	descriptor?: ChimeraFilterDescriptor<OperatorsMap, Entity> | null,
 ): ChimeraFilterChecker<Entity> => (descriptor ? compileConjunction(config, descriptor) : () => true);
 
-export const simplifyFilter = <Entity, Config extends ChimeraFilterConfig = ChimeraFilterConfig>(
-	descriptor?: ChimeraFilterDescriptor<Config, Entity> | null,
-): ChimeraSimplifiedFilter<Config> => (descriptor ? simplifyConjunction(descriptor) : null);
+export const simplifyFilter = <Entity, OperatorsMap extends ChimeraOperatorMap>(
+	descriptor?: ChimeraFilterDescriptor<OperatorsMap, Entity> | null,
+): ChimeraSimplifiedFilter<OperatorsMap> => (descriptor ? simplifyConjunction(descriptor) : null);
 
-const isOperationSubset = <Config extends ChimeraFilterConfig>(
-	candidateOp: ChimeraSimplifiedOperator<Config> | SimplifiedConjunction<Config>,
-	targetOp: ChimeraSimplifiedOperator<Config> | SimplifiedConjunction<Config>,
+const isOperationSubset = <OperatorsMap extends ChimeraOperatorMap>(
+	candidateOp: ChimeraSimplifiedOperator<OperatorsMap> | SimplifiedConjunction<OperatorsMap>,
+	targetOp: ChimeraSimplifiedOperator<OperatorsMap> | SimplifiedConjunction<OperatorsMap>,
 	getOperatorKey: ChimeraKeyFromOperatorGetter,
 ): boolean => {
 	if (candidateOp.type !== targetOp.type) return false;
@@ -209,9 +210,9 @@ const isOperationSubset = <Config extends ChimeraFilterConfig>(
 	return false;
 };
 
-const isConjunctionSubset = <Config extends ChimeraFilterConfig>(
-	candidate: SimplifiedConjunction<Config>,
-	target: SimplifiedConjunction<Config>,
+const isConjunctionSubset = <OperatorsMap extends ChimeraOperatorMap>(
+	candidate: SimplifiedConjunction<OperatorsMap>,
+	target: SimplifiedConjunction<OperatorsMap>,
 	getOperatorKey: ChimeraKeyFromOperatorGetter,
 ): boolean => {
 	if (candidate.kind !== target.kind) return false;
@@ -229,9 +230,9 @@ const isConjunctionSubset = <Config extends ChimeraFilterConfig>(
 	}
 };
 
-export const isFilterSubset = <Config extends ChimeraFilterConfig>(
-	candidate: ChimeraSimplifiedFilter<Config>,
-	target: ChimeraSimplifiedFilter<Config>,
+export const isFilterSubset = <OperatorsMap extends ChimeraOperatorMap>(
+	candidate: ChimeraSimplifiedFilter<OperatorsMap>,
+	target: ChimeraSimplifiedFilter<OperatorsMap>,
 	getOperatorKey: ChimeraKeyFromOperatorGetter,
 ): boolean => {
 	// If a candidate is null, it's always a subset (matches everything)

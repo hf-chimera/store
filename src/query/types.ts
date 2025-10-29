@@ -1,4 +1,4 @@
-import type { ChimeraFilterConfig, ChimeraSimplifiedFilter } from "../filter/types.ts";
+import type { ChimeraOperatorMap, ChimeraSimplifiedFilter } from '../filter/types.ts';
 import type { ChimeraSimplifiedOrderDescriptor } from "../order/types.ts";
 import type { ChimeraEntityId, ChimeraEntityMap, ChimeraIdGetterFunc, DeepPartial, StrKeys } from "../shared/types.ts";
 
@@ -107,13 +107,9 @@ export type ChimeraQueryEntityFetcherRequestParams = {
 	signal: AbortSignal;
 };
 
-export type ChimeraQueryEntityCollectionFetcherParams<
-	Entity,
-	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
-	Meta = any,
-> = {
+export type ChimeraQueryEntityCollectionFetcherParams<Entity, OperatorsMap extends ChimeraOperatorMap, Meta = any> = {
 	order: ChimeraSimplifiedOrderDescriptor<keyof Entity & string>[] | null;
-	filter: ChimeraSimplifiedFilter<FilterConfig, keyof Entity & string> | null;
+	filter: ChimeraSimplifiedFilter<OperatorsMap, keyof Entity & string> | null;
 	meta: Meta;
 };
 
@@ -123,12 +119,8 @@ export type ChimeraQueryEntityItemFetcherParams<Entity, Meta = any> = {
 	meta: Meta;
 };
 
-export type ChimeraQueryEntityCollectionFetcher<
-	Entity,
-	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
-	Meta = any,
-> = (
-	params: ChimeraQueryEntityCollectionFetcherParams<Entity, FilterConfig, Meta>,
+export type ChimeraQueryEntityCollectionFetcher<Entity, OperatorsMap extends ChimeraOperatorMap, Meta = any> = (
+	params: ChimeraQueryEntityCollectionFetcherParams<Entity, OperatorsMap, Meta>,
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
 ) => Promise<ChimeraQueryCollectionFetcherResponse<Entity>>;
 
@@ -139,10 +131,10 @@ export type ChimeraQueryEntityItemFetcher<Entity> = (
 
 export type ChimeraQueryDefaultCollectionFetcher<
 	EntityMap extends ChimeraEntityMap,
-	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
+	OperatorsMap extends ChimeraOperatorMap,
 > = <EntityName extends StrKeys<EntityMap>>(
 	entityName: EntityName,
-	params: ChimeraQueryEntityCollectionFetcherParams<EntityMap[EntityName], FilterConfig>,
+	params: ChimeraQueryEntityCollectionFetcherParams<EntityMap[EntityName], OperatorsMap>,
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
 ) => Promise<ChimeraQueryCollectionFetcherResponse<EntityMap[EntityName]>>;
 
@@ -248,7 +240,7 @@ export type ChimeraQueryDefaultBatchedCreator<EntityMap extends ChimeraEntityMap
  * Config types
  */
 
-export type QueryEntityConfig<Entity extends object> = {
+export type QueryEntityConfig<Entity extends object, OperatorsMap extends ChimeraOperatorMap> = {
 	name: string;
 
 	devMode: boolean;
@@ -257,7 +249,7 @@ export type QueryEntityConfig<Entity extends object> = {
 
 	idGetter: ChimeraIdGetterFunc<Entity>;
 
-	collectionFetcher: ChimeraQueryEntityCollectionFetcher<Entity>;
+	collectionFetcher: ChimeraQueryEntityCollectionFetcher<Entity, OperatorsMap>;
 	itemFetcher: ChimeraQueryEntityItemFetcher<Entity>;
 
 	itemUpdater: ChimeraQueryEntityItemUpdater<Entity>;
@@ -270,17 +262,13 @@ export type QueryEntityConfig<Entity extends object> = {
 	batchedCreator: ChimeraQueryEntityBatchedCreator<Entity>;
 };
 
-export type ChimeraQueryEntityConfig<
-	Entity,
-	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
-	Meta = any,
-> = {
+export type ChimeraQueryEntityConfig<Entity, OperatorsMap extends ChimeraOperatorMap, Meta = any> = {
 	trustQuery?: boolean;
 	updateDebounceTimeout?: number;
 
 	idGetter?: ChimeraQueryEntityIdGetter<Entity>;
 
-	collectionFetcher?: ChimeraQueryEntityCollectionFetcher<Entity, FilterConfig, Meta>;
+	collectionFetcher?: ChimeraQueryEntityCollectionFetcher<Entity, OperatorsMap, Meta>;
 	itemFetcher?: ChimeraQueryEntityItemFetcher<Entity>;
 
 	itemUpdater?: ChimeraQueryEntityItemUpdater<Entity>;
@@ -293,16 +281,13 @@ export type ChimeraQueryEntityConfig<
 	batchedCreator?: ChimeraQueryEntityBatchedCreator<Entity>;
 };
 
-export type ChimeraQueryDefaultsConfig<
-	EntityMap extends ChimeraEntityMap,
-	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
-> = {
+export type ChimeraQueryDefaultsConfig<EntityMap extends ChimeraEntityMap, OperatorsMap extends ChimeraOperatorMap> = {
 	trustQuery?: boolean; // Disable extra filtering and sorting while creating a new query
 	updateDebounceTimeout?: number; // If set, will debounce updates with specified timeout in ms
 
 	idGetter?: ChimeraQueryDefaultEntityIdGetter<EntityMap>;
 
-	collectionFetcher?: ChimeraQueryDefaultCollectionFetcher<EntityMap, FilterConfig>;
+	collectionFetcher?: ChimeraQueryDefaultCollectionFetcher<EntityMap, OperatorsMap>;
 	itemFetcher?: ChimeraQueryDefaultItemFetcher<EntityMap>;
 
 	itemUpdater?: ChimeraQueryDefaultItemUpdater<EntityMap>;
@@ -315,17 +300,11 @@ export type ChimeraQueryDefaultsConfig<
 	batchedCreator?: ChimeraQueryDefaultBatchedCreator<EntityMap>;
 };
 
-export type ChimeraEntityConfigMap<
-	EntityMap extends ChimeraEntityMap,
-	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
-> = {
-	[K in keyof EntityMap]: ChimeraQueryEntityConfig<EntityMap[K], FilterConfig>;
+export type ChimeraEntityConfigMap<EntityMap extends ChimeraEntityMap, OperatorsMap extends ChimeraOperatorMap> = {
+	[K in keyof EntityMap]: ChimeraQueryEntityConfig<EntityMap[K], OperatorsMap>;
 };
 
-export type ChimeraQueryConfig<
-	EntityMap extends ChimeraEntityMap,
-	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
-> = {
-	defaults: ChimeraQueryDefaultsConfig<EntityMap, FilterConfig>;
-	entities: ChimeraEntityConfigMap<EntityMap, FilterConfig>;
+export type ChimeraQueryConfig<EntityMap extends ChimeraEntityMap, OperatorsMap extends ChimeraOperatorMap> = {
+	defaults: ChimeraQueryDefaultsConfig<EntityMap, OperatorsMap>;
+	entities: ChimeraEntityConfigMap<EntityMap, OperatorsMap>;
 };

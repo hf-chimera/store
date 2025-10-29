@@ -1,4 +1,4 @@
-import type { ChimeraFilterChecker } from "../filter/types.ts";
+import type { ChimeraFilterChecker, ChimeraOperatorMap } from '../filter/types.ts';
 import type { ChimeraOrderByComparator } from "../order/types.ts";
 import type { EventArgs, EventNames } from "../shared/ChimeraEventEmitter";
 import { ChimeraEventEmitter } from "../shared/ChimeraEventEmitter";
@@ -35,55 +35,55 @@ import {
 	type QueryEntityConfig,
 } from "./types.ts";
 
-export type ChimeraCollectionQueryEventMap<Item extends object> = {
+export type ChimeraCollectionQueryEventMap<Item extends object, OperatorsMap extends ChimeraOperatorMap> = {
 	/** Once the query is initialized */
-	initialized: { instance: ChimeraCollectionQuery<Item> };
+	initialized: { instance: ChimeraCollectionQuery<Item, OperatorsMap> };
 
 	/** Once the query data is ready (will be followed by 'update') */
-	ready: { instance: ChimeraCollectionQuery<Item> };
+	ready: { instance: ChimeraCollectionQuery<Item, OperatorsMap> };
 
 	/** Each time the query was updated */
-	updated: { instance: ChimeraCollectionQuery<Item>; items: Item[]; oldItems: Item[] | null };
+	updated: { instance: ChimeraCollectionQuery<Item, OperatorsMap>; items: Item[]; oldItems: Item[] | null };
 	/** Each time the query was an initiator of update */
-	selfUpdated: { instance: ChimeraCollectionQuery<Item>; items: Item[]; oldItems: Item[] | null };
+	selfUpdated: { instance: ChimeraCollectionQuery<Item, OperatorsMap>; items: Item[]; oldItems: Item[] | null };
 
 	/** Each time item created */
-	selfItemCreated: { instance: ChimeraCollectionQuery<Item>; item: Item };
+	selfItemCreated: { instance: ChimeraCollectionQuery<Item, OperatorsMap>; item: Item };
 
 	/** Each time item added */
-	itemAdded: { instance: ChimeraCollectionQuery<Item>; item: Item };
+	itemAdded: { instance: ChimeraCollectionQuery<Item, OperatorsMap>; item: Item };
 
 	/** Each time item updated */
-	itemUpdated: { instance: ChimeraCollectionQuery<Item>; oldItem: Item; newItem: Item };
+	itemUpdated: { instance: ChimeraCollectionQuery<Item, OperatorsMap>; oldItem: Item; newItem: Item };
 	/** Each time the query was an initiator of an item update */
-	selfItemUpdated: { instance: ChimeraCollectionQuery<Item>; item: Item };
+	selfItemUpdated: { instance: ChimeraCollectionQuery<Item, OperatorsMap>; item: Item };
 
 	/** Each time item deleted */
-	itemDeleted: { instance: ChimeraCollectionQuery<Item>; item: Item };
+	itemDeleted: { instance: ChimeraCollectionQuery<Item, OperatorsMap>; item: Item };
 	/** Each time the query was an initiator of item deletion */
-	selfItemDeleted: { instance: ChimeraCollectionQuery<Item>; id: ChimeraEntityId };
+	selfItemDeleted: { instance: ChimeraCollectionQuery<Item, OperatorsMap>; id: ChimeraEntityId };
 
 	/** Each time the fetcher produces an error */
-	error: { instance: ChimeraCollectionQuery<Item>; error: unknown };
+	error: { instance: ChimeraCollectionQuery<Item, OperatorsMap>; error: unknown };
 };
 
-export class ChimeraCollectionQuery<Item extends object>
-	extends ChimeraEventEmitter<ChimeraCollectionQueryEventMap<Item>>
+export class ChimeraCollectionQuery<Item extends object, OperatorsMap extends ChimeraOperatorMap>
+	extends ChimeraEventEmitter<ChimeraCollectionQueryEventMap<Item, OperatorsMap>>
 	implements ChimeraQueryFetchingStatable
 {
 	#state: ChimeraQueryFetchingState;
 	#promise: ChimeraCancellablePromise | null;
 	#lastError: unknown;
 	#items: Item[] | null;
-	readonly #config: QueryEntityConfig<Item>;
+	readonly #config: QueryEntityConfig<Item, OperatorsMap>;
 	readonly #idGetter: ChimeraIdGetterFunc<Item>;
-	readonly #params: ChimeraQueryEntityCollectionFetcherParams<Item>;
+	readonly #params: ChimeraQueryEntityCollectionFetcherParams<Item, OperatorsMap>;
 	readonly #order: ChimeraOrderByComparator<Item>;
 	readonly #filter: ChimeraFilterChecker<Item>;
 
-	#emit<T extends EventNames<ChimeraCollectionQueryEventMap<Item>>>(
+	#emit<T extends EventNames<ChimeraCollectionQueryEventMap<Item, OperatorsMap>>>(
 		event: T,
-		arg: EventArgs<ChimeraCollectionQueryEventMap<Item>, T>,
+		arg: EventArgs<ChimeraCollectionQueryEventMap<Item, OperatorsMap>, T>,
 	) {
 		queueMicrotask(() => super.emit(event, arg));
 	}
@@ -228,7 +228,7 @@ export class ChimeraCollectionQuery<Item extends object>
 	}
 
 	constructor(
-		config: QueryEntityConfig<Item>,
+		config: QueryEntityConfig<Item, OperatorsMap>,
 		params: ChimeraQueryEntityCollectionFetcherParams<Item, any>,
 		existingItems: Iterable<Item> | null,
 		order: ChimeraOrderByComparator<Item>,
@@ -264,7 +264,7 @@ export class ChimeraCollectionQuery<Item extends object>
 		this.#emit("initialized", { instance: this });
 	}
 
-	get [ChimeraGetParamsSym](): ChimeraQueryEntityCollectionFetcherParams<Item> {
+	get [ChimeraGetParamsSym](): ChimeraQueryEntityCollectionFetcherParams<Item, OperatorsMap> {
 		return this.#params;
 	}
 
@@ -541,7 +541,7 @@ export class ChimeraCollectionQuery<Item extends object>
 
 	every<S extends Item>(
 		predicate: (value: Item, index: number, query: this) => value is S,
-	): this is ChimeraCollectionQuery<S>;
+	): this is ChimeraCollectionQuery<S, OperatorsMap>;
 	every(predicate: (value: Item, index: number, query: this) => unknown): boolean;
 	every(predicate: (value: Item, index: number, query: this) => unknown): boolean {
 		return this.#readyItems().every((item, idx) => predicate(item, idx, this));

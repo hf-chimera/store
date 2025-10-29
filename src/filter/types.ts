@@ -14,78 +14,78 @@ export type ChimeraOperatorFunction = (itemValue: any, testValue: any) => boolea
 export type ChimeraOperatorMap = Record<string, ChimeraOperatorFunction>;
 
 export type ChimeraFilterOperatorDescriptor<
-	Config extends ChimeraFilterConfig,
+	OperatorsMap extends ChimeraOperatorMap,
 	Entity,
-	Op extends keyof Config["operators"] & string = keyof Config["operators"] & string,
+	Op extends keyof OperatorsMap & string = keyof OperatorsMap & string,
 > = {
 	[K in Op]: {
 		type: typeof ChimeraOperatorSymbol;
 		op: K;
-		value: ChimeraPropertyGetter<Entity, Parameters<Config["operators"][K]>[0]>;
-		test: Parameters<Config["operators"][K]>[1];
+		value: ChimeraPropertyGetter<Entity, Parameters<OperatorsMap[K]>[0]>;
+		test: Parameters<OperatorsMap[K]>[1];
 	};
 }[Op];
 
-export type ChimeraConjunctionOperation<Config extends ChimeraFilterConfig, Entity> =
-	| ChimeraFilterOperatorDescriptor<Config, Entity>
-	| ChimeraConjunctionDescriptor<Config, Entity>;
+export type ChimeraConjunctionOperation<OperatorsMap extends ChimeraOperatorMap, Entity> =
+	| ChimeraFilterOperatorDescriptor<OperatorsMap, Entity>
+	| ChimeraConjunctionDescriptor<OperatorsMap, Entity>;
 export type ChimeraConjunctionDescriptor<
-	Config extends ChimeraFilterConfig,
+	OperatorsMap extends ChimeraOperatorMap,
 	Entity,
 	Conj extends ChimeraConjunctionType = ChimeraConjunctionType,
 > = {
 	[K in Conj]: {
 		type: typeof ChimeraConjunctionSymbol;
 		kind: K;
-		operations: ChimeraConjunctionOperation<Config, Entity>[];
+		operations: ChimeraConjunctionOperation<OperatorsMap, Entity>[];
 	};
 }[Conj];
 
-export type ChimeraFilterDescriptor<Config extends ChimeraFilterConfig, Entity> = ChimeraConjunctionDescriptor<
-	Config,
+export type ChimeraFilterDescriptor<OperatorsMap extends ChimeraOperatorMap, Entity> = ChimeraConjunctionDescriptor<
+	OperatorsMap,
 	Entity
 >;
 
 export type ChimeraSimplifiedOperator<
-	Config extends ChimeraFilterConfig = ChimeraFilterConfig,
+	OperatorsMap extends ChimeraOperatorMap,
 	Keys extends string = string,
-	Op extends keyof Config["operators"] & string = keyof Config["operators"] & string,
+	Op extends keyof OperatorsMap & string = keyof OperatorsMap & string,
 > = {
 	[K in Op]: {
 		type: typeof ChimeraOperatorSymbol;
 		op: K;
 		key: Keys | string;
-		test: Parameters<Config["operators"][K]>[1];
+		test: Parameters<OperatorsMap[K]>[1];
 	};
 }[Op];
 
 export type SimplifiedConjunction<
-	Config extends ChimeraFilterConfig = ChimeraFilterConfig,
+	OperatorsMap extends ChimeraOperatorMap,
 	Keys extends string = string,
 	Conj extends ChimeraConjunctionType = ChimeraConjunctionType,
 > = {
 	[K in Conj]: {
 		type: typeof ChimeraConjunctionSymbol;
 		kind: K;
-		operations: (ChimeraSimplifiedOperator<Config, Keys> | SimplifiedConjunction<Config, Keys>)[];
+		operations: (ChimeraSimplifiedOperator<OperatorsMap, Keys> | SimplifiedConjunction<OperatorsMap, Keys>)[];
 	};
 }[Conj];
 
 export type ChimeraSimplifiedFilter<
-	Config extends ChimeraFilterConfig = ChimeraFilterConfig,
+	OperatorsMap extends ChimeraOperatorMap,
 	Keys extends string = string,
-> = SimplifiedConjunction<Config, Keys> | null;
+> = SimplifiedConjunction<OperatorsMap, Keys> | null;
 
-export type ChimeraKeyFromFilterGetter = <Config extends ChimeraFilterConfig = ChimeraFilterConfig>(
-	filter: ChimeraSimplifiedFilter<Config> | null,
+export type ChimeraKeyFromFilterGetter = <OperatorsMap extends ChimeraOperatorMap>(
+	filter: ChimeraSimplifiedFilter<OperatorsMap> | null,
 ) => string;
 
-export type ChimeraKeyFromOperatorGetter = <Config extends ChimeraFilterConfig = ChimeraFilterConfig>(
-	operator: ChimeraSimplifiedOperator<Config> | null,
+export type ChimeraKeyFromOperatorGetter = <OperatorsMap extends ChimeraOperatorMap>(
+	operator: ChimeraSimplifiedOperator<OperatorsMap> | null,
 ) => string;
 
-export type ChimeraFilterConfig = {
-	operators: ChimeraOperatorMap;
-	getFilterKey: ChimeraKeyFromFilterGetter;
-	getOperatorKey: ChimeraKeyFromOperatorGetter;
+export type ChimeraFilterConfig<OperatorsMap extends ChimeraOperatorMap> = {
+	operators: OperatorsMap;
+	getFilterKey?: ChimeraKeyFromFilterGetter;
+	getOperatorKey?: ChimeraKeyFromOperatorGetter;
 };

@@ -12,21 +12,18 @@ import {
 	simplifyFilter,
 	simplifyOperator,
 } from './filter.ts';
+import type { ChimeraFilterConfig } from './types';
 
 type TestEntity = { a: number; b: string; c: boolean };
 type TestConfig = {
-	getFilterKey: (filter: any) => string;
-	getOperatorKey: (operator: any) => string;
-	operators: {
-		eq: (a: any, b: any) => boolean;
-		gt: (a: any, b: any) => boolean;
-		lt: (a: any, b: any) => boolean;
-		neq: (a: any, b: any) => boolean;
-	};
+	eq: (a: any, b: any) => boolean;
+	gt: (a: any, b: any) => boolean;
+	lt: (a: any, b: any) => boolean;
+	neq: (a: any, b: any) => boolean;
 };
 
 describe('Filter', () => {
-	const config: TestConfig = {
+	const config: Required<ChimeraFilterConfig<TestConfig>> = {
 		getFilterKey: (filter: any) => JSON.stringify(filter),
 		getOperatorKey: (operator: any) => JSON.stringify(operator),
 		operators: {
@@ -50,7 +47,7 @@ describe('Filter', () => {
 
 		it('should compile and evaluate \'not\' conjunctions', () => {
 			const desc = chimeraCreateNot<TestEntity, TestConfig>(
-				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 5)
+				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 5),
 			);
 			const checker = compileConjunction(config, desc);
 			expect(checker({ a: 5, b: 'x', c: true })).toBe(false);
@@ -62,7 +59,7 @@ describe('Filter', () => {
 				chimeraCreateConjunction<TestEntity, TestConfig>('and', [
 					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 5),
 					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
-				])
+				]),
 			);
 			const checker = compileConjunction(config, desc);
 			expect(checker({ a: 5, b: 'test', c: true })).toBe(false);
@@ -85,7 +82,7 @@ describe('Filter', () => {
 			const desc = {
 				kind: 'and',
 				operations: [{ op: 'badType', type: ChimeraOperatorSymbol }],
-				type: ChimeraConjunctionSymbol
+				type: ChimeraConjunctionSymbol,
 			};
 			expect(() => {
 				const checker = compileConjunction(config, desc as any);
@@ -127,7 +124,7 @@ describe('Filter', () => {
 
 		it('should simplify \'not\' conjunction descriptor', () => {
 			const notDesc = chimeraCreateNot<TestEntity, TestConfig>(
-				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1)
+				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 			);
 			const simplified = simplifyConjunction(notDesc);
 			expect(simplified).toMatchObject({
@@ -142,7 +139,7 @@ describe('Filter', () => {
 				chimeraCreateConjunction<TestEntity, TestConfig>('and', [
 					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
-				])
+				]),
 			);
 			const simplified = simplifyConjunction(notDesc);
 			expect(simplified).toMatchObject({
@@ -273,7 +270,7 @@ describe('Filter', () => {
 	describe('chimeraCreateNot', () => {
 		it('should create \'not\' conjunction descriptor with single operation', () => {
 			const notDesc = chimeraCreateNot<TestEntity, TestConfig>(
-				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1)
+				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 			);
 			expect(notDesc).toMatchObject({
 				kind: 'not',
@@ -311,7 +308,7 @@ describe('Filter', () => {
 
 	describe('compileFilter', () => {
 		it('should return always-true if no descriptor', () => {
-			const checker = compileFilter<TestEntity>(config);
+			const checker = compileFilter<TestEntity, TestConfig>(config);
 			expect(checker({ a: 1, b: 'x', c: true })).toBe(true);
 		});
 
@@ -319,16 +316,16 @@ describe('Filter', () => {
 			const desc = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
 				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2),
 			]);
-			const checker = compileFilter<TestEntity>(config, desc);
+			const checker = compileFilter<TestEntity, TestConfig>(config, desc);
 			expect(checker({ a: 2, b: 'y', c: true })).toBe(true);
 			expect(checker({ a: 3, b: 'y', c: true })).toBe(false);
 		});
 
 		it('should compile and check \'not\' filter', () => {
 			const desc = chimeraCreateNot<TestEntity, TestConfig>(
-				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2)
+				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2),
 			);
-			const checker = compileFilter<TestEntity>(config, desc);
+			const checker = compileFilter<TestEntity, TestConfig>(config, desc);
 			expect(checker({ a: 2, b: 'y', c: true })).toBe(false);
 			expect(checker({ a: 3, b: 'y', c: true })).toBe(true);
 		});
@@ -338,9 +335,9 @@ describe('Filter', () => {
 				chimeraCreateConjunction<TestEntity, TestConfig>('and', [
 					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2),
 					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
-				])
+				]),
 			);
-			const checker = compileFilter<TestEntity>(config, desc);
+			const checker = compileFilter<TestEntity, TestConfig>(config, desc);
 			expect(checker({ a: 2, b: 'test', c: true })).toBe(false);
 			expect(checker({ a: 2, b: 'other', c: true })).toBe(true);
 			expect(checker({ a: 3, b: 'test', c: true })).toBe(true);
@@ -349,22 +346,22 @@ describe('Filter', () => {
 
 	describe('simplifyFilter', () => {
 		it('should return null if no descriptor', () => {
-			expect(simplifyFilter<TestEntity>()).toBeNull();
+			expect(simplifyFilter<TestEntity, TestConfig>()).toBeNull();
 		});
 
 		it('should simplify filter descriptor', () => {
 			const desc = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
 				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2),
 			]);
-			const simplified = simplifyFilter<TestEntity>(desc);
+			const simplified = simplifyFilter<TestEntity, TestConfig>(desc);
 			expect(simplified).toMatchObject({ kind: 'and', type: expect.any(Symbol) });
 		});
 
 		it('should simplify \'not\' filter descriptor', () => {
 			const desc = chimeraCreateNot<TestEntity, TestConfig>(
-				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2)
+				chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2),
 			);
-			const simplified = simplifyFilter<TestEntity>(desc);
+			const simplified = simplifyFilter<TestEntity, TestConfig>(desc);
 			expect(simplified).toMatchObject({ kind: 'not', type: expect.any(Symbol) });
 		});
 
@@ -373,9 +370,9 @@ describe('Filter', () => {
 				chimeraCreateConjunction<TestEntity, TestConfig>('and', [
 					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2),
 					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
-				])
+				]),
 			);
-			const simplified = simplifyFilter<TestEntity>(desc);
+			const simplified = simplifyFilter<TestEntity, TestConfig>(desc);
 			expect(simplified).toMatchObject({ kind: 'not', type: expect.any(Symbol) });
 		});
 	});
@@ -385,7 +382,7 @@ describe('Filter', () => {
 		const createFilter = (kind: 'and' | 'or', operations: any[]) =>
 			chimeraCreateConjunction<TestEntity, TestConfig>(kind, operations);
 
-		const createOperator = (op: keyof TestConfig['operators'], key: keyof TestEntity, value: any) =>
+		const createOperator = (op: keyof TestConfig, key: keyof TestEntity, value: any) =>
 			chimeraCreateOperator<TestEntity, TestConfig, typeof op>(op, key, value);
 
 		describe('null filter handling', () => {
@@ -474,19 +471,19 @@ describe('Filter', () => {
 
 		describe('identical filters', () => {
 			it('should return true for identical simple filters', () => {
-				const filter = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+				const filter = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 				]);
 				const simplified = simplifyFilter(filter);
 				expect(isFilterSubset(simplified, simplified, config.getOperatorKey)).toBe(true);
 			});
 
 			it('should return true for identical complex filters', () => {
-				const filter = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-					chimeraCreateConjunction<TestEntity, typeof config>('or', [
-						chimeraCreateOperator<TestEntity, typeof config, 'gt'>('gt', 'a', 0),
-						chimeraCreateOperator<TestEntity, typeof config, 'lt'>('lt', 'a', 10),
+				const filter = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+					chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'gt'>('gt', 'a', 0),
+						chimeraCreateOperator<TestEntity, TestConfig, 'lt'>('lt', 'a', 10),
 					]),
 				]);
 				const simplified = simplifyFilter(filter);
@@ -496,12 +493,12 @@ describe('Filter', () => {
 
 		describe('AND conjunction subset relationships', () => {
 			it('should return true when candidate AND is subset of target AND', () => {
-				const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+				const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 				]);
-				const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
+				const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
 				]);
 
 				const candidateSimplified = simplifyFilter(candidate);
@@ -511,13 +508,13 @@ describe('Filter', () => {
 			});
 
 			it('should return false when candidate AND is not subset of target AND', () => {
-				const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'different'),
+				const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'different'),
 				]);
-				const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
+				const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
 				]);
 
 				const candidateSimplified = simplifyFilter(candidate);
@@ -527,12 +524,12 @@ describe('Filter', () => {
 			});
 
 			it('should return false when candidate has more operations than target', () => {
-				const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
+				const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
 				]);
-				const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+				const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 				]);
 
 				const candidateSimplified = simplifyFilter(candidate);
@@ -544,12 +541,12 @@ describe('Filter', () => {
 
 		describe('OR conjunction subset relationships', () => {
 			it('should return true when candidate OR has all target conditions', () => {
-				const candidate = chimeraCreateConjunction<TestEntity, typeof config>('or', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
+				const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
 				]);
-				const target = chimeraCreateConjunction<TestEntity, typeof config>('or', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+				const target = chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 				]);
 
 				const candidateSimplified = simplifyFilter(candidate);
@@ -559,13 +556,13 @@ describe('Filter', () => {
 			});
 
 			it('should return false when candidate OR is not subset of target OR', () => {
-				const candidate = chimeraCreateConjunction<TestEntity, typeof config>('or', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'different'),
+				const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'different'),
 				]);
-				const target = chimeraCreateConjunction<TestEntity, typeof config>('or', [
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
+				const target = chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
 				]);
 
 				const candidateSimplified = simplifyFilter(candidate);
@@ -577,11 +574,11 @@ describe('Filter', () => {
 
 		describe('NOT conjunction subset relationships', () => {
 			it('should return true when candidate NOT is subset of target NOT with identical operations', () => {
-				const candidate = chimeraCreateNot<TestEntity, typeof config>(
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1)
+				const candidate = chimeraCreateNot<TestEntity, TestConfig>(
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 				);
-				const target = chimeraCreateNot<TestEntity, typeof config>(
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1)
+				const target = chimeraCreateNot<TestEntity, TestConfig>(
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 				);
 
 				const candidateSimplified = simplifyFilter(candidate);
@@ -591,14 +588,14 @@ describe('Filter', () => {
 			});
 
 			it('should return false when candidate NOT has fewer conditions than target NOT', () => {
-				const candidate = chimeraCreateNot<TestEntity, typeof config>(
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1)
+				const candidate = chimeraCreateNot<TestEntity, TestConfig>(
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 				);
-				const target = chimeraCreateNot<TestEntity, typeof config>(
-					chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
-					])
+				const target = chimeraCreateNot<TestEntity, TestConfig>(
+					chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
+					]),
 				);
 
 				const candidateSimplified = simplifyFilter(candidate);
@@ -608,11 +605,11 @@ describe('Filter', () => {
 			});
 
 			it('should return false when candidate NOT has different conditions than target NOT', () => {
-				const candidate = chimeraCreateNot<TestEntity, typeof config>(
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1)
+				const candidate = chimeraCreateNot<TestEntity, TestConfig>(
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 				);
-				const target = chimeraCreateNot<TestEntity, typeof config>(
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test')
+				const target = chimeraCreateNot<TestEntity, TestConfig>(
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
 				);
 
 				const candidateSimplified = simplifyFilter(candidate);
@@ -622,14 +619,14 @@ describe('Filter', () => {
 			});
 
 			it('should return false when candidate NOT has more operations than target NOT', () => {
-				const candidate = chimeraCreateNot<TestEntity, typeof config>(
-					chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
-					])
+				const candidate = chimeraCreateNot<TestEntity, TestConfig>(
+					chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
+					]),
 				);
-				const target = chimeraCreateNot<TestEntity, typeof config>(
-					chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1)
+				const target = chimeraCreateNot<TestEntity, TestConfig>(
+					chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 				);
 
 				const candidateSimplified = simplifyFilter(candidate);
@@ -639,16 +636,16 @@ describe('Filter', () => {
 			});
 
 			it('should handle nested NOT conjunctions correctly', () => {
-				const candidate = chimeraCreateNot<TestEntity, typeof config>(
-					chimeraCreateConjunction<TestEntity, typeof config>('or', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 2),
-					])
+				const candidate = chimeraCreateNot<TestEntity, TestConfig>(
+					chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2),
+					]),
 				);
-				const target = chimeraCreateNot<TestEntity, typeof config>(
-					chimeraCreateConjunction<TestEntity, typeof config>('or', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-					])
+				const target = chimeraCreateNot<TestEntity, TestConfig>(
+					chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+					]),
 				);
 
 				const candidateSimplified = simplifyFilter(candidate);
@@ -659,11 +656,11 @@ describe('Filter', () => {
 
 			describe('mixed conjunction types', () => {
 				it('should return false when candidate and target have different conjunction types', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('or', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					]);
 
 					const candidateSimplified = simplifyFilter(candidate);
@@ -673,11 +670,11 @@ describe('Filter', () => {
 				});
 
 				it('should return false when candidate is \'and\' and target is \'not\'', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					]);
-					const target = chimeraCreateNot<TestEntity, typeof config>(
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1)
+					const target = chimeraCreateNot<TestEntity, TestConfig>(
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					);
 
 					const candidateSimplified = simplifyFilter(candidate);
@@ -687,11 +684,11 @@ describe('Filter', () => {
 				});
 
 				it('should return false when candidate is \'not\' and target is \'and\'', () => {
-					const candidate = chimeraCreateNot<TestEntity, typeof config>(
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1)
+					const candidate = chimeraCreateNot<TestEntity, TestConfig>(
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					]);
 
 					const candidateSimplified = simplifyFilter(candidate);
@@ -701,11 +698,11 @@ describe('Filter', () => {
 				});
 
 				it('should return false when candidate is \'or\' and target is \'not\'', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('or', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					]);
-					const target = chimeraCreateNot<TestEntity, typeof config>(
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1)
+					const target = chimeraCreateNot<TestEntity, TestConfig>(
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					);
 
 					const candidateSimplified = simplifyFilter(candidate);
@@ -715,11 +712,11 @@ describe('Filter', () => {
 				});
 
 				it('should return false when candidate is \'not\' and target is \'or\'', () => {
-					const candidate = chimeraCreateNot<TestEntity, typeof config>(
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1)
+					const candidate = chimeraCreateNot<TestEntity, TestConfig>(
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('or', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					]);
 
 					const candidateSimplified = simplifyFilter(candidate);
@@ -731,15 +728,15 @@ describe('Filter', () => {
 
 			describe('nested conjunction subset relationships', () => {
 				it('should handle nested conjunctions correctly', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateConjunction<TestEntity, typeof config>('or', [
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 2),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2),
 						]),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateConjunction<TestEntity, typeof config>('or', [
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 						]),
 					]);
 
@@ -752,25 +749,25 @@ describe('Filter', () => {
 
 			describe('complex deep variant tests', () => {
 				it('should handle deeply nested AND-OR combinations', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-						chimeraCreateConjunction<TestEntity, typeof config>('or', [
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
-							chimeraCreateConjunction<TestEntity, typeof config>('and', [
-								chimeraCreateOperator<TestEntity, typeof config, 'gt'>('gt', 'a', 0),
-								chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'c', true),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+						chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
+							chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+								chimeraCreateOperator<TestEntity, TestConfig, 'gt'>('gt', 'a', 0),
+								chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'c', true),
 							]),
 						]),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-						chimeraCreateConjunction<TestEntity, typeof config>('or', [
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'other'),
-							chimeraCreateConjunction<TestEntity, typeof config>('and', [
-								chimeraCreateOperator<TestEntity, typeof config, 'gt'>('gt', 'a', 0),
-								chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'c', true),
-								chimeraCreateOperator<TestEntity, typeof config, 'lt'>('lt', 'a', 100),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+						chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'other'),
+							chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+								chimeraCreateOperator<TestEntity, TestConfig, 'gt'>('gt', 'a', 0),
+								chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'c', true),
+								chimeraCreateOperator<TestEntity, TestConfig, 'lt'>('lt', 'a', 100),
 							]),
 						]),
 					]);
@@ -782,19 +779,19 @@ describe('Filter', () => {
 				});
 
 				it('should handle deeply nested AND-NOT combinations', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-						chimeraCreateNot<TestEntity, typeof config>(
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test')
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+						chimeraCreateNot<TestEntity, TestConfig>(
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
 						),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-						chimeraCreateNot<TestEntity, typeof config>(
-							chimeraCreateConjunction<TestEntity, typeof config>('or', [
-								chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
-								chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'other'),
-							])
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+						chimeraCreateNot<TestEntity, TestConfig>(
+							chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+								chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
+								chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'other'),
+							]),
 						),
 					]);
 
@@ -805,19 +802,19 @@ describe('Filter', () => {
 				});
 
 				it('should handle deeply nested OR-NOT combinations', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('or', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-						chimeraCreateNot<TestEntity, typeof config>(
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test')
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+						chimeraCreateNot<TestEntity, TestConfig>(
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
 						),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('or', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-						chimeraCreateNot<TestEntity, typeof config>(
-							chimeraCreateConjunction<TestEntity, typeof config>('and', [
-								chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
-								chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'c', true),
-							])
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+						chimeraCreateNot<TestEntity, TestConfig>(
+							chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+								chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
+								chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'c', true),
+							]),
 						),
 					]);
 
@@ -828,23 +825,23 @@ describe('Filter', () => {
 				});
 
 				it('should handle complex OR-AND combinations', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('or', [
-						chimeraCreateConjunction<TestEntity, typeof config>('and', [
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+						chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
 						]),
-						chimeraCreateConjunction<TestEntity, typeof config>('and', [
-							chimeraCreateOperator<TestEntity, typeof config, 'gt'>('gt', 'a', 5),
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'c', false),
+						chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+							chimeraCreateOperator<TestEntity, TestConfig, 'gt'>('gt', 'a', 5),
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'c', false),
 						]),
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 10),
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 10),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('or', [
-						chimeraCreateConjunction<TestEntity, typeof config>('and', [
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+						chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
 						]),
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 10),
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 10),
 					]);
 
 					const candidateSimplified = simplifyFilter(candidate);
@@ -854,19 +851,19 @@ describe('Filter', () => {
 				});
 
 				it('should return false for complex mismatched nested structures', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateConjunction<TestEntity, typeof config>('or', [
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 						]),
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateConjunction<TestEntity, typeof config>('or', [
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-							chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 2),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+							chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2),
 						]),
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 'test'),
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'c', true),
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 'test'),
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'c', true),
 					]);
 
 					const candidateSimplified = simplifyFilter(candidate);
@@ -876,19 +873,19 @@ describe('Filter', () => {
 				});
 
 				it('should handle mixed operator types in nested structures', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-						chimeraCreateConjunction<TestEntity, typeof config>('or', [
-							chimeraCreateOperator<TestEntity, typeof config, 'gt'>('gt', 'a', 0),
-							chimeraCreateOperator<TestEntity, typeof config, 'lt'>('lt', 'a', 10),
-							chimeraCreateOperator<TestEntity, typeof config, 'neq'>('neq', 'a', 5),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+						chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+							chimeraCreateOperator<TestEntity, TestConfig, 'gt'>('gt', 'a', 0),
+							chimeraCreateOperator<TestEntity, TestConfig, 'lt'>('lt', 'a', 10),
+							chimeraCreateOperator<TestEntity, TestConfig, 'neq'>('neq', 'a', 5),
 						]),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
-						chimeraCreateConjunction<TestEntity, typeof config>('or', [
-							chimeraCreateOperator<TestEntity, typeof config, 'gt'>('gt', 'a', 0),
-							chimeraCreateOperator<TestEntity, typeof config, 'lt'>('lt', 'a', 10),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
+						chimeraCreateConjunction<TestEntity, TestConfig>('or', [
+							chimeraCreateOperator<TestEntity, TestConfig, 'gt'>('gt', 'a', 0),
+							chimeraCreateOperator<TestEntity, TestConfig, 'lt'>('lt', 'a', 10),
 						]),
 					]);
 
@@ -901,11 +898,11 @@ describe('Filter', () => {
 
 			describe('operator comparison', () => {
 				it('should return true for identical operators', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					]);
 
 					const candidateSimplified = simplifyFilter(candidate);
@@ -915,11 +912,11 @@ describe('Filter', () => {
 				});
 
 				it('should return false for different operators', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 2),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 2),
 					]);
 
 					const candidateSimplified = simplifyFilter(candidate);
@@ -929,11 +926,11 @@ describe('Filter', () => {
 				});
 
 				it('should return false for different operator types', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'gt'>('gt', 'a', 1),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'gt'>('gt', 'a', 1),
 					]);
 
 					const candidateSimplified = simplifyFilter(candidate);
@@ -943,11 +940,11 @@ describe('Filter', () => {
 				});
 
 				it('should return false for different keys', () => {
-					const candidate = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'a', 1),
+					const candidate = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'a', 1),
 					]);
-					const target = chimeraCreateConjunction<TestEntity, typeof config>('and', [
-						chimeraCreateOperator<TestEntity, typeof config, 'eq'>('eq', 'b', 1),
+					const target = chimeraCreateConjunction<TestEntity, TestConfig>('and', [
+						chimeraCreateOperator<TestEntity, TestConfig, 'eq'>('eq', 'b', 1),
 					]);
 
 					const candidateSimplified = simplifyFilter(candidate);

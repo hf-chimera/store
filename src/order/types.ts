@@ -32,6 +32,6 @@ export type ChimeraSimplifiedOrderDescriptor<Keys extends string = string> = {
 export type ChimeraKeyFromOrderGetter = (order: ChimeraSimplifiedOrderDescriptor[] | null) => string;
 
 export type ChimeraOrderConfig = {
-	primitiveComparator: ChimeraPrimitiveComparator;
-	getKey: ChimeraKeyFromOrderGetter;
+	primitiveComparator?: ChimeraPrimitiveComparator;
+	getKey?: ChimeraKeyFromOrderGetter;
 };

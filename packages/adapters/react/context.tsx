@@ -1,7 +1,7 @@
-import { createContext, type ReactNode, useMemo } from "react";
-import type { ChimeraFilterConfig } from "../../src/filter";
-import type { ChimeraEntityMap } from "../../src/shared/types";
-import type { ChimeraStore } from "../../src/store";
+import { createContext, type ReactNode, useMemo } from 'react';
+import type { ChimeraFilterConfig } from '../../../src/filter';
+import type { ChimeraEntityMap } from '../../../src/shared/types';
+import type { ChimeraStore } from '../../../src/store';
 
 export interface ChimeraStoreContextValue<
 	EntityMap extends ChimeraEntityMap,
@@ -24,8 +24,8 @@ export const ChimeraStoreProvider = <
 	EntityMap extends ChimeraEntityMap,
 	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
 >({
-	children,
-	store,
-}: ChimeraStoreProviderProps<EntityMap, FilterConfig>) => (
+	                                      children,
+	                                      store,
+                                      }: ChimeraStoreProviderProps<EntityMap, FilterConfig>) => (
 	<ChimeraStoreContext.Provider value={useMemo(() => ({ store }), [store])}>{children}</ChimeraStoreContext.Provider>
 );

@@ -37,7 +37,7 @@ const nullsComparator = (a: unknown, b: unknown, nulls: ChimeraOrderNulls): numb
 
 export const buildComparator = <Entity>(
 	comparator: ChimeraPrimitiveComparator,
-	orderBy?: ChimeraOrderPriority<Entity>,
+	orderBy?: ChimeraOrderPriority<Entity> | null,
 ): ChimeraOrderByComparator<Entity> => {
 	if (!orderBy) return () => 0;
 
@@ -61,6 +61,6 @@ export const buildComparator = <Entity>(
 };
 
 export const simplifyOrderBy = <Entity>(
-	orderBy?: ChimeraOrderPriority<Entity>,
+	orderBy?: ChimeraOrderPriority<Entity> | null,
 ): ChimeraSimplifiedOrderDescriptor<keyof Entity & string>[] | null =>
 	orderBy ? orderBy.map((ob) => ({ desc: ob.desc, field: ob.key.key, nulls: ob.nulls })) : null;

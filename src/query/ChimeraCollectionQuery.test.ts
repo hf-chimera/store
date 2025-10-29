@@ -32,10 +32,14 @@ interface TestItem {
 	};
 }
 
+type OperationsMap = {
+	eq: () => true;
+};
+
 describe("ChimeraCollectionQuery", () => {
-	let mockConfig: QueryEntityConfig<TestItem>;
-	let mockParams: ChimeraQueryEntityCollectionFetcherParams<TestItem>;
-	let mockCollectionFetcher: Mock<ChimeraQueryEntityCollectionFetcher<TestItem>>;
+	let mockConfig: QueryEntityConfig<TestItem, OperationsMap>;
+	let mockParams: ChimeraQueryEntityCollectionFetcherParams<TestItem, OperationsMap>;
+	let mockCollectionFetcher: Mock<ChimeraQueryEntityCollectionFetcher<TestItem, OperationsMap>>;
 	let mockItemUpdater: Mock<ChimeraQueryEntityItemUpdater<TestItem>>;
 	let mockItemDeleter: Mock<ChimeraQueryEntityItemDeleter>;
 	let mockItemCreator: Mock<ChimeraQueryEntityItemCreator<TestItem>>;

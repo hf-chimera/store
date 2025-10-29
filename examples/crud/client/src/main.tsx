@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import './styles.css';
-import { ChimeraStoreProvider } from '../../../../adapters/react';
+import { ChimeraStoreProvider } from '../../../../packages/adapters/react';
 import { store } from '@/store';
 
 // Import the generated route tree

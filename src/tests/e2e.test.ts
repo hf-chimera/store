@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import type { chimeraDefaultFilterOperators } from '../filter/defaults';
 import { chimeraCreateConjunction, chimeraCreateOperator } from "../filter/index.ts";
-import type { ChimeraFilterConfig } from "../filter/types.ts";
 import { ChimeraOrderNulls, chimeraCreateOrderBy } from "../order/index.ts";
 import { ChimeraQueryFetchingState } from "../query";
 import { ChimeraStore } from "../store/index.ts";
 import { stubApi } from "./api.ts";
 import type { Comment, Post, TestEntityMap, Todo, User } from "./types.ts";
+
+type ChimeraOperatorMap = typeof chimeraDefaultFilterOperators;
 
 const createStore = () =>
 	new ChimeraStore<TestEntityMap>({
@@ -142,8 +144,8 @@ describe("Store Module - e2e Tests", () => {
 
 			// Filter users by name containing "Leanne"
 			const filteredQuery = userRepo.getCollection({
-				filter: chimeraCreateConjunction<User, ChimeraFilterConfig>("and", [
-					chimeraCreateOperator<User, ChimeraFilterConfig, "contains">("contains", "name", "Leanne"),
+				filter: chimeraCreateConjunction<User, ChimeraOperatorMap>('and', [
+					chimeraCreateOperator<User, ChimeraOperatorMap, 'contains'>('contains', 'name', 'Leanne'),
 				]),
 			});
 			await filteredQuery.progress;
@@ -155,9 +157,9 @@ describe("Store Module - e2e Tests", () => {
 			const userRepo = store.from("user");
 
 			// Filter users with complex conditions
-			const complexFilter = chimeraCreateConjunction<User, ChimeraFilterConfig>("and", [
-				chimeraCreateOperator<User, ChimeraFilterConfig, "contains">("contains", "name", "Graham"),
-				chimeraCreateOperator<User, ChimeraFilterConfig, "eq">("eq", "id", 1),
+			const complexFilter = chimeraCreateConjunction<User, ChimeraOperatorMap>('and', [
+				chimeraCreateOperator<User, ChimeraOperatorMap, 'contains'>('contains', 'name', 'Graham'),
+				chimeraCreateOperator<User, ChimeraOperatorMap, 'eq'>('eq', 'id', 1),
 			]);
 
 			const filteredQuery = userRepo.getCollection({
@@ -172,9 +174,9 @@ describe("Store Module - e2e Tests", () => {
 			const userRepo = store.from("user");
 
 			// Filter users with OR condition
-			const orFilter = chimeraCreateConjunction<User, ChimeraFilterConfig>("or", [
-				chimeraCreateOperator<User, ChimeraFilterConfig, "eq">("eq", "id", 1),
-				chimeraCreateOperator<User, ChimeraFilterConfig, "eq">("eq", "id", 2),
+			const orFilter = chimeraCreateConjunction<User, ChimeraOperatorMap>('or', [
+				chimeraCreateOperator<User, ChimeraOperatorMap, 'eq'>('eq', 'id', 1),
+				chimeraCreateOperator<User, ChimeraOperatorMap, 'eq'>('eq', 'id', 2),
 			]);
 
 			const filteredQuery = userRepo.getCollection({
@@ -512,8 +514,8 @@ describe("Store Module - e2e Tests", () => {
 			// Get posts by this user
 			const postRepo = store.from("post");
 			const userPostsQuery = postRepo.getCollection({
-				filter: chimeraCreateConjunction<Post, ChimeraFilterConfig>("and", [
-					chimeraCreateOperator<Post, ChimeraFilterConfig, "eq">("eq", "userId", user?.id || 0),
+				filter: chimeraCreateConjunction<Post, ChimeraOperatorMap>('and', [
+					chimeraCreateOperator<Post, ChimeraOperatorMap, 'eq'>('eq', 'userId', user?.id || 0),
 				]),
 			});
 			await userPostsQuery.progress;
@@ -522,8 +524,8 @@ describe("Store Module - e2e Tests", () => {
 			// Get comments for the first post
 			const commentRepo = store.from("comment");
 			const postCommentsQuery = commentRepo.getCollection({
-				filter: chimeraCreateConjunction<Comment, ChimeraFilterConfig>("and", [
-					chimeraCreateOperator<Comment, ChimeraFilterConfig, "eq">("eq", "postId", userPostsQuery.at(0)?.id || 0),
+				filter: chimeraCreateConjunction<Comment, ChimeraOperatorMap>('and', [
+					chimeraCreateOperator<Comment, ChimeraOperatorMap, 'eq'>('eq', 'postId', userPostsQuery.at(0)?.id || 0),
 				]),
 			});
 			await postCommentsQuery.progress;

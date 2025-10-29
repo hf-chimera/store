@@ -1,7 +1,7 @@
 import { chimeraDefaultDebugConfig } from "../debug/defaults.ts";
 import type { ChimeraDebugConfig } from "../debug/types.ts";
-import { chimeraDefaultFilterConfig } from "../filter/defaults.ts";
-import type { ChimeraFilterConfig } from "../filter/types.ts";
+import { chimeraDefaultFilterConfig, type chimeraDefaultFilterOperators } from '../filter/defaults.ts';
+import type { ChimeraFilterConfig, ChimeraOperatorMap } from '../filter/types.ts';
 import { chimeraDefaultOrderConfig } from "../order/defaults.ts";
 import type { ChimeraOrderConfig } from "../order/types.ts";
 import {
@@ -65,68 +65,65 @@ type ManyDeleteEvent<EntityMap extends ChimeraEntityMap> = {
 	};
 }[StrKeys<EntityMap>];
 
-type RepositoryEvent<EntityMap extends ChimeraEntityMap, FilterConfig extends ChimeraFilterConfig> = {
+type RepositoryEvent<EntityMap extends ChimeraEntityMap, OperatorsMap extends ChimeraOperatorMap> = {
 	[K in StrKeys<EntityMap>]: {
 		entityName: K;
-		repository: ChimeraEntityRepository<EntityMap[K], FilterConfig>;
+		repository: ChimeraEntityRepository<EntityMap[K], OperatorsMap>;
 	};
 }[StrKeys<EntityMap>];
 
-type ChimeraStoreEventMap<
-	EntityMap extends ChimeraEntityMap,
-	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
-> = {
+type ChimeraStoreEventMap<EntityMap extends ChimeraEntityMap, OperatorsMap extends ChimeraOperatorMap> = {
 	/** Once the store is initialized */
-	initialized: [{ instance: ChimeraStore<EntityMap, FilterConfig> }];
+	initialized: [{ instance: ChimeraStore<EntityMap, OperatorsMap> }];
 
 	repositoryInitialized: [
-		{ instance: ChimeraStore<EntityMap, FilterConfig> } & RepositoryEvent<EntityMap, FilterConfig>,
+			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap>,
 	];
 
 	/** Each time item added */
 	itemAdded: [
-		{ instance: ChimeraStore<EntityMap, FilterConfig> } & RepositoryEvent<EntityMap, FilterConfig> &
+			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
 			ItemEvent<EntityMap>,
 	];
 
 	/** Each time many items updated */
 	updated: [
-		{ instance: ChimeraStore<EntityMap, FilterConfig> } & RepositoryEvent<EntityMap, FilterConfig> &
+			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
 			ManyItemEvent<EntityMap>,
 	];
 	/** Each time item updated */
 	itemUpdated: [
-		{ instance: ChimeraStore<EntityMap, FilterConfig> } & RepositoryEvent<EntityMap, FilterConfig> &
+			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
 			ItemEvent<EntityMap>,
 	];
 
 	/** Each time many items deleted */
 	deleted: [
-		{ instance: ChimeraStore<EntityMap, FilterConfig> } & RepositoryEvent<EntityMap, FilterConfig> &
+			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
 			ManyDeleteEvent<EntityMap>,
 	];
 	/** Each time item deleted */
 	itemDeleted: [
-		{ instance: ChimeraStore<EntityMap, FilterConfig> } & RepositoryEvent<EntityMap, FilterConfig> &
+			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
 			ItemDeleteEvent<EntityMap>,
 	];
 };
 
 export class ChimeraStore<
 	EntityMap extends ChimeraEntityMap,
-	FilterConfig extends ChimeraFilterConfig = ChimeraFilterConfig,
-	Config extends ChimeraStoreConfig<EntityMap, FilterConfig> = ChimeraStoreConfig<EntityMap, FilterConfig>,
-> extends ChimeraEventEmitter<ChimeraStoreEventMap<EntityMap, FilterConfig>> {
-	readonly #reposMap: ChimeraRepositoryMap<EntityMap, FilterConfig>;
-	readonly #queryConfig: ChimeraRepositoryConfigMap<EntityMap>;
-	readonly #filterConfig: FilterConfig;
-	readonly #orderConfig: ChimeraOrderConfig;
+	OperatorsMap extends ChimeraOperatorMap = typeof chimeraDefaultFilterOperators,
+	Config extends ChimeraStoreConfig<EntityMap, OperatorsMap> = ChimeraStoreConfig<EntityMap, OperatorsMap>,
+> extends ChimeraEventEmitter<ChimeraStoreEventMap<EntityMap, OperatorsMap>> {
+	readonly #reposMap: ChimeraRepositoryMap<EntityMap, OperatorsMap>;
+	readonly #queryConfig: ChimeraRepositoryConfigMap<EntityMap, OperatorsMap>;
+	readonly #filterConfig: Required<ChimeraFilterConfig<OperatorsMap>>;
+	readonly #orderConfig: Required<ChimeraOrderConfig>;
 	readonly #debugConfig: Required<ChimeraDebugConfig>;
 	readonly #initialConfig: Config;
 
-	#emit<T extends EventNames<ChimeraStoreEventMap<EntityMap, FilterConfig>>>(
+	#emit<T extends EventNames<ChimeraStoreEventMap<EntityMap, OperatorsMap>>>(
 		event: T,
-		arg: EventArgs<ChimeraStoreEventMap<EntityMap, FilterConfig>, T>,
+		arg: EventArgs<ChimeraStoreEventMap<EntityMap, OperatorsMap>, T>,
 	) {
 		queueMicrotask(() => super.emit(event, arg));
 	}
@@ -137,7 +134,7 @@ export class ChimeraStore<
 
 	#addRepository<EntityName extends StrKeys<EntityMap>>(
 		entityName: EntityName,
-	): ChimeraEntityRepository<EntityMap[EntityName], FilterConfig> {
+	): ChimeraEntityRepository<EntityMap[EntityName], OperatorsMap> {
 		const repo = (this.#reposMap[entityName] = new ChimeraEntityRepository(
 			this.#queryConfig[entityName],
 			this.#filterConfig,
@@ -148,7 +145,7 @@ export class ChimeraStore<
 			this.#emit("repositoryInitialized", {
 				entityName: entityName,
 				instance: this,
-				repository: e.instance as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], FilterConfig>,
+				repository: e.instance as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], OperatorsMap>,
 			}),
 		);
 
@@ -161,11 +158,11 @@ export class ChimeraStore<
 		this.#initialConfig = deepObjectFreeze(deepObjectClone(config));
 		const { query: queryConfig, order: orderConfig, filter: filterConfig, debug: debugConfig } = config;
 
-		this.#filterConfig = deepObjectAssign<FilterConfig>(
+		this.#filterConfig = deepObjectAssign<Required<ChimeraFilterConfig<OperatorsMap>>>(
 			deepObjectClone(chimeraDefaultFilterConfig),
 			filterConfig ?? {},
 		);
-		this.#orderConfig = deepObjectAssign<ChimeraOrderConfig>(
+		this.#orderConfig = deepObjectAssign<Required<ChimeraOrderConfig>>(
 			deepObjectClone(chimeraDefaultOrderConfig),
 			orderConfig ?? {},
 		);
@@ -174,7 +171,7 @@ export class ChimeraStore<
 			debugConfig ?? {},
 		);
 
-		const query = deepObjectAssign<Required<ChimeraQueryDefaultsConfig<Record<string, object>>>>(
+		const query = deepObjectAssign<Required<ChimeraQueryDefaultsConfig<Record<string, object>, ChimeraOperatorMap>>>(
 			deepObjectClone(chimeraDefaultQueryConfig),
 			queryConfig?.defaults ?? {},
 		);
@@ -182,7 +179,7 @@ export class ChimeraStore<
 			(
 				Object.entries(queryConfig?.entities ?? chimeraDefaultQueryConfig.entities) as [
 					string,
-					ChimeraQueryEntityConfig<object, FilterConfig>,
+					ChimeraQueryEntityConfig<object, OperatorsMap>,
 				][]
 			).map(([key, value]) => [
 				key,
@@ -206,9 +203,9 @@ export class ChimeraStore<
 					name: key,
 					trustQuery: value.trustQuery ?? query.trustQuery,
 					updateDebounceTimeout: value.updateDebounceTimeout ?? query.updateDebounceTimeout,
-				} satisfies QueryEntityConfig<object>,
+				} satisfies QueryEntityConfig<any, any>,
 			]),
-		) as unknown as ChimeraRepositoryConfigMap<EntityMap>;
+		) as unknown as ChimeraRepositoryConfigMap<EntityMap, OperatorsMap>;
 
 		this.#reposMap = {};
 
@@ -221,7 +218,7 @@ export class ChimeraStore<
 
 	from<EntityName extends StrKeys<EntityMap>>(
 		entityName: EntityName,
-	): ChimeraEntityRepository<EntityMap[EntityName], FilterConfig> {
+	): ChimeraEntityRepository<EntityMap[EntityName], OperatorsMap> {
 		return this.#reposMap[entityName] ?? this.#addRepository(entityName);
 	}
 
@@ -233,7 +230,7 @@ export class ChimeraStore<
 				entityName,
 				instance: this,
 				item,
-				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], FilterConfig>,
+				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], OperatorsMap>,
 			});
 		}
 	}
@@ -246,7 +243,7 @@ export class ChimeraStore<
 				entityName,
 				instance: this,
 				items,
-				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], FilterConfig>,
+				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], OperatorsMap>,
 			});
 		}
 	}
@@ -259,7 +256,7 @@ export class ChimeraStore<
 				entityName,
 				id,
 				instance: this,
-				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], FilterConfig>,
+				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], OperatorsMap>,
 			});
 		}
 	}
@@ -272,7 +269,7 @@ export class ChimeraStore<
 				entityName,
 				ids,
 				instance: this,
-				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], FilterConfig>,
+				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], OperatorsMap>,
 			});
 		}
 	}
@@ -289,26 +286,27 @@ export class ChimeraStore<
 				entityName,
 				ids: toDelete,
 				instance: this,
-				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], FilterConfig>,
+				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], OperatorsMap>,
 			});
 			this.#emit("updated", {
 				entityName,
 				instance: this,
 				items: toAdd,
-				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], FilterConfig>,
+				repository: repo as unknown as ChimeraEntityRepository<EntityMap[StrKeys<EntityMap>], OperatorsMap>,
 			});
 		}
 	}
 }
 
 // Utility types
-export type AnyChimeraStore = ChimeraStore<any>;
-type ExtractsStoreGenerics<T extends AnyChimeraStore> = T extends ChimeraStore<infer E, infer F, infer C>
-	? { entityMap: E; filterConfig: F; config: C }
+export type AnyChimeraStore = ChimeraStore<any, any>;
+type ExtractsStoreGenerics<T extends AnyChimeraStore> = T extends ChimeraStore<infer E, infer O>
+	? { entityMap: E; operatorMap: O }
 	: never;
 export type ChimeraStoreEntityMap<T extends AnyChimeraStore> = ExtractsStoreGenerics<T>['entityMap'];
-export type ChimeraStoreFilter<T extends AnyChimeraStore> = ExtractsStoreGenerics<T>['filterConfig'];
+export type ChimeraStoreOperatorMap<T extends AnyChimeraStore> = ExtractsStoreGenerics<T>['operatorMap'];
 export type ChimeraStoreEntities<T extends AnyChimeraStore> = keyof ChimeraStoreEntityMap<T> & string;
+export type ChimeraStoreOperator<T extends AnyChimeraStore> = keyof ChimeraStoreOperatorMap<T> & string;
 export type ChimeraStoreEntityType<
 	T extends AnyChimeraStore,
 	K extends ChimeraStoreEntities<T>,

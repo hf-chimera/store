@@ -1,3 +1,4 @@
+import type { ChimeraOperatorMap } from '../filter';
 import type { ChimeraEntityMap } from "../shared/types.ts";
 import { ChimeraQueryNotSpecifiedError } from "./errors.ts";
 import type { ChimeraQueryConfig, ChimeraQueryDefaultsConfig } from "./types.ts";
@@ -38,6 +39,6 @@ export const chimeraDefaultQueryConfig = {
 		},
 		trustQuery: true,
 		updateDebounceTimeout: 0,
-	} as Required<ChimeraQueryDefaultsConfig<ChimeraEntityMap>>,
+	} as Required<ChimeraQueryDefaultsConfig<ChimeraEntityMap, ChimeraOperatorMap>>,
 	entities: {},
-} satisfies ChimeraQueryConfig<ChimeraEntityMap>;
+} satisfies ChimeraQueryConfig<ChimeraEntityMap, ChimeraOperatorMap>;

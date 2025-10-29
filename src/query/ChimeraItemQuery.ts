@@ -1,3 +1,4 @@
+import type { ChimeraOperatorMap } from '../filter';
 import type { EventArgs, EventNames } from "../shared/ChimeraEventEmitter";
 import { ChimeraEventEmitter } from "../shared/ChimeraEventEmitter";
 import { ChimeraInternalError } from "../shared/errors.ts";
@@ -65,7 +66,7 @@ export class ChimeraItemQuery<Item extends object>
 	#promise: ChimeraCancellablePromise | null;
 	#lastError: unknown;
 	readonly #params: ChimeraQueryEntityItemFetcherParams<Item>;
-	readonly #config: QueryEntityConfig<Item>;
+	readonly #config: QueryEntityConfig<Item, ChimeraOperatorMap>;
 	readonly #idGetter: ChimeraIdGetterFunc<Item>;
 
 	#emit<T extends EventNames<ChimeraItemQueryEventMap<Item>>>(
@@ -258,7 +259,7 @@ export class ChimeraItemQuery<Item extends object>
 	}
 
 	constructor(
-		config: QueryEntityConfig<Item>,
+		config: QueryEntityConfig<Item, ChimeraOperatorMap>,
 		params: ChimeraQueryEntityItemFetcherParams<Item>,
 		existingItem: Item | null,
 		toCreateItem: DeepPartial<Item> | null,

@@ -24,4 +24,4 @@ export const chimeraDefaultKeyFromOrder: ChimeraKeyFromOrderGetter = (order): st
 export const chimeraDefaultOrderConfig = {
 	getKey: chimeraDefaultKeyFromOrder,
 	primitiveComparator: chimeraDefaultComparator,
-} satisfies ChimeraOrderConfig;
+} satisfies Required<ChimeraOrderConfig>;

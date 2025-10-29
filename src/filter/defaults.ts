@@ -37,4 +37,4 @@ export const chimeraDefaultFilterConfig = {
 	getFilterKey: chimeraDefaultGetKeyFromFilter,
 	getOperatorKey: getKeyFromOperation,
 	operators: chimeraDefaultFilterOperators,
-} satisfies ChimeraFilterConfig;
+} satisfies ChimeraFilterConfig<typeof chimeraDefaultFilterOperators>;
