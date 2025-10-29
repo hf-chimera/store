@@ -26,7 +26,7 @@ describe("Order", () => {
 	it("should simplify order by correctly", () => {
 		const orderBy = [chimeraCreateOrderBy<TestEntity>("name", true, ChimeraOrderNulls.First)];
 		const simplified = simplifyOrderBy<TestEntity>(orderBy);
-		expect(simplified).toEqual([{ desc: true, field: 'name', nulls: ChimeraOrderNulls.First }]);
+		expect(simplified).toEqual([{ desc: true, field: "name", nulls: ChimeraOrderNulls.First }]);
 		expect(simplifyOrderBy<TestEntity>(undefined)).toBeNull();
 		expect(simplifyOrderBy<TestEntity>(null as unknown as ChimeraOrderPriority<TestEntity>)).toBeNull();
 	});

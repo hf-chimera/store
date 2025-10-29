@@ -1,6 +1,6 @@
 import type { ChimeraSimplifiedOrderDescriptor } from "../../../../src";
 import { ChimeraConjunctionSymbol, ChimeraOperatorSymbol } from "../../../../src/filter/constants";
-import type { chimeraDefaultFilterOperators } from '../../../../src/filter/defaults';
+import type { chimeraDefaultFilterOperators } from "../../../../src/filter/defaults";
 import type { ChimeraSimplifiedFilter, ChimeraSimplifiedOperator } from "../../../../src/filter/types";
 import type { FieldFilter, Filter } from "../../server/types";
 

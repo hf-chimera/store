@@ -1,4 +1,4 @@
-import type { ChimeraFilterChecker, ChimeraOperatorMap } from '../filter/types.ts';
+import type { ChimeraFilterChecker, ChimeraOperatorMap } from "../filter/types.ts";
 import type { ChimeraOrderByComparator } from "../order/types.ts";
 import type { EventArgs, EventNames } from "../shared/ChimeraEventEmitter";
 import { ChimeraEventEmitter } from "../shared/ChimeraEventEmitter";

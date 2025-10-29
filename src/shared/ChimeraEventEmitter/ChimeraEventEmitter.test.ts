@@ -78,7 +78,7 @@ describe("ChimeraEventEmitter", () => {
 				expect(eventData.extra).equals(undefined);
 			});
 
-			e.emit('data', { emitter: e, extra: undefined, message: 'foo', timestamp: testDate });
+			e.emit("data", { emitter: e, extra: undefined, message: "foo", timestamp: testDate });
 		});
 
 		it("emits to all event listeners", () => {

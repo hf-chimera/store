@@ -46,8 +46,8 @@ describe("Order Defaults", () => {
 	});
 	it("serializes simple and complex order", () => {
 		const order = [
-			{ desc: false, field: 'name', nulls: ChimeraOrderNulls.Last },
-			{ desc: true, field: 'age', nulls: ChimeraOrderNulls.First },
+			{ desc: false, field: "name", nulls: ChimeraOrderNulls.Last },
+			{ desc: true, field: "age", nulls: ChimeraOrderNulls.First },
 		];
 		expect(chimeraDefaultKeyFromOrder(order)).toBe(JSON.stringify(order));
 	});

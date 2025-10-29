@@ -1,8 +1,8 @@
-import { getChimeraTypedHooks } from '../../../../packages/adapters/react';
-import type { ChimeraStoreEntities } from '../../../../src';
+import { getChimeraTypedHooks } from "../../../../packages/adapters/react";
+import type { ChimeraStoreEntities } from "../../../../src";
 import { ChimeraStore } from "../../../../src";
 import type { Customer, Event, Order } from "../../server/types";
-import { create, endpointEntityMap, getAll, getById, remove, subscribeToEvents, update } from './api';
+import { create, endpointEntityMap, getAll, getById, remove, subscribeToEvents, update } from "./api";
 
 export type MyChimeraStore = typeof store;
 export const store = new ChimeraStore<{

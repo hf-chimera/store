@@ -49,7 +49,7 @@ export class ChimeraWeakValueMap<K, V extends object> extends ChimeraEventEmitte
 		for (const [key, weakRef] of this.#map.entries()) {
 			if (weakRef.deref() === undefined) {
 				this.#map.delete(key);
-				this.#emit('finalize', { instance: this, key });
+				this.#emit("finalize", { instance: this, key });
 			}
 		}
 	}
@@ -61,7 +61,7 @@ export class ChimeraWeakValueMap<K, V extends object> extends ChimeraEventEmitte
 			const weakRef = this.#map.get(key);
 			if (weakRef && weakRef.deref() === undefined) {
 				this.#map.delete(key);
-				this.#emit('finalize', { instance: this, key });
+				this.#emit("finalize", { instance: this, key });
 			}
 		});
 
@@ -86,7 +86,7 @@ export class ChimeraWeakValueMap<K, V extends object> extends ChimeraEventEmitte
 
 		this.#registry.register(value, key, value);
 		this.#map.set(key, new WeakRef(value));
-		this.#emit('set', { instance: this, key, value });
+		this.#emit("set", { instance: this, key, value });
 		return this;
 	}
 
@@ -97,13 +97,13 @@ export class ChimeraWeakValueMap<K, V extends object> extends ChimeraEventEmitte
 
 		if (value === undefined) {
 			this.#map.delete(key);
-			this.#emit('finalize', { instance: this, key });
+			this.#emit("finalize", { instance: this, key });
 			return true;
 		}
 
 		this.#map.delete(key);
 		this.#registry.unregister(value);
-		this.#emit('delete', { instance: this, key, value });
+		this.#emit("delete", { instance: this, key, value });
 		return true;
 	}
 
@@ -113,7 +113,7 @@ export class ChimeraWeakValueMap<K, V extends object> extends ChimeraEventEmitte
 
 		if (value === undefined && weakRef) {
 			this.#map.delete(key);
-			this.#emit('finalize', { instance: this, key });
+			this.#emit("finalize", { instance: this, key });
 			this.#scheduleCleanup();
 		}
 
@@ -127,7 +127,7 @@ export class ChimeraWeakValueMap<K, V extends object> extends ChimeraEventEmitte
 				callbackFn.call(thisArg, value, k, this);
 			} else {
 				this.#map.delete(k);
-				this.#emit('finalize', { instance: this, key: k });
+				this.#emit("finalize", { instance: this, key: k });
 			}
 		});
 
@@ -142,7 +142,7 @@ export class ChimeraWeakValueMap<K, V extends object> extends ChimeraEventEmitte
 
 		if (value === undefined && weakRef) {
 			this.#map.delete(key);
-			this.#emit('finalize', { instance: this, key });
+			this.#emit("finalize", { instance: this, key });
 			this.#scheduleCleanup();
 		}
 
@@ -161,7 +161,7 @@ export class ChimeraWeakValueMap<K, V extends object> extends ChimeraEventEmitte
 				yield [k, value];
 			} else {
 				this.#map.delete(k);
-				this.#emit('finalize', { instance: this, key: k });
+				this.#emit("finalize", { instance: this, key: k });
 			}
 		}
 
@@ -176,7 +176,7 @@ export class ChimeraWeakValueMap<K, V extends object> extends ChimeraEventEmitte
 				yield k;
 			} else {
 				this.#map.delete(k);
-				this.#emit('finalize', { instance: this, key: k });
+				this.#emit("finalize", { instance: this, key: k });
 			}
 		}
 
@@ -209,7 +209,7 @@ export class ChimeraWeakValueMap<K, V extends object> extends ChimeraEventEmitte
 		}
 
 		this.#map.clear();
-		this.#emit('clear', { instance: this });
+		this.#emit("clear", { instance: this });
 	}
 
 	cleanup(): void {

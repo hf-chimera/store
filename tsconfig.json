@@ -8,11 +8,7 @@
 		"exactOptionalPropertyTypes": true,
 		"forceConsistentCasingInFileNames": true,
 		"jsx": "preserve",
-		"lib": [
-			"es2022",
-			"ESNext",
-			"dom"
-		],
+		"lib": ["es2022", "ESNext", "dom"],
 		"module": "ESNext",
 		"moduleDetection": "force",
 		"moduleResolution": "Bundler",

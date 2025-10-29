@@ -1,4 +1,4 @@
-import type { ChimeraOperatorMap } from '../filter';
+import type { ChimeraOperatorMap } from "../filter";
 import type { EventArgs, EventNames } from "../shared/ChimeraEventEmitter";
 import { ChimeraEventEmitter } from "../shared/ChimeraEventEmitter";
 import { ChimeraInternalError } from "../shared/errors.ts";

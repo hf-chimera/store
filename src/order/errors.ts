@@ -1,10 +1,8 @@
 import { ChimeraError } from "../shared/errors.ts";
 
-export class ChimeraOrderError extends ChimeraError {
-}
+export class ChimeraOrderError extends ChimeraError {}
 
-export class ChimeraOrderTypeError extends ChimeraOrderError {
-}
+export class ChimeraOrderTypeError extends ChimeraOrderError {}
 
 export class ChimeraOrderTypeComparisonError extends ChimeraOrderTypeError {
 	constructor(a: unknown, b: unknown) {

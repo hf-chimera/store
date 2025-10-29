@@ -1,5 +1,5 @@
-import { createContext, type ReactNode, useMemo } from 'react';
-import type { AnyChimeraStore } from '../../../src/store';
+import { createContext, type ReactNode, useMemo } from "react";
+import type { AnyChimeraStore } from "../../../src/store";
 
 export interface ChimeraStoreContextValue<T extends AnyChimeraStore> {
 	store: T;

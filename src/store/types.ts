@@ -1,5 +1,5 @@
 import type { ChimeraDebugConfig } from "../debug/types.ts";
-import type { ChimeraFilterConfig, ChimeraFilterDescriptor, ChimeraOperatorMap } from '../filter/types.ts';
+import type { ChimeraFilterConfig, ChimeraFilterDescriptor, ChimeraOperatorMap } from "../filter/types.ts";
 import type { ChimeraOrderConfig, ChimeraOrderPriority } from "../order/types.ts";
 import type { ChimeraQueryConfig, QueryEntityConfig } from "../query/types.ts";
 import type { ChimeraEntityMap, StrKeys } from "../shared/types.ts";

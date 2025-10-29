@@ -1,4 +1,4 @@
-import type { ChimeraOperatorMap, ChimeraSimplifiedFilter } from '../filter/types.ts';
+import type { ChimeraOperatorMap, ChimeraSimplifiedFilter } from "../filter/types.ts";
 import type { ChimeraSimplifiedOrderDescriptor } from "../order/types.ts";
 import type { ChimeraEntityId, ChimeraEntityMap, ChimeraIdGetterFunc, DeepPartial, StrKeys } from "../shared/types.ts";
 

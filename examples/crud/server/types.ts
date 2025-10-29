@@ -1,15 +1,15 @@
 export type FilterOperator =
-	| 'contains'
-	| 'endsWith'
-	| 'eq'
-	| 'gt'
-	| 'gte'
-	| 'in'
-	| 'lt'
-	| 'lte'
-	| 'neq'
-	| 'notIn'
-	| 'startsWith';
+	| "contains"
+	| "endsWith"
+	| "eq"
+	| "gt"
+	| "gte"
+	| "in"
+	| "lt"
+	| "lte"
+	| "neq"
+	| "notIn"
+	| "startsWith";
 
 export interface FieldFilter {
 	field: string;
@@ -43,7 +43,7 @@ export type Filter = FieldFilter | AndFilter | OrFilter | NotFilter;
 export interface OrderRule {
 	field: string;
 	desc?: boolean;
-	nulls?: 'first' | 'last';
+	nulls?: "first" | "last";
 }
 
 export type ApiOrder = OrderRule[];
@@ -76,11 +76,11 @@ export type Event = {
 	timestamp: number;
 } & (
 	| {
-	operation: 'create' | 'update';
-	entity?: any;
-}
+			operation: "create" | "update";
+			entity?: any;
+	  }
 	| {
-	operation: 'delete';
-	id: number;
-}
-	);
+			operation: "delete";
+			id: number;
+	  }
+);

@@ -4,9 +4,9 @@ export default defineConfig({
 	clean: true,
 	dts: true,
 	entry: {
-		index: './src/index.ts',
-		qb: './packages/qb/index.ts',
-		'adapters/react': './packages/adapters/react/index.ts',
+		index: "./src/index.ts",
+		qb: "./packages/qb/index.ts",
+		"adapters/react": "./packages/adapters/react/index.ts",
 	},
 	format: ["cjs", "esm"],
 	shims: true,

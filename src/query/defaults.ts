@@ -1,4 +1,4 @@
-import type { chimeraDefaultFilterOperators } from '../filter/defaults';
+import type { chimeraDefaultFilterOperators } from "../filter/defaults";
 import type { ChimeraEntityMap } from "../shared/types.ts";
 import { ChimeraQueryNotSpecifiedError } from "./errors.ts";
 import type { ChimeraQueryConfig, ChimeraQueryDefaultsConfig } from "./types.ts";

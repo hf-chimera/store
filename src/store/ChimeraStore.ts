@@ -1,7 +1,7 @@
 import { chimeraDefaultDebugConfig } from "../debug/defaults.ts";
 import type { ChimeraDebugConfig } from "../debug/types.ts";
-import { chimeraDefaultFilterConfig, type chimeraDefaultFilterOperators } from '../filter/defaults.ts';
-import type { ChimeraFilterConfig, ChimeraOperatorMap } from '../filter/types.ts';
+import { chimeraDefaultFilterConfig, type chimeraDefaultFilterOperators } from "../filter/defaults.ts";
+import type { ChimeraFilterConfig, ChimeraOperatorMap } from "../filter/types.ts";
 import { chimeraDefaultOrderConfig } from "../order/defaults.ts";
 import type { ChimeraOrderConfig } from "../order/types.ts";
 import {
@@ -21,7 +21,7 @@ import type {
 } from "../query/types.ts";
 import { ChimeraInternalError } from "../shared";
 import { ChimeraEventEmitter, type EventArgs, type EventNames } from "../shared/ChimeraEventEmitter";
-import { deepObjectAssign, deepObjectClone, deepObjectFreeze } from '../shared/shared.ts';
+import { deepObjectAssign, deepObjectClone, deepObjectFreeze } from "../shared/shared.ts";
 import type { ChimeraEntityId, ChimeraEntityMap, ChimeraIdGetterFunc, StrKeys } from "../shared/types.ts";
 import { ChimeraEntityRepository } from "./ChimeraEntityRepository.ts";
 import type { ChimeraRepositoryConfigMap, ChimeraRepositoryMap, ChimeraStoreConfig } from "./types.ts";
@@ -77,34 +77,34 @@ type ChimeraStoreEventMap<EntityMap extends ChimeraEntityMap, OperatorsMap exten
 	initialized: [{ instance: ChimeraStore<EntityMap, OperatorsMap> }];
 
 	repositoryInitialized: [
-			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap>,
+		{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap>,
 	];
 
 	/** Each time item added */
 	itemAdded: [
-			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
+		{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
 			ItemEvent<EntityMap>,
 	];
 
 	/** Each time many items updated */
 	updated: [
-			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
+		{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
 			ManyItemEvent<EntityMap>,
 	];
 	/** Each time item updated */
 	itemUpdated: [
-			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
+		{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
 			ItemEvent<EntityMap>,
 	];
 
 	/** Each time many items deleted */
 	deleted: [
-			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
+		{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
 			ManyDeleteEvent<EntityMap>,
 	];
 	/** Each time item deleted */
 	itemDeleted: [
-			{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
+		{ instance: ChimeraStore<EntityMap, OperatorsMap> } & RepositoryEvent<EntityMap, OperatorsMap> &
 			ItemDeleteEvent<EntityMap>,
 	];
 };
@@ -303,8 +303,8 @@ export type AnyChimeraStore = ChimeraStore<any, any>;
 type ExtractsStoreGenerics<T extends AnyChimeraStore> = T extends ChimeraStore<infer E, infer O>
 	? { entityMap: E; operatorMap: O }
 	: never;
-export type ChimeraStoreEntityMap<T extends AnyChimeraStore> = ExtractsStoreGenerics<T>['entityMap'];
-export type ChimeraStoreOperatorMap<T extends AnyChimeraStore> = ExtractsStoreGenerics<T>['operatorMap'];
+export type ChimeraStoreEntityMap<T extends AnyChimeraStore> = ExtractsStoreGenerics<T>["entityMap"];
+export type ChimeraStoreOperatorMap<T extends AnyChimeraStore> = ExtractsStoreGenerics<T>["operatorMap"];
 export type ChimeraStoreEntities<T extends AnyChimeraStore> = keyof ChimeraStoreEntityMap<T> & string;
 export type ChimeraStoreOperator<T extends AnyChimeraStore> = keyof ChimeraStoreOperatorMap<T> & string;
 export type ChimeraStoreEntityType<

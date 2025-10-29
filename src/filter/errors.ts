@@ -1,7 +1,6 @@
 import { ChimeraError } from "../shared/errors.ts";
 
-export class ChimeraFilterError extends ChimeraError {
-}
+export class ChimeraFilterError extends ChimeraError {}
 
 export class ChimeraFilterOperatorError extends ChimeraFilterError {
 	constructor(operator: string, message: string) {

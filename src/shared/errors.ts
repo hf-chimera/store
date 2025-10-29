@@ -1,5 +1,4 @@
-export class ChimeraError extends Error {
-}
+export class ChimeraError extends Error {}
 
 export class ChimeraInternalError extends ChimeraError {
 	constructor(message: string, options?: ErrorOptions) {

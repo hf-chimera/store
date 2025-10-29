@@ -3,7 +3,7 @@ import type { ChimeraConjunctionSymbol, ChimeraOperatorSymbol } from "./constant
 
 export type ChimeraFilterChecker<Entity> = (item: Entity) => boolean;
 
-export type ChimeraConjunctionType = 'and' | 'or' | 'not';
+export type ChimeraConjunctionType = "and" | "or" | "not";
 
 export type ConjunctionFunction = (operations: Array<() => boolean>) => boolean;
 export type ConjunctionMap = {

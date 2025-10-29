@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from "vitest";
-import type { ChimeraOperatorMap } from '../filter';
+import type { ChimeraOperatorMap } from "../filter";
 import type { ChimeraCancellablePromise } from "../shared/types.ts";
 import { ChimeraItemQuery } from "./ChimeraItemQuery.ts";
 import { ChimeraDeleteOneSym, ChimeraSetOneSym } from "./constants.ts";
@@ -200,7 +200,7 @@ describe("ChimeraItemQuery", () => {
 
 		it("should throw error when refetching during creation", () => {
 			mockCreator.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
-			const query = new ChimeraItemQuery(mockConfig, mockParams, null, { name: 'New', value: 42 });
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, { name: "New", value: 42 });
 
 			expect(() => query.refetch()).toThrow(ChimeraQueryNotCreatedError);
 		});
@@ -242,7 +242,7 @@ describe("ChimeraItemQuery", () => {
 
 		it("should throw error when updating during creation", () => {
 			mockCreator.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
-			const query = new ChimeraItemQuery(mockConfig, mockParams, null, { name: 'New', value: 42 });
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, { name: "New", value: 42 });
 
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
 			expect(() => query.update(item)).toThrow(ChimeraQueryNotCreatedError);
@@ -348,7 +348,7 @@ describe("ChimeraItemQuery", () => {
 
 		it("should throw error when deleting during creation", () => {
 			mockCreator.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
-			const query = new ChimeraItemQuery(mockConfig, mockParams, null, { name: 'New', value: 42 });
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, { name: "New", value: 42 });
 
 			expect(() => query.delete()).toThrow(ChimeraQueryNotCreatedError);
 		});
@@ -577,7 +577,7 @@ describe("ChimeraItemQuery", () => {
 		it("should handle creation errors", async () => {
 			mockCreator.mockRejectedValue(new Error("Creation failed"));
 
-			const query = new ChimeraItemQuery(mockConfig, mockParams, null, { name: 'New', value: 42 });
+			const query = new ChimeraItemQuery(mockConfig, mockParams, null, { name: "New", value: 42 });
 
 			await expect(query.promise).rejects.toThrow();
 			await query.progress;

@@ -1,6 +1,6 @@
-import http from 'node:http';
-import { DatabaseSync } from 'node:sqlite';
-import type { ApiOrder, Event, Filter, WhereClause } from './types';
+import http from "node:http";
+import { DatabaseSync } from "node:sqlite";
+import type { ApiOrder, Event, Filter, WhereClause } from "./types";
 
 interface EntityConfig {
 	table: string;
@@ -22,12 +22,12 @@ setInterval(() => {
 // Entity configurations
 const entities: Record<string, EntityConfig> = {
 	customers: {
-		table: 'customers',
-		fields: ['name', 'email', 'phone'],
+		table: "customers",
+		fields: ["name", "email", "phone"],
 	},
 	orders: {
-		table: 'orders',
-		fields: ['customerId', 'productName', 'quantity', 'totalAmount', 'status'],
+		table: "orders",
+		fields: ["customerId", "productName", "quantity", "totalAmount", "status"],
 	},
 };
 
@@ -37,47 +37,47 @@ function buildWhereClause(filter?: Filter | null): WhereClause | null {
 	const values: (null | number | bigint | string)[] = [];
 
 	const parseNode = (node: Filter): string => {
-		if (node.and) return `(${node.and.map(parseNode).join(' AND ')})`;
-		if (node.or) return `(${node.or.map(parseNode).join(' OR ')})`;
+		if (node.and) return `(${node.and.map(parseNode).join(" AND ")})`;
+		if (node.or) return `(${node.or.map(parseNode).join(" OR ")})`;
 		if (node.not) return `(NOT ${parseNode(node.not)})`;
 
 		const { field, op, value } = node;
 		const col = `"${field}"`;
 
 		switch (op) {
-			case 'eq':
+			case "eq":
 				values.push(value);
 				return `${col} = ?`;
-			case 'neq':
+			case "neq":
 				values.push(value);
 				return `${col} != ?`;
-			case 'gt':
+			case "gt":
 				values.push(value);
 				return `${col} > ?`;
-			case 'gte':
+			case "gte":
 				values.push(value);
 				return `${col} >= ?`;
-			case 'lt':
+			case "lt":
 				values.push(value);
 				return `${col} < ?`;
-			case 'lte':
+			case "lte":
 				values.push(value);
 				return `${col} <= ?`;
-			case 'contains':
+			case "contains":
 				values.push(`%${value}%`);
 				return `${col} LIKE ?`;
-			case 'startsWith':
+			case "startsWith":
 				values.push(`${value}%`);
 				return `${col} LIKE ?`;
-			case 'endsWith':
+			case "endsWith":
 				values.push(`%${value}`);
 				return `${col} LIKE ?`;
-			case 'in':
+			case "in":
 				values.push(value);
-				return `${col} IN (${value.map(() => '?').join(',')})`;
-			case 'notIn':
+				return `${col} IN (${value.map(() => "?").join(",")})`;
+			case "notIn":
 				values.push(value);
-				return `${col} NOT IN (${value.map(() => '?').join(',')})`;
+				return `${col} NOT IN (${value.map(() => "?").join(",")})`;
 			default:
 				throw new Error(`Unsupported operator: ${op}`);
 		}
@@ -88,20 +88,20 @@ function buildWhereClause(filter?: Filter | null): WhereClause | null {
 }
 
 function buildOrderClause(order?: ApiOrder | null): string {
-	if (!order || !Array.isArray(order) || order.length === 0) return '';
+	if (!order || !Array.isArray(order) || order.length === 0) return "";
 
 	return order
 		.map(({ field, desc, nulls }) => {
-			let clause = `"${field}" ${desc ? 'DESC' : 'ASC'}`;
-			if (nulls === 'first') clause += ' NULLS FIRST';
-			if (nulls === 'last') clause += ' NULLS LAST';
+			let clause = `"${field}" ${desc ? "DESC" : "ASC"}`;
+			if (nulls === "first") clause += " NULLS FIRST";
+			if (nulls === "last") clause += " NULLS LAST";
 			return clause;
 		})
-		.join(', ');
+		.join(", ");
 }
 
 async function initDb() {
-	db = new DatabaseSync('./database.sqlite');
+	db = new DatabaseSync("./database.sqlite");
 	db.exec(`
       CREATE TABLE IF NOT EXISTS customers
       (
@@ -129,16 +129,16 @@ function publishEvent(event: Event) {
 	events.push(event);
 	console.info(
 		`[EVENT] ${event.entityType} ${event.operation}:`,
-		event.operation === 'delete' ? event.id : event.entity,
+		event.operation === "delete" ? event.id : event.entity,
 	);
 }
 
 // Helper to parse JSON body
 async function parseBody(req: http.IncomingMessage): Promise<any> {
 	return new Promise((resolve, reject) => {
-		let body = '';
-		req.on('data', (chunk) => (body += chunk));
-		req.on('end', () => {
+		let body = "";
+		req.on("data", (chunk) => (body += chunk));
+		req.on("end", () => {
 			try {
 				resolve(body ? JSON.parse(body) : {});
 			} catch (e) {
@@ -151,10 +151,10 @@ async function parseBody(req: http.IncomingMessage): Promise<any> {
 // Helper to send JSON response
 function sendJSON(res: http.ServerResponse, data: any, status = 200) {
 	res.writeHead(status, {
-		'Content-Type': 'application/json',
-		'Access-Control-Allow-Origin': '*',
-		'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-		'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+		"Content-Type": "application/json",
+		"Access-Control-Allow-Origin": "*",
+		"Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+		"Access-Control-Allow-Headers": "Content-Type, Authorization",
 	});
 	res.end(JSON.stringify(data));
 }
@@ -168,7 +168,7 @@ function createCrudHandler(entityName: string, config: EntityConfig) {
 
 			const sql = `
           SELECT *
-          FROM ${config.table} ${whereClause ? `WHERE ${whereClause.clause}` : ''} ${orderClause ? `ORDER BY ${orderClause}` : ''}
+          FROM ${config.table} ${whereClause ? `WHERE ${whereClause.clause}` : ""} ${orderClause ? `ORDER BY ${orderClause}` : ""}
 			`;
 
 			return db.prepare(sql).all(...(whereClause?.values || []));
@@ -185,8 +185,8 @@ function createCrudHandler(entityName: string, config: EntityConfig) {
 		},
 
 		create: (data: any) => {
-			const fields = config.fields.join(', ');
-			const placeholders = config.fields.map(() => '?').join(', ');
+			const fields = config.fields.join(", ");
+			const placeholders = config.fields.map(() => "?").join(", ");
 			const values = config.fields.map((f) => data[f]);
 
 			const stmt = db.prepare(`
@@ -204,7 +204,7 @@ function createCrudHandler(entityName: string, config: EntityConfig) {
 
 			publishEvent({
 				entityType: entityName,
-				operation: 'create',
+				operation: "create",
 				entity,
 				timestamp: Date.now(),
 			});
@@ -213,7 +213,7 @@ function createCrudHandler(entityName: string, config: EntityConfig) {
 		},
 
 		update: (id: string, data: any) => {
-			const setClause = config.fields.map((f) => `${f} = ?`).join(', ');
+			const setClause = config.fields.map((f) => `${f} = ?`).join(", ");
 			const values = [...config.fields.map((f) => data[f]), id];
 
 			db.prepare(`
@@ -231,7 +231,7 @@ function createCrudHandler(entityName: string, config: EntityConfig) {
 
 			publishEvent({
 				entityType: entityName,
-				operation: 'update',
+				operation: "update",
 				entity,
 				timestamp: Date.now(),
 			});
@@ -248,7 +248,7 @@ function createCrudHandler(entityName: string, config: EntityConfig) {
 
 			publishEvent({
 				entityType: entityName,
-				operation: 'delete',
+				operation: "delete",
 				timestamp: Date.now(),
 				id: +id,
 			});
@@ -263,8 +263,8 @@ async function handleCrudRoute(
 	entityName: string,
 	config: EntityConfig,
 ) {
-	const url = req.url || '';
-	const method = req.method || '';
+	const url = req.url || "";
+	const method = req.method || "";
 	const handler = createCrudHandler(entityName, config);
 
 	const listPattern = new RegExp(`^/${entityName}$`);
@@ -272,10 +272,10 @@ async function handleCrudRoute(
 
 	try {
 		// List all
-		if (listPattern.test(url) && method === 'GET') {
-			const fullUrl = new URL(url, 'http://localhost'); // base required for Node URL
-			const filterParam = fullUrl.searchParams.get('filter');
-			const orderParam = fullUrl.searchParams.get('order');
+		if (listPattern.test(url) && method === "GET") {
+			const fullUrl = new URL(url, "http://localhost"); // base required for Node URL
+			const filterParam = fullUrl.searchParams.get("filter");
+			const orderParam = fullUrl.searchParams.get("order");
 
 			let filter: Filter | null = null;
 			let order: ApiOrder | null = null;
@@ -284,7 +284,7 @@ async function handleCrudRoute(
 				try {
 					filter = JSON.parse(decodeURIComponent(filterParam));
 				} catch (err) {
-					console.warn('Invalid filter param:', err);
+					console.warn("Invalid filter param:", err);
 					filter = null;
 				}
 			}
@@ -293,7 +293,7 @@ async function handleCrudRoute(
 				try {
 					order = JSON.parse(decodeURIComponent(orderParam));
 				} catch (err) {
-					console.warn('Invalid order param:', err);
+					console.warn("Invalid order param:", err);
 					order = null;
 				}
 			}
@@ -302,26 +302,26 @@ async function handleCrudRoute(
 			sendJSON(res, items);
 		}
 		// Create
-		else if (listPattern.test(url) && method === 'POST') {
+		else if (listPattern.test(url) && method === "POST") {
 			const body = await parseBody(req);
 			const item = handler.create(body);
 			sendJSON(res, item, 201);
 		}
 		// Get by ID
-		else if (itemPattern.test(url) && method === 'GET') {
+		else if (itemPattern.test(url) && method === "GET") {
 			const id = url.match(itemPattern)![1]!;
 			const item = handler.getById(id);
-			item ? sendJSON(res, item) : sendJSON(res, { error: 'Not found' }, 404);
+			item ? sendJSON(res, item) : sendJSON(res, { error: "Not found" }, 404);
 		}
 		// Update
-		else if (itemPattern.test(url) && method === 'PUT') {
+		else if (itemPattern.test(url) && method === "PUT") {
 			const id = url.match(itemPattern)![1]!;
 			const body = await parseBody(req);
 			const item = handler.update(id, body);
 			sendJSON(res, item);
 		}
 		// Delete
-		else if (itemPattern.test(url) && method === 'DELETE') {
+		else if (itemPattern.test(url) && method === "DELETE") {
 			const id = url.match(itemPattern)![1]!;
 			handler.delete(id);
 			res.writeHead(204);
@@ -333,7 +333,7 @@ async function handleCrudRoute(
 		return true; // Route handled
 	} catch (err) {
 		console.error(err);
-		sendJSON(res, { error: 'Internal server error' }, 500);
+		sendJSON(res, { error: "Internal server error" }, 500);
 		return true;
 	}
 }
@@ -341,12 +341,12 @@ async function handleCrudRoute(
 // Main API Server
 const apiServer = http.createServer(async (req, res) => {
 	// Handle CORS preflight
-	if (req.method === 'OPTIONS') {
+	if (req.method === "OPTIONS") {
 		res.writeHead(204, {
-			'Access-Control-Allow-Origin': '*',
-			'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-			'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-			'Access-Control-Max-Age': '86400', // cache preflight for 24h
+			"Access-Control-Allow-Origin": "*",
+			"Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+			"Access-Control-Allow-Headers": "Content-Type, Authorization",
+			"Access-Control-Max-Age": "86400", // cache preflight for 24h
 		});
 		res.end();
 		return;
@@ -359,35 +359,35 @@ const apiServer = http.createServer(async (req, res) => {
 	}
 
 	// No route matched
-	sendJSON(res, { error: 'Not found' }, 404);
+	sendJSON(res, { error: "Not found" }, 404);
 });
 
 // Event Processing Server
 const eventServer = http.createServer((req, res) => {
-	const url = req.url || '';
+	const url = req.url || "";
 
 	// Handle CORS preflight
-	if (req.method === 'OPTIONS') {
+	if (req.method === "OPTIONS") {
 		res.writeHead(204, {
-			'Access-Control-Allow-Origin': '*',
-			'Access-Control-Allow-Methods': 'GET,OPTIONS',
-			'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-			'Access-Control-Max-Age': '86400',
+			"Access-Control-Allow-Origin": "*",
+			"Access-Control-Allow-Methods": "GET,OPTIONS",
+			"Access-Control-Allow-Headers": "Content-Type, Authorization",
+			"Access-Control-Max-Age": "86400",
 		});
 		res.end();
 		return;
 	}
 
-	if (url === '/events') {
+	if (url === "/events") {
 		sendJSON(res, events);
-	} else if (url === '/events/stream') {
+	} else if (url === "/events/stream") {
 		const id = Math.random().toString(36).slice(2);
 
 		res.writeHead(200, {
-			'Content-Type': 'text/event-stream',
-			'Cache-Control': 'no-cache',
-			Connection: 'keep-alive',
-			'Access-Control-Allow-Origin': '*',
+			"Content-Type": "text/event-stream",
+			"Cache-Control": "no-cache",
+			Connection: "keep-alive",
+			"Access-Control-Allow-Origin": "*",
 		});
 
 		connections.set(id, Date.now());
@@ -402,11 +402,11 @@ const eventServer = http.createServer((req, res) => {
 			}
 		}, 100);
 
-		req.on('close', () => {
+		req.on("close", () => {
 			clearInterval(interval);
 		});
 	} else {
-		sendJSON(res, { error: 'Not found' }, 404);
+		sendJSON(res, { error: "Not found" }, 404);
 	}
 });
 
@@ -415,8 +415,8 @@ async function start() {
 	await initDb();
 
 	apiServer.listen(3000, () => {
-		console.info('🚀 Main API running on http://localhost:3000');
-		console.info('   Available entities:');
+		console.info("🚀 Main API running on http://localhost:3000");
+		console.info("   Available entities:");
 		Object.keys(entities).forEach((entity) => {
 			console.info(`   GET/POST    /${entity}`);
 			console.info(`   GET/PUT/DEL /${entity}/:id`);
@@ -424,9 +424,9 @@ async function start() {
 	});
 
 	eventServer.listen(3001, () => {
-		console.info('📡 Event Service running on http://localhost:3001');
-		console.info('   GET /events - View all events');
-		console.info('   GET /events/stream - SSE stream');
+		console.info("📡 Event Service running on http://localhost:3001");
+		console.info("   GET /events - View all events");
+		console.info("   GET /events/stream - SSE stream");
 	});
 }
 
