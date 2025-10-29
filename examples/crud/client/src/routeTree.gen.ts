@@ -41,14 +41,12 @@ export interface FileRoutesByFullPath {
 	"/orders/new": typeof OrdersNewRoute;
 	"/orders": typeof OrdersIndexRoute;
 }
-
 export interface FileRoutesByTo {
 	"/": typeof IndexRoute;
 	"/orders/$id": typeof OrdersIdRoute;
 	"/orders/new": typeof OrdersNewRoute;
 	"/orders": typeof OrdersIndexRoute;
 }
-
 export interface FileRoutesById {
 	__root__: typeof rootRouteImport;
 	"/": typeof IndexRoute;
@@ -56,7 +54,6 @@ export interface FileRoutesById {
 	"/orders/new": typeof OrdersNewRoute;
 	"/orders/": typeof OrdersIndexRoute;
 }
-
 export interface FileRouteTypes {
 	fileRoutesByFullPath: FileRoutesByFullPath;
 	fullPaths: "/" | "/orders/$id" | "/orders/new" | "/orders";
@@ -65,7 +62,6 @@ export interface FileRouteTypes {
 	id: "__root__" | "/" | "/orders/$id" | "/orders/new" | "/orders/";
 	fileRoutesById: FileRoutesById;
 }
-
 export interface RootRouteChildren {
 	IndexRoute: typeof IndexRoute;
 	OrdersIdRoute: typeof OrdersIdRoute;

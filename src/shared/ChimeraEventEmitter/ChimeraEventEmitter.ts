@@ -39,8 +39,7 @@ export class ChimeraEventEmitter<EventTypes extends ValidEventTypes = string> {
 		if (!this._events[event]) {
 			this._events[event] = listener;
 			this._eventsCount++;
-		}
-		else if (!(this._events[event] as EventRecord<EventTypes, T>).fn)
+		} else if (!(this._events[event] as EventRecord<EventTypes, T>).fn)
 			(this._events[event] as EventRecord<EventTypes, T>[]).push(listener);
 		else this._events[event] = [this._events[event] as EventRecord<EventTypes, T>, listener];
 

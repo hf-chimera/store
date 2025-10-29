@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useChimeraItem } from '@/store';
+import { useChimeraItem } from '../../store';
 import { useState, useEffect } from 'react';
 
 export const Route = createFileRoute('/orders/$id')({

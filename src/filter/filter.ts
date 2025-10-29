@@ -1,3 +1,4 @@
+import { ChimeraInternalError } from "../shared/errors.ts";
 import { compilePropertyGetter, simplifyPropertyGetter } from "../shared/shared.ts";
 import type { ChimeraPropertyGetter, KeysOfType } from "../shared/types.ts";
 import { ChimeraConjunctionSymbol, ChimeraOperatorSymbol } from "./constants.ts";
@@ -61,7 +62,7 @@ export const simplifyOperator = <OperatorsMap extends ChimeraOperatorMap, Entity
 	op,
 	value,
 	test,
-                                                                                  }: ChimeraFilterOperatorDescriptor<OperatorsMap, Entity>): ChimeraSimplifiedOperator<OperatorsMap> => ({
+}: ChimeraFilterOperatorDescriptor<OperatorsMap, Entity>): ChimeraSimplifiedOperator<OperatorsMap> => ({
 	key: simplifyPropertyGetter(value),
 	op,
 	test,
@@ -113,7 +114,7 @@ const compareSimplifiedConjunction = <OperatorsMap extends ChimeraOperatorMap>(
 export const simplifyConjunction = <OperatorsMap extends ChimeraOperatorMap, Entity>({
 	kind,
 	operations,
-                                                                                     }: ChimeraConjunctionDescriptor<OperatorsMap, Entity>): SimplifiedConjunction<OperatorsMap> => {
+}: ChimeraConjunctionDescriptor<OperatorsMap, Entity>): SimplifiedConjunction<OperatorsMap> => {
 	return {
 		kind,
 		operations: operations
@@ -159,7 +160,7 @@ export const chimeraCreateOperator = <
 export const chimeraCreateConjunction = <
 	Entity,
 	OperatorsMap extends ChimeraOperatorMap,
-	Conj extends Exclude<ChimeraConjunctionType, 'not'> = Exclude<ChimeraConjunctionType, 'not'>,
+	Conj extends Exclude<ChimeraConjunctionType, "not"> = Exclude<ChimeraConjunctionType, "not">,
 >(
 	kind: Conj,
 	operations: ChimeraConjunctionOperation<OperatorsMap, Entity>[],
@@ -171,7 +172,7 @@ export const chimeraCreateConjunction = <
 
 export const chimeraCreateNot = <Entity, OperatorsMap extends ChimeraOperatorMap>(
 	operation: ChimeraConjunctionOperation<OperatorsMap, Entity>,
-): ChimeraConjunctionDescriptor<OperatorsMap, Entity, 'not'> => ({
+): ChimeraConjunctionDescriptor<OperatorsMap, Entity, "not"> => ({
 	kind: "not",
 	operations: [operation],
 	type: ChimeraConjunctionSymbol,

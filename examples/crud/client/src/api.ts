@@ -1,5 +1,6 @@
 import type { ChimeraSimplifiedOrderDescriptor } from "../../../../src";
 import { ChimeraConjunctionSymbol, ChimeraOperatorSymbol } from "../../../../src/filter/constants";
+import type { chimeraDefaultFilterOperators } from '../../../../src/filter/defaults';
 import type { ChimeraSimplifiedFilter, ChimeraSimplifiedOperator } from "../../../../src/filter/types";
 import type { FieldFilter, Filter } from "../../server/types";
 
@@ -17,10 +18,14 @@ export const endpointEntityMap = {
 	customers: "customer",
 } as const;
 
+type OperatorMap = typeof chimeraDefaultFilterOperators;
+
 /**
  * Transform Chimera filter to unified filter format
  */
-export function transformChimeraFilterToUnified(node: ChimeraSimplifiedFilter | ChimeraSimplifiedOperator): Filter {
+export function transformChimeraFilterToUnified(
+	node: ChimeraSimplifiedFilter<OperatorMap> | ChimeraSimplifiedOperator<OperatorMap>,
+): Filter {
 	if (!node || typeof node !== "object") {
 		throw new Error("Invalid Chimera filter node");
 	}
@@ -47,7 +52,7 @@ export function transformChimeraFilterToUnified(node: ChimeraSimplifiedFilter | 
 				if (transformed.length !== 1) {
 					throw new Error("NOT conjunction must have exactly one operation");
 				}
-				return { not: transformed[0] };
+				return { not: transformed[0] as Filter };
 		}
 	}
 
@@ -86,7 +91,7 @@ async function makeRequest(url: string, method: string, data?: any): Promise<any
  */
 export async function getAll(
 	entity: string,
-	filter: ChimeraSimplifiedFilter | null,
+	filter: ChimeraSimplifiedFilter<OperatorMap> | null,
 	order: ChimeraSimplifiedOrderDescriptor[] | null,
 ): Promise<any[]> {
 	const query: string[] = [];

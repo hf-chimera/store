@@ -58,21 +58,6 @@
 				"useDefaultParameterLast": "error",
 				"useEnumInitializers": "error",
 				"useExplicitLengthCheck": "off",
-				"useNamingConvention": {
-					"level": "error",
-					"options": {
-						"conventions": [
-							{
-								"match": ".*",
-								"selector": {
-									"kind": "objectLiteralMember"
-								}
-							}
-						],
-						"requireAscii": true,
-						"strictCase": false
-					}
-				},
 				"useNumberNamespace": "error",
 				"useSelfClosingElements": "error",
 				"useSingleVarDeclarator": "error"

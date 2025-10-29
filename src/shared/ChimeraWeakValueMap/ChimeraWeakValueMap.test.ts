@@ -26,8 +26,8 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should initialize with provided values", () => {
-			const obj1 = {id: 1};
-			const obj2 = {id: 2};
+			const obj1 = { id: 1 };
+			const obj2 = { id: 2 };
 			const initialValues: [string, object][] = [
 				["key1", obj1],
 				["key2", obj2],
@@ -54,7 +54,7 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("ChimeraWeakValueMap#set", () => {
 		it("should add new entries", () => {
-			const obj = {id: 1};
+			const obj = { id: 1 };
 			weakMap.set("key1", obj);
 
 			expect(weakMap.has("key1")).toBe(true);
@@ -63,8 +63,8 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should update existing entries", () => {
-			const obj1 = {id: 1};
-			const obj2 = {id: 2};
+			const obj1 = { id: 1 };
+			const obj2 = { id: 2 };
 
 			weakMap.set("key1", obj1);
 			weakMap.set("key1", obj2);
@@ -77,7 +77,7 @@ describe("ChimeraWeakValueMap", () => {
 			const setSpy = vi.fn();
 			weakMap.on("set", setSpy);
 
-			const obj = {id: 1};
+			const obj = { id: 1 };
 			weakMap.set("key1", obj);
 
 			// Wait for a microtask to complete
@@ -94,7 +94,7 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should return this for chaining", () => {
-			const obj = {id: 1};
+			const obj = { id: 1 };
 			const result = weakMap.set("key1", obj);
 			expect(result).toBe(weakMap);
 		});
@@ -102,7 +102,7 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("ChimeraWeakValueMap#get", () => {
 		it("should return value for existing key", () => {
-			const obj = {id: 1};
+			const obj = { id: 1 };
 			weakMap.set("key1", obj);
 			expect(weakMap.get("key1")).toBe(obj);
 		});
@@ -112,7 +112,7 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should return undefined for garbage collected value", () => {
-			weakMap.set("key1", {id: 1});
+			weakMap.set('key1', { id: 1 });
 			// Force garbage collection simulation by creating new objects
 			for (let i = 0; i < 1000; i++) {
 				new Array(1000).fill(0);
@@ -124,7 +124,7 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("ChimeraWeakValueMap#ha", () => {
 		it("should return true for existing key", () => {
-			const obj = {id: 1};
+			const obj = { id: 1 };
 			weakMap.set("key1", obj);
 			expect(weakMap.has("key1")).toBe(true);
 		});
@@ -134,7 +134,7 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should return false for garbage collected value", () => {
-			weakMap.set("key1", {id: 1});
+			weakMap.set('key1', { id: 1 });
 			// Force garbage collection simulation
 			for (let i = 0; i < 1000; i++) {
 				new Array(1000).fill(0);
@@ -146,7 +146,7 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("ChimeraWeakValueMap#delete", () => {
 		it("should delete existing entry", () => {
-			const obj = {id: 1};
+			const obj = { id: 1 };
 			weakMap.set("key1", obj);
 			expect(weakMap.delete("key1")).toBe(true);
 			expect(weakMap.has("key1")).toBe(false);
@@ -162,7 +162,7 @@ describe("ChimeraWeakValueMap", () => {
 			const deleteSpy = vi.fn();
 			weakMap.on("delete", deleteSpy);
 
-			const obj = {id: 1};
+			const obj = { id: 1 };
 			weakMap.set("key1", obj);
 			weakMap.delete("key1");
 
@@ -183,7 +183,7 @@ describe("ChimeraWeakValueMap", () => {
 			weakMap.on("finalize", finalizeSpy);
 
 			// Create an object and immediately delete it
-			const obj = {id: 1};
+			const obj = { id: 1 };
 			weakMap.set("key1", obj);
 			// We still have a strong reference, so finalize should NOT be called
 			weakMap.delete("key1");
@@ -201,8 +201,8 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("ChimeraWeakValueMap#clear", () => {
 		it("should remove all entries", () => {
-			const obj1 = {id: 1};
-			const obj2 = {id: 2};
+			const obj1 = { id: 1 };
+			const obj2 = { id: 2 };
 
 			weakMap.set("key1", obj1);
 			weakMap.set("key2", obj2);
@@ -219,7 +219,7 @@ describe("ChimeraWeakValueMap", () => {
 			const clearSpy = vi.fn();
 			weakMap.on("clear", clearSpy);
 
-			weakMap.set("key1", {id: 1});
+			weakMap.set('key1', { id: 1 });
 			weakMap.clear();
 
 			return new Promise((resolve) => {
@@ -242,10 +242,10 @@ describe("ChimeraWeakValueMap", () => {
 		it("should return correct size", () => {
 			expect(weakMap.size).toBe(0);
 
-			weakMap.set("key1", {id: 1});
+			weakMap.set('key1', { id: 1 });
 			expect(weakMap.size).toBe(1);
 
-			weakMap.set("key2", {id: 2});
+			weakMap.set('key2', { id: 2 });
 			expect(weakMap.size).toBe(2);
 
 			weakMap.delete("key1");
@@ -253,8 +253,8 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should exclude garbage collected values", () => {
-			weakMap.set("key1", {id: 1});
-			weakMap.set("key2", {id: 2});
+			weakMap.set('key1', { id: 1 });
+			weakMap.set('key2', { id: 2 });
 
 			expect(weakMap.size).toBe(2);
 			expect(weakMap.rawSize).toBe(2);
@@ -269,18 +269,18 @@ describe("ChimeraWeakValueMap", () => {
 		it("should return total number of entries including stale references", () => {
 			expect(weakMap.rawSize).toBe(0);
 
-			weakMap.set("key1", {id: 1});
+			weakMap.set('key1', { id: 1 });
 			expect(weakMap.rawSize).toBe(1);
 
-			weakMap.set("key2", {id: 2});
+			weakMap.set('key2', { id: 2 });
 			expect(weakMap.rawSize).toBe(2);
 		});
 	});
 
 	describe("ChimeraWeakValueMap#forEach", () => {
 		it("should iterate over all entries", () => {
-			const obj1 = {id: 1};
-			const obj2 = {id: 2};
+			const obj1 = { id: 1 };
+			const obj2 = { id: 2 };
 
 			weakMap.set("key1", obj1);
 			weakMap.set("key2", obj2);
@@ -294,10 +294,10 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should handle thisArg correctly", () => {
-			const obj = {id: 1};
+			const obj = { id: 1 };
 			weakMap.set("key1", obj);
 
-			const thisArg = {test: true};
+			const thisArg = { test: true };
 			let capturedThis: any;
 			const callback = vi.fn(function (this: any) {
 				capturedThis = this;
@@ -309,8 +309,8 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should skip garbage collected values", () => {
-			weakMap.set("key1", {id: 1});
-			weakMap.set("key2", {id: 2});
+			weakMap.set('key1', { id: 1 });
+			weakMap.set('key2', { id: 2 });
 
 			const callback = vi.fn();
 			weakMap.forEach(callback);
@@ -321,8 +321,8 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("ChimeraWeakValueMap#entries", () => {
 		it("should return iterator of key-value pairs", () => {
-			const obj1 = {id: 1};
-			const obj2 = {id: 2};
+			const obj1 = { id: 1 };
+			const obj2 = { id: 2 };
 
 			weakMap.set("key1", obj1);
 			weakMap.set("key2", obj2);
@@ -335,8 +335,8 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should skip garbage collected values", () => {
-			weakMap.set("key1", {id: 1});
-			weakMap.set("key2", {id: 2});
+			weakMap.set('key1', { id: 1 });
+			weakMap.set('key2', { id: 2 });
 
 			const entries = Array.from(weakMap.entries());
 			expect(entries).toHaveLength(2);
@@ -345,16 +345,16 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("ChimeraWeakValueMap#keys", () => {
 		it("should return iterator of keys", () => {
-			weakMap.set("key1", {id: 1});
-			weakMap.set("key2", {id: 2});
+			weakMap.set('key1', { id: 1 });
+			weakMap.set('key2', { id: 2 });
 
 			const keys = Array.from(weakMap.keys());
 			expect(keys).toEqual(["key1", "key2"]);
 		});
 
 		it("should skip garbage collected values", () => {
-			weakMap.set("key1", {id: 1});
-			weakMap.set("key2", {id: 2});
+			weakMap.set('key1', { id: 1 });
+			weakMap.set('key2', { id: 2 });
 
 			const keys = Array.from(weakMap.keys());
 			expect(keys).toHaveLength(2);
@@ -363,8 +363,8 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("ChimeraWeakValueMap#values", () => {
 		it("should return iterator of values", () => {
-			const obj1 = {id: 1};
-			const obj2 = {id: 2};
+			const obj1 = { id: 1 };
+			const obj2 = { id: 2 };
 
 			weakMap.set("key1", obj1);
 			weakMap.set("key2", obj2);
@@ -374,8 +374,8 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should skip garbage collected values", () => {
-			weakMap.set("key1", {id: 1});
-			weakMap.set("key2", {id: 2});
+			weakMap.set('key1', { id: 1 });
+			weakMap.set('key2', { id: 2 });
 
 			const values = Array.from(weakMap.values());
 			expect(values).toHaveLength(2);
@@ -384,8 +384,8 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("ChimeraWeakValueMap#[Symbol.iterator]", () => {
 		it("should be iterable", () => {
-			const obj1 = {id: 1};
-			const obj2 = {id: 2};
+			const obj1 = { id: 1 };
+			const obj2 = { id: 2 };
 
 			weakMap.set("key1", obj1);
 			weakMap.set("key2", obj2);
@@ -400,8 +400,8 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("ChimeraWeakValueMap#cleanup", () => {
 		it("should remove stale references", () => {
-			weakMap.set("key1", {id: 1});
-			weakMap.set("key2", {id: 2});
+			weakMap.set('key1', { id: 1 });
+			weakMap.set('key2', { id: 2 });
 
 			expect(weakMap.rawSize).toBe(2);
 			weakMap.cleanup();
@@ -412,7 +412,7 @@ describe("ChimeraWeakValueMap", () => {
 			const finalizeSpy = vi.fn();
 			weakMap.on("finalize", finalizeSpy);
 
-			weakMap.set("key1", {id: 1});
+			weakMap.set('key1', { id: 1 });
 			weakMap.cleanup();
 
 			return new Promise((resolve) => {
@@ -442,7 +442,7 @@ describe("ChimeraWeakValueMap", () => {
 			weakMap.on("set", listener1);
 			weakMap.on("set", listener2);
 
-			const obj = {id: 1};
+			const obj = { id: 1 };
 			weakMap.set("key1", obj);
 
 			return new Promise((resolve) => {
@@ -467,7 +467,7 @@ describe("ChimeraWeakValueMap", () => {
 			weakMap.on("set", listener);
 			weakMap.off("set", listener);
 
-			const obj = {id: 1};
+			const obj = { id: 1 };
 			weakMap.set("key1", obj);
 
 			return new Promise((resolve) => {
@@ -481,7 +481,7 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("Edge cases", () => {
 		it("should handle null and undefined keys", () => {
-			const obj = {id: 1};
+			const obj = { id: 1 };
 
 			weakMap.set(null as any, obj);
 			expect(weakMap.has(null as any)).toBe(true);
@@ -493,7 +493,7 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should handle primitive values as keys", () => {
-			const obj = {id: 1};
+			const obj = { id: 1 };
 
 			weakMap.set("string", obj);
 			weakMap.set(123 as any, obj);
@@ -510,7 +510,7 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should handle same object with different keys", () => {
-			const obj = {id: 1};
+			const obj = { id: 1 };
 
 			weakMap.set("key1", obj);
 			weakMap.set("key2", obj);
@@ -521,7 +521,7 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should handle rapid set/delete operations", () => {
-			const obj = {id: 1};
+			const obj = { id: 1 };
 
 			weakMap.set("key1", obj);
 			weakMap.delete("key1");
@@ -536,7 +536,7 @@ describe("ChimeraWeakValueMap", () => {
 			const entries = 1000;
 
 			for (let i = 0; i < entries; i++) {
-				weakMap.set(`key${i}`, {id: i});
+				weakMap.set(`key${i}`, { id: i });
 			}
 
 			expect(weakMap.size).toBe(entries);
@@ -548,9 +548,9 @@ describe("ChimeraWeakValueMap", () => {
 		});
 
 		it("should handle concurrent modifications during iteration", () => {
-			weakMap.set("key1", {id: 1});
-			weakMap.set("key2", {id: 2});
-			weakMap.set("key3", {id: 3});
+			weakMap.set('key1', { id: 1 });
+			weakMap.set('key2', { id: 2 });
+			weakMap.set('key3', { id: 3 });
 
 			const entries: [string, object][] = [];
 			for (const [key, value] of weakMap) {
@@ -566,7 +566,7 @@ describe("ChimeraWeakValueMap", () => {
 
 	describe("Memory management", () => {
 		it("should not prevent garbage collection of values", () => {
-			let obj = {id: 1};
+			let obj = { id: 1 };
 			weakMap.set("key1", obj);
 
 			// Remove the strong reference
@@ -587,7 +587,7 @@ describe("ChimeraWeakValueMap", () => {
 			weakMap.on("finalize", finalizeSpy);
 
 			// Create an object and immediately remove strong references
-			weakMap.set("key1", {id: 1});
+			weakMap.set('key1', { id: 1 });
 
 			// Force cleanup
 			weakMap.cleanup();
@@ -621,7 +621,7 @@ describe("ChimeraWeakValueMap", () => {
 			const obj: ComplexObject = {
 				data: "test",
 				id: 1,
-				nested: {value: true},
+				nested: { value: true },
 			};
 
 			complexMap.set("key1", obj);

@@ -21,13 +21,17 @@ type EntityMap = {
 	posts: TPost;
 };
 
-const makeFilterConfig = (): ChimeraFilterConfig => ({
+const operators = {
+	eq: (a: unknown, b: unknown) => a === b,
+	gt: (a: number | Date | string | bigint, b: number | Date | string | bigint) => (a as number) > (b as number),
+};
+
+type OperatorsMap = typeof operators;
+
+const makeFilterConfig = (): ChimeraFilterConfig<OperatorsMap> => ({
 	getFilterKey: (f) => JSON.stringify(f ?? null),
 	getOperatorKey: (op) => (op ? `${op.op}:${op.key}:${String(op.test)}` : ""),
-	operators: {
-		eq: (a, b) => a === b,
-		gt: (a, b) => (a as number) > (b as number),
-	},
+	operators,
 });
 
 const makeOrderConfig = (): ChimeraOrderConfig => ({
@@ -35,7 +39,7 @@ const makeOrderConfig = (): ChimeraOrderConfig => ({
 	primitiveComparator: (a: any, b: any) => (a === b ? 0 : a > b ? 1 : -1),
 });
 
-const makeStoreConfig = (): ChimeraStoreConfig<EntityMap> => ({
+const makeStoreConfig = (): ChimeraStoreConfig<EntityMap, OperatorsMap> => ({
 	debug: { devMode: true },
 	filter: makeFilterConfig(),
 	order: makeOrderConfig(),
@@ -82,7 +86,7 @@ describe("ChimeraStore", () => {
 
 	it("emits initialized event on construction", () => {
 		const events: any[] = [];
-		const store = new ChimeraStore<EntityMap>(config);
+		const store = new ChimeraStore<EntityMap, OperatorsMap>(config);
 		store.on("initialized", (e) => events.push(e));
 
 		return new Promise<void>((resolve) => {
@@ -100,21 +104,21 @@ describe("ChimeraStore", () => {
 	});
 
 	it("creates repository on first access and caches it", () => {
-		const store = new ChimeraStore<EntityMap>(config);
+		const store = new ChimeraStore<EntityMap, OperatorsMap>(config);
 		const repo1 = store.from("users");
 		const repo2 = store.from("users");
 		expect(repo1).toBe(repo2);
 	});
 
 	it("creates different repositories for different entities", () => {
-		const store = new ChimeraStore<EntityMap>(config);
+		const store = new ChimeraStore<EntityMap, OperatorsMap>(config);
 		const usersRepo = store.from("users");
 		const postsRepo = store.from("posts");
 		expect(usersRepo).not.toBe(postsRepo);
 	});
 
 	it("emits repositoryInitialized event when repository is created", () => {
-		const store = new ChimeraStore<EntityMap>(config);
+		const store = new ChimeraStore<EntityMap, OperatorsMap>(config);
 		const events: any[] = [];
 		store.on("repositoryInitialized", (e) => events.push(e));
 
@@ -133,13 +137,13 @@ describe("ChimeraStore", () => {
 		});
 	});
 
-	test.each<[string, (store: ChimeraStore<EntityMap>, entityName: keyof EntityMap) => void, string]>([
+	test.each<[string, (store: ChimeraStore<EntityMap, OperatorsMap>, entityName: keyof EntityMap) => void, string]>([
 		["updateOne", (s, e) => s.updateOne(e, { email: "test@test.com", id: "1", name: "Test" } as any), "itemUpdated"],
 		["updateMany", (s, e) => s.updateMany(e, [{ email: "test@test.com", id: "1", name: "Test" }] as any), "updated"],
 		["deleteOne", (s, e) => s.deleteOne(e, "1"), "itemDeleted"],
 		["deleteMany", (s, e) => s.deleteMany(e, ["1", "2"]), "deleted"],
 	])("emits %s event when repository exists", (method, action, eventName) => {
-		const store = new ChimeraStore<EntityMap>(config);
+		const store = new ChimeraStore<EntityMap, OperatorsMap>(config);
 		const events: any[] = [];
 		store.on(eventName as any, (e) => events.push(e));
 
@@ -165,13 +169,13 @@ describe("ChimeraStore", () => {
 		});
 	});
 
-	test.each<[string, (store: ChimeraStore<EntityMap>, entityName: keyof EntityMap) => void]>([
+	test.each<[string, (store: ChimeraStore<EntityMap, OperatorsMap>, entityName: keyof EntityMap) => void]>([
 		["updateOne", (s, e) => s.updateOne(e, { email: "test@test.com", id: "1", name: "Test" } as any)],
 		["updateMany", (s, e) => s.updateMany(e, [{ email: "test@test.com", id: "1", name: "Test" }] as any)],
 		["deleteOne", (s, e) => s.deleteOne(e, "1")],
 		["deleteMany", (s, e) => s.deleteMany(e, ["1", "2"])],
 	])("does not emit events when repository does not exist for %s", (method, action) => {
-		const store = new ChimeraStore<EntityMap>(config);
+		const store = new ChimeraStore<EntityMap, OperatorsMap>(config);
 		const events: any[] = [];
 		store.on("itemUpdated", (e) => events.push(e));
 		store.on("updated", (e) => events.push(e));
@@ -189,7 +193,7 @@ describe("ChimeraStore", () => {
 	});
 
 	it("emits both deleted and updated events for updateMixed", () => {
-		const store = new ChimeraStore<EntityMap>(config);
+		const store = new ChimeraStore<EntityMap, OperatorsMap>(config);
 		const deletedEvents: any[] = [];
 		const updatedEvents: any[] = [];
 		store.on("deleted", (e) => deletedEvents.push(e));
@@ -225,7 +229,7 @@ describe("ChimeraStore", () => {
 	});
 
 	it("does not emit events for updateMixed when repository does not exist", () => {
-		const store = new ChimeraStore<EntityMap>(config);
+		const store = new ChimeraStore<EntityMap, OperatorsMap>(config);
 		const deletedEvents: any[] = [];
 		const updatedEvents: any[] = [];
 		store.on("deleted", (e) => deletedEvents.push(e));
@@ -243,7 +247,7 @@ describe("ChimeraStore", () => {
 	});
 
 	it("preserves repository instances across multiple from calls", () => {
-		const store = new ChimeraStore<EntityMap>(config);
+		const store = new ChimeraStore<EntityMap, OperatorsMap>(config);
 		const repo1 = store.from("users");
 		const repo2 = store.from("users");
 		const repo3 = store.from("users");
@@ -253,7 +257,7 @@ describe("ChimeraStore", () => {
 	});
 
 	it("handles concurrent repository creation", () => {
-		const store = new ChimeraStore<EntityMap>(config);
+		const store = new ChimeraStore<EntityMap, OperatorsMap>(config);
 		const repo1 = store.from("users");
 		const repo2 = store.from("posts");
 		const repo3 = store.from("users");

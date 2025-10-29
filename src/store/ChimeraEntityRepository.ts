@@ -94,7 +94,6 @@ export class ChimeraEntityRepository<
 		this.#registerUpdate(item, skipItem);
 		for (const c of this.#collectionQueryMap.values()) c !== skipCollection && c[ChimeraSetOneSym](item);
 	}
-
 	#propagateDeleteOne(
 		id: ChimeraEntityId,
 		{ item: skipItem, collection: skipCollection }: SkipParams<Item, OperatorsMap> = {},
@@ -145,7 +144,6 @@ export class ChimeraEntityRepository<
 			order: simplifyOrderBy(params.order),
 		};
 	}
-
 	#getCollectionKey({ order, filter }: ChimeraQueryEntityCollectionFetcherParams<Item, OperatorsMap>): string {
 		return `ORDER<${order ? this.#orderConfig.getKey(order) : ""}>\nFILTER<${filter ? this.#filterConfig.getFilterKey(filter) : ""}>`;
 	}
@@ -153,15 +151,12 @@ export class ChimeraEntityRepository<
 	#collectionUpdateHandler(query: ChimeraCollectionQuery<Item, OperatorsMap>, items: Item[]) {
 		this.#propagateUpdateMany(items, { collection: query });
 	}
-
 	#collectionCreateHandler(query: ChimeraCollectionQuery<Item, OperatorsMap>, item: Item) {
 		this.#propagateUpdateOne(item, { collection: query });
 	}
-
 	#collectionItemUpdated(query: ChimeraCollectionQuery<Item, OperatorsMap>, item: Item) {
 		this.#propagateUpdateOne(item, { collection: query });
 	}
-
 	#collectionItemDeleted(query: ChimeraCollectionQuery<Item, OperatorsMap>, id: ChimeraEntityId) {
 		this.#propagateDeleteOne(id, { collection: query });
 	}

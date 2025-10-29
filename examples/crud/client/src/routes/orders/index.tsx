@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useChimeraCollection } from '@/store';
+import { useChimeraCollection } from '../../store';
 
 export const Route = createFileRoute('/orders/')({
 	component: OrdersList,

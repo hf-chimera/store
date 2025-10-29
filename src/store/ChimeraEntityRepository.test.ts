@@ -18,16 +18,19 @@ interface TItem {
 	value: number;
 }
 
-const makeFilterConfig = (): ChimeraFilterConfig => ({
+const operators = {
+	eq: (a: unknown, b: unknown) => a === b,
+	gt: (a: number | Date | string | bigint, b: number | Date | string | bigint) => (a as number) > (b as number),
+};
+type OperatorMap = typeof operators;
+
+const makeFilterConfig = (): Required<ChimeraFilterConfig<OperatorMap>> => ({
 	getFilterKey: (f) => JSON.stringify(f ?? null),
 	getOperatorKey: (op) => (op ? `${op.op}:${op.key}:${String(op.test)}` : ""),
-	operators: {
-		eq: (a, b) => a === b,
-		gt: (a, b) => (a as number) > (b as number),
-	},
+	operators,
 });
 
-const makeOrderConfig = (): ChimeraOrderConfig => ({
+const makeOrderConfig = (): Required<ChimeraOrderConfig> => ({
 	getKey: (o) => JSON.stringify(o ?? []),
 	primitiveComparator: (a: any, b: any) => (a === b ? 0 : a > b ? 1 : -1),
 });
@@ -36,7 +39,7 @@ type MockedConfig<T> = {
 	[K in keyof T]: T[K] extends (...args: any[]) => any ? Mock : T[K];
 };
 
-const makeEntityConfig = (): MockedConfig<QueryEntityConfig<TItem>> => {
+const makeEntityConfig = (): MockedConfig<QueryEntityConfig<TItem, OperatorMap>> => {
 	const collectionFetcher = vi.fn();
 	const itemFetcher = vi.fn();
 	const itemUpdater = vi.fn();
@@ -63,9 +66,9 @@ const makeEntityConfig = (): MockedConfig<QueryEntityConfig<TItem>> => {
 };
 
 describe("ChimeraEntityRepository", () => {
-	let cfg: MockedConfig<QueryEntityConfig<TItem>>;
-	let filterCfg: ChimeraFilterConfig;
-	let orderCfg: ChimeraOrderConfig;
+	let cfg: MockedConfig<QueryEntityConfig<TItem, OperatorMap>>;
+	let filterCfg: Required<ChimeraFilterConfig<OperatorMap>>;
+	let orderCfg: Required<ChimeraOrderConfig>;
 
 	beforeEach(() => {
 		cfg = makeEntityConfig();
@@ -76,7 +79,7 @@ describe("ChimeraEntityRepository", () => {
 
 	it("emits initialized event on construction", () => {
 		const events: any[] = [];
-		const repo = new ChimeraEntityRepository<TItem, ChimeraFilterConfig>(cfg, filterCfg, orderCfg);
+		const repo = new ChimeraEntityRepository<TItem, OperatorMap>(cfg, filterCfg, orderCfg);
 		repo.on("initialized", (e) => events.push(e));
 
 		// Wait for the event to be emitted (it's queued with queueMicrotask)
@@ -91,14 +94,14 @@ describe("ChimeraEntityRepository", () => {
 
 	it("caches queries and forbids external emit", () => {
 		cfg.collectionFetcher.mockResolvedValue({ data: [] });
-		const repo = new ChimeraEntityRepository<TItem, ChimeraFilterConfig>(cfg, filterCfg, orderCfg);
+		const repo = new ChimeraEntityRepository<TItem, OperatorMap>(cfg, filterCfg, orderCfg);
 		expect(repo.getCollection({})).toBe(repo.getCollection({}));
 		// @ts-expect-error
 		expect(() => repo.emit("initialized", { instance: repo })).toThrowError;
 	});
 
 	it("propagates item updates from item query to collection and emits events", async () => {
-		const repo = new ChimeraEntityRepository<TItem, ChimeraFilterConfig>(cfg, filterCfg, orderCfg);
+		const repo = new ChimeraEntityRepository<TItem, OperatorMap>(cfg, filterCfg, orderCfg);
 		const items: TItem[] = [
 			{ id: "1", name: "A", value: 1 },
 			{ id: "2", name: "B", value: 2 },
@@ -122,7 +125,7 @@ describe("ChimeraEntityRepository", () => {
 	});
 
 	it("propagates delete from item query to collection and emits", async () => {
-		const repo = new ChimeraEntityRepository<TItem, ChimeraFilterConfig>(cfg, filterCfg, orderCfg);
+		const repo = new ChimeraEntityRepository<TItem, OperatorMap>(cfg, filterCfg, orderCfg);
 		const items: TItem[] = [
 			{ id: "1", name: "A", value: 1 },
 			{ id: "2", name: "B", value: 2 },
@@ -144,7 +147,7 @@ describe("ChimeraEntityRepository", () => {
 	});
 
 	it("reacts to collection self events: update/create/delete flow", async () => {
-		const repo = new ChimeraEntityRepository<TItem, ChimeraFilterConfig>(cfg, filterCfg, orderCfg);
+		const repo = new ChimeraEntityRepository<TItem, OperatorMap>(cfg, filterCfg, orderCfg);
 		cfg.collectionFetcher.mockResolvedValue({ data: [{ id: "1", name: "A", value: 1 }] });
 		const col = repo.getCollection({ order: [] });
 		await col.progress;
@@ -187,7 +190,7 @@ describe("ChimeraEntityRepository", () => {
 		["delete many", (r) => r[ChimeraDeleteManySym](["1", "2"]), []],
 		["update mixed", (r) => r[ChimeraUpdateMixedSym]([{ id: "3", name: "C", value: 3 }], ["1"]), ["2", "3"]],
 	])("repository symbols propagate to collections: %s", async (_label, op, expectedIds) => {
-		const repo = new ChimeraEntityRepository<TItem, ChimeraFilterConfig>(cfg, filterCfg, orderCfg);
+		const repo = new ChimeraEntityRepository<TItem, OperatorMap>(cfg, filterCfg, orderCfg);
 		cfg.collectionFetcher.mockResolvedValue({
 			data: [
 				{ id: "1", name: "A", value: 1 },
@@ -206,7 +209,7 @@ describe("ChimeraEntityRepository", () => {
 
 	it("getCollection returns distinct instances for distinct keys", async () => {
 		cfg.collectionFetcher.mockResolvedValue({ data: [] });
-		const repo = new ChimeraEntityRepository<TItem, ChimeraFilterConfig>(cfg, filterCfg, orderCfg);
+		const repo = new ChimeraEntityRepository<TItem, OperatorMap>(cfg, filterCfg, orderCfg);
 		const a = repo.getCollection({ order: [] });
 		const b = repo.getCollection({
 			order: [{ desc: true, key: { get: "value", key: "value" }, nulls: ChimeraOrderNulls.Last }],
