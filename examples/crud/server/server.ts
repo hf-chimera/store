@@ -1,5 +1,7 @@
 import http from "node:http";
+import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import type { IncomingMessage, ServerResponse } from "http";
 import type { ApiOrder, Event, Filter, WhereClause } from "./types";
 
 interface EntityConfig {
@@ -12,6 +14,7 @@ let db: DatabaseSync;
 const events: Event[] = [];
 const connections = new Map<string, number>();
 
+// Clear already read events
 setInterval(() => {
 	const min = Math.min(...connections.values());
 	const firstElem = events.findIndex((e) => e.timestamp > min);
@@ -100,8 +103,8 @@ function buildOrderClause(order?: ApiOrder | null): string {
 		.join(", ");
 }
 
-async function initDb() {
-	db = new DatabaseSync("./database.sqlite");
+function initDb() {
+	db = new DatabaseSync(path.join(import.meta.dirname, "./database.sqlite"));
 	db.exec(`
       CREATE TABLE IF NOT EXISTS customers
       (
@@ -137,7 +140,7 @@ function publishEvent(event: Event) {
 async function parseBody(req: http.IncomingMessage): Promise<any> {
 	return new Promise((resolve, reject) => {
 		let body = "";
-		req.on("data", (chunk) => (body += chunk));
+		req.on("data", (chunk: string) => (body += chunk));
 		req.on("end", () => {
 			try {
 				resolve(body ? JSON.parse(body) : {});
@@ -159,102 +162,47 @@ function sendJSON(res: http.ServerResponse, data: any, status = 200) {
 	res.end(JSON.stringify(data));
 }
 
-// Generic CRUD handler
-function createCrudHandler(entityName: string, config: EntityConfig) {
-	return {
-		getAll: ({ filter, order }: { filter?: Filter | null; order?: ApiOrder | null }) => {
-			const whereClause = buildWhereClause(filter ?? null);
-			const orderClause = buildOrderClause(order ?? null);
+const operations = {
+	getAll: ({ filter, order }: { filter?: Filter | null; order?: ApiOrder | null }, config: EntityConfig) => {
+		const whereClause = buildWhereClause(filter ?? null);
+		const orderClause = buildOrderClause(order ?? null);
+		return db
+			.prepare(
+				`SELECT *FROM ${config.table} ${whereClause ? `WHERE ${whereClause.clause}` : ""} ${orderClause ? `ORDER BY ${orderClause}` : ""}`,
+			)
+			.all(...(whereClause?.values || []));
+	},
 
-			const sql = `
-          SELECT *
-          FROM ${config.table} ${whereClause ? `WHERE ${whereClause.clause}` : ""} ${orderClause ? `ORDER BY ${orderClause}` : ""}
-			`;
+	getById: (id: string, config: EntityConfig) => {
+		return db.prepare(`SELECT * FROM ${config.table} WHERE id = ?`).get(id);
+	},
 
-			return db.prepare(sql).all(...(whereClause?.values || []));
-		},
+	create: (data: any, config: EntityConfig) => {
+		const result = db
+			.prepare(
+				`INSERT INTO ${config.table} (${config.fields.join(", ")}) VALUES (${config.fields.map(() => "?").join(", ")})`,
+			)
+			.run(...config.fields.map((f) => data[f]));
+		const entity = db.prepare(`SELECT * FROM ${config.table} WHERE id = ?`).get(result.lastInsertRowid);
+		publishEvent({ entityType: config.table, operation: "create", entity, timestamp: Date.now() });
+		return entity;
+	},
 
-		getById: (id: string) => {
-			return db
-				.prepare(`
-            SELECT *
-            FROM ${config.table}
-            WHERE id = ?
-				`)
-				.get(id);
-		},
+	update: (id: string, data: any, config: EntityConfig) => {
+		db.prepare(`UPDATE ${config.table} SET ${config.fields.map((f) => `${f} = ?`).join(", ")} WHERE id = ?`).run(
+			...config.fields.map((f) => data[f]),
+			id,
+		);
+		const entity = db.prepare(`SELECT * FROM ${config.table} WHERE id = ?`).get(id);
+		publishEvent({ entityType: config.table, operation: "update", entity, timestamp: Date.now() });
+		return entity;
+	},
 
-		create: (data: any) => {
-			const fields = config.fields.join(", ");
-			const placeholders = config.fields.map(() => "?").join(", ");
-			const values = config.fields.map((f) => data[f]);
-
-			const stmt = db.prepare(`
-          INSERT INTO ${config.table} (${fields})
-          VALUES (${placeholders})
-			`);
-			const result = stmt.run(...values);
-			const entity = db
-				.prepare(`
-            SELECT *
-            FROM ${config.table}
-            WHERE id = ?
-				`)
-				.get(result.lastInsertRowid);
-
-			publishEvent({
-				entityType: entityName,
-				operation: "create",
-				entity,
-				timestamp: Date.now(),
-			});
-
-			return entity;
-		},
-
-		update: (id: string, data: any) => {
-			const setClause = config.fields.map((f) => `${f} = ?`).join(", ");
-			const values = [...config.fields.map((f) => data[f]), id];
-
-			db.prepare(`
-          UPDATE ${config.table}
-          SET ${setClause}
-          WHERE id = ?
-			`).run(...values);
-			const entity = db
-				.prepare(`
-            SELECT *
-            FROM ${config.table}
-            WHERE id = ?
-				`)
-				.get(id);
-
-			publishEvent({
-				entityType: entityName,
-				operation: "update",
-				entity,
-				timestamp: Date.now(),
-			});
-
-			return entity;
-		},
-
-		delete: (id: string) => {
-			db.prepare(`
-          DELETE
-          FROM ${config.table}
-          WHERE id = ?
-			`).run(id);
-
-			publishEvent({
-				entityType: entityName,
-				operation: "delete",
-				timestamp: Date.now(),
-				id: +id,
-			});
-		},
-	};
-}
+	delete: (id: string, config: EntityConfig) => {
+		db.prepare(`DELETE FROM ${config.table} WHERE id = ?`).run(id);
+		publishEvent({ entityType: config.table, operation: "delete", timestamp: Date.now(), id: +id });
+	},
+};
 
 // Generic route handler for CRUD operations
 async function handleCrudRoute(
@@ -263,23 +211,19 @@ async function handleCrudRoute(
 	entityName: string,
 	config: EntityConfig,
 ) {
-	const url = req.url || "";
+	const fullUrl = new URL(req.url, "http://localhost"); // base required for Node URL
 	const method = req.method || "";
-	const handler = createCrudHandler(entityName, config);
 
 	const listPattern = new RegExp(`^/${entityName}$`);
 	const itemPattern = new RegExp(`^/${entityName}/(\\d+)$`);
 
 	try {
 		// List all
-		if (listPattern.test(url) && method === "GET") {
-			const fullUrl = new URL(url, "http://localhost"); // base required for Node URL
+		if (listPattern.test(fullUrl.pathname) && method === "GET") {
 			const filterParam = fullUrl.searchParams.get("filter");
 			const orderParam = fullUrl.searchParams.get("order");
 
 			let filter: Filter | null = null;
-			let order: ApiOrder | null = null;
-
 			if (filterParam) {
 				try {
 					filter = JSON.parse(decodeURIComponent(filterParam));
@@ -289,6 +233,7 @@ async function handleCrudRoute(
 				}
 			}
 
+			let order: ApiOrder | null = null;
 			if (orderParam) {
 				try {
 					order = JSON.parse(decodeURIComponent(orderParam));
@@ -298,39 +243,46 @@ async function handleCrudRoute(
 				}
 			}
 
-			const items = handler.getAll({ filter, order });
+			const items = operations.getAll({ filter, order }, config);
 			sendJSON(res, items);
-		}
-		// Create
-		else if (listPattern.test(url) && method === "POST") {
-			const body = await parseBody(req);
-			const item = handler.create(body);
-			sendJSON(res, item, 201);
-		}
-		// Get by ID
-		else if (itemPattern.test(url) && method === "GET") {
-			const id = url.match(itemPattern)![1]!;
-			const item = handler.getById(id);
-			item ? sendJSON(res, item) : sendJSON(res, { error: "Not found" }, 404);
-		}
-		// Update
-		else if (itemPattern.test(url) && method === "PUT") {
-			const id = url.match(itemPattern)![1]!;
-			const body = await parseBody(req);
-			const item = handler.update(id, body);
-			sendJSON(res, item);
-		}
-		// Delete
-		else if (itemPattern.test(url) && method === "DELETE") {
-			const id = url.match(itemPattern)![1]!;
-			handler.delete(id);
-			res.writeHead(204);
-			res.end();
-		} else {
-			return false; // Route isn't handled
+			return true;
 		}
 
-		return true; // Route handled
+		// Create
+		if (listPattern.test(fullUrl.pathname) && method === "POST") {
+			const body = await parseBody(req);
+			const item = operations.create(body, config);
+			sendJSON(res, item, 201);
+			return true;
+		}
+
+		const id = fullUrl.pathname.match(itemPattern)?.[1];
+		if (!id) return false;
+
+		// Get by ID
+		if (itemPattern.test(fullUrl.pathname) && method === "GET") {
+			const item = operations.getById(id, config);
+			item ? sendJSON(res, item) : sendJSON(res, { error: "Not found" }, 404);
+			return true;
+		}
+
+		// Update
+		if (itemPattern.test(fullUrl.pathname) && method === "PUT") {
+			const body = await parseBody(req);
+			const item = operations.update(id, body, config);
+			sendJSON(res, item);
+			return true;
+		}
+
+		// Delete
+		if (itemPattern.test(fullUrl.pathname) && method === "DELETE") {
+			operations.delete(id, config);
+			res.writeHead(204);
+			res.end();
+			return true;
+		}
+
+		return false; // Route handled
 	} catch (err) {
 		console.error(err);
 		sendJSON(res, { error: "Internal server error" }, 500);
@@ -339,49 +291,50 @@ async function handleCrudRoute(
 }
 
 // Main API Server
-const apiServer = http.createServer(async (req, res) => {
-	// Handle CORS preflight
-	if (req.method === "OPTIONS") {
-		res.writeHead(204, {
-			"Access-Control-Allow-Origin": "*",
-			"Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-			"Access-Control-Allow-Headers": "Content-Type, Authorization",
-			"Access-Control-Max-Age": "86400", // cache preflight for 24h
-		});
-		res.end();
-		return;
-	}
+const apiServer = http.createServer(
+	async (
+		req: InstanceType<IncomingMessage>,
+		res: InstanceType<ServerResponse<InstanceType<IncomingMessage>>> & { req: InstanceType<IncomingMessage> },
+	) => {
+		// Handle CORS preflight
+		if (req.method === "OPTIONS") {
+			res.writeHead(204, {
+				"Access-Control-Allow-Origin": "*",
+				"Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+				"Access-Control-Allow-Headers": "Content-Type, Authorization",
+				"Access-Control-Max-Age": "86400", // cache preflight for 24h
+			});
+			res.end();
+			return;
+		}
 
-	// Try to handle the route with each entity
-	for (const [entityName, config] of Object.entries(entities)) {
-		const handled = await handleCrudRoute(req, res, entityName, config);
-		if (handled) return;
-	}
+		// Try to handle the route with each entity
+		for (const [entityName, config] of Object.entries(entities)) {
+			if (await handleCrudRoute(req, res, entityName, config)) return;
+		}
 
-	// No route matched
-	sendJSON(res, { error: "Not found" }, 404);
-});
+		// No route matched
+		sendJSON(res, { error: "Not found" }, 404);
+	},
+);
 
 // Event Processing Server
-const eventServer = http.createServer((req, res) => {
-	const url = req.url || "";
-
-	// Handle CORS preflight
-	if (req.method === "OPTIONS") {
-		res.writeHead(204, {
-			"Access-Control-Allow-Origin": "*",
-			"Access-Control-Allow-Methods": "GET,OPTIONS",
-			"Access-Control-Allow-Headers": "Content-Type, Authorization",
-			"Access-Control-Max-Age": "86400",
-		});
-		res.end();
-		return;
-	}
-
-	if (url === "/events") {
-		sendJSON(res, events);
-	} else if (url === "/events/stream") {
-		const id = Math.random().toString(36).slice(2);
+const eventServer = http.createServer(
+	(
+		req: InstanceType<IncomingMessage>,
+		res: InstanceType<ServerResponse<InstanceType<IncomingMessage>>> & { req: InstanceType<IncomingMessage> },
+	) => {
+		// Handle CORS preflight
+		if (req.method === "OPTIONS") {
+			res.writeHead(204, {
+				"Access-Control-Allow-Origin": "*",
+				"Access-Control-Allow-Methods": "GET,OPTIONS",
+				"Access-Control-Allow-Headers": "Content-Type, Authorization",
+				"Access-Control-Max-Age": "86400",
+			});
+			res.end();
+			return;
+		}
 
 		res.writeHead(200, {
 			"Content-Type": "text/event-stream",
@@ -390,29 +343,23 @@ const eventServer = http.createServer((req, res) => {
 			"Access-Control-Allow-Origin": "*",
 		});
 
+		const id = Math.random().toString(36).slice(2);
 		connections.set(id, Date.now());
 		const interval = setInterval(() => {
 			if (events.length > 0) {
-				const lastEventTime = connections.get(id) as number;
-				for (const event of events) {
-					if (lastEventTime < event.timestamp) {
-						res.write(`data: ${JSON.stringify(event)}\n\n`);
-					}
-				}
+				const lastEventTime = connections.get(id) ?? 0;
+				for (const event of events)
+					if (lastEventTime < event.timestamp) res.write(`data: ${JSON.stringify(event)}\n\n`);
 			}
 		}, 100);
 
-		req.on("close", () => {
-			clearInterval(interval);
-		});
-	} else {
-		sendJSON(res, { error: "Not found" }, 404);
-	}
-});
+		req.on("close", () => clearInterval(interval));
+	},
+);
 
 // Start servers
-async function start() {
-	await initDb();
+function start() {
+	initDb();
 
 	apiServer.listen(3000, () => {
 		console.info("🚀 Main API running on http://localhost:3000");
@@ -430,4 +377,4 @@ async function start() {
 	});
 }
 
-await start();
+start();

@@ -1,12 +1,40 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
+import { useState } from 'react';
 import { useChimeraCollection } from '../../store';
+import type { Order } from '../../../../server/types';
 
 export const Route = createFileRoute('/orders/')({
 	component: OrdersList,
 });
 
+type SortOptions = `${keyof Order}:${'+' | '-'}`
+
 function OrdersList() {
-	const ordersQuery = useChimeraCollection('order', {});
+	const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending' | 'cancelled'>('all');
+	const [minAmount, setMinAmount] = useState<number>(0);
+	const [sortBy, setSortBy] = useState<SortOptions>('createdAt:-');
+
+	const ordersQuery = useChimeraCollection(
+		'order',
+		(q) => {
+			// Filter: exclude cancelled orders if statusFilter is not 'all'
+			if (statusFilter !== 'all') {
+				q.where('status', 'eq', statusFilter);
+			}
+
+			// Filter: orders with totalAmount >= minAmount
+			if (minAmount > 0) {
+				q.where('totalAmount', 'gte', minAmount);
+			}
+
+			const [orderField, orerDirection] = sortBy.split(':')
+			q.orderBy(orderField as keyof Order, orerDirection !== '+')
+
+			// Secondary sort: always sort by id as tiebreaker
+			q.orderBy('id', false); // Ascending
+		},
+		[statusFilter, minAmount, sortBy],
+	);
 
 	if (!ordersQuery.ready) {
 		return (
@@ -28,6 +56,66 @@ function OrdersList() {
 				>
 					Create New Order
 				</Link>
+			</div>
+
+			{/* Filters and Sorting Controls */}
+			<div className="bg-white rounded-lg shadow p-4 mb-6">
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+					{/* Status Filter */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Filter by Status
+						</label>
+						<div className="flex flex-wrap gap-2">
+							{(['all', 'completed', 'pending', 'cancelled'] as const).map((status) => (
+								<button
+									key={status}
+									onClick={() => setStatusFilter(status)}
+									className={`px-3 py-1 text-sm rounded ${
+										statusFilter === status
+											? 'bg-blue-500 text-white'
+											: 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+									}`}
+								>
+									{status.charAt(0).toUpperCase() + status.slice(1)}
+								</button>
+							))}
+						</div>
+					</div>
+
+					{/* Minimum Amount Filter */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Minimum Amount ($)
+						</label>
+						<input
+							type="number"
+							min="0"
+							step="0.01"
+							value={minAmount}
+							onChange={(e) => setMinAmount(Number.parseFloat(e.target.value) || 0)}
+							className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+							placeholder="0.00"
+						/>
+					</div>
+
+					{/* Sort By */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Sort By
+						</label>
+						<select
+							value={sortBy}
+							onChange={(e) => setSortBy(e.target.value as SortOptions)}
+							className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+						>
+							<option value="totalAmount:-">Total Amount (High to Low)</option>
+							<option value="totalAmount:+">Total Amount (Low to High)</option>
+							<option value="createdAt:-">Created Date (Newest First)</option>
+							<option value="createdAt:+">Created Date (Oldest First)</option>
+						</select>
+					</div>
+				</div>
 			</div>
 
 			<div className="bg-white rounded-lg shadow overflow-hidden">
@@ -55,6 +143,10 @@ function OrdersList() {
 						<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 							Actions
 						</th>
+						<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+							Created at
+						</th>
+						<th></th>
 					</tr>
 					</thead>
 					<tbody className="bg-white divide-y divide-gray-200">
@@ -92,6 +184,15 @@ function OrdersList() {
 								>
 									Edit
 								</Link>
+							</td>
+							<td>
+								{order.createdAt}
+							</td>
+							<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+								<button
+									className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+									onClick={() => ordersQuery.delete(order.id)}
+								>Delete</button>
 							</td>
 						</tr>
 					))}

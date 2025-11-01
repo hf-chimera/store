@@ -919,14 +919,6 @@ describe("ChimeraCollectionQuery", () => {
 			expect(query.at(1)?.id).toBe("test-2");
 		});
 
-		it("should handle the case where #getById is called with collection not ready in internal methods", () => {
-			mockCollectionFetcher.mockResolvedValue({ data: [] });
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
-
-			// This should throw ChimeraInternalError since it's called internally
-			expect(() => query[ChimeraSetOneSym]({ id: "test-1", name: "Test", value: 42 })).toThrow();
-		});
-
 		it("should handle id mismatch scenarios correctly in delete operations", async () => {
 			const config = { ...mockConfig, trustQuery: false };
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];

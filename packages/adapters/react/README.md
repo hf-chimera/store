@@ -1,17 +1,12 @@
 # ChimeraStore React Integration
 
-This package provides React hooks and components for seamless integration with
-ChimeraStore, enabling reactive data management in React applications.
+This package provides React hooks for seamless integration with ChimeraStore, enabling reactive data management in React applications.
 
 ## Features
 
-- **React Hooks**: Custom hooks for managing ChimeraStore queries and operations
-- **React Components**: Pre-built components for common data operations
+- **React Hooks**: Custom hooks for managing ChimeraStore queries
 - **TypeScript Support**: Full type safety with TypeScript
 - **Automatic State Management**: Automatic re-rendering when data changes
-- **Error Handling**: Built-in error handling and loading states
-- **Optional Dependency**: React integration is optional and only loaded when
-  needed
 
 ## Installation
 
@@ -32,8 +27,11 @@ Import from the React-specific entry point:
 ```tsx
 import {
 	ChimeraStoreProvider,
-	useCollectionQuery,
-	useItemQuery
+	useChimeraStore,
+	useChimeraRepository,
+	useChimeraCollection,
+	useChimeraItem,
+	getChimeraTypedHooks
 } from '@hf-chimera/store/react';
 ```
 
@@ -52,9 +50,12 @@ import { ChimeraStore } from '@hf-chimera/store';
 Wrap your app with the `ChimeraStoreProvider`:
 
 ```tsx
-import { ChimeraStoreProvider } from '@hf-chimera/store';
+import { ChimeraStoreProvider } from '@hf-chimera/store/react';
+import { ChimeraStore } from '@hf-chimera/store';
+import type { MyEntityMap } from './types';
 
-const storeConfig = {
+// Create your store instance
+const store = new ChimeraStore<MyEntityMap>({
 	query: {
 		defaults: {
 			idGetter: 'id',
@@ -71,11 +72,11 @@ const storeConfig = {
 			order: {}
 		}
 	}
-};
+});
 
 function App() {
 	return (
-		<ChimeraStoreProvider config={storeConfig}>
+		<ChimeraStoreProvider store={store}>
 			<YourApp/>
 		</ChimeraStoreProvider>
 	);
@@ -85,33 +86,26 @@ function App() {
 ### 2. Use Collection Queries
 
 ```tsx
-import { useCollectionQuery } from '@hf-chimera/store';
+import { useChimeraCollection } from '@hf-chimera/store/react';
 
 function CustomerList() {
-	const {
-		data: customers,
-		isLoading,
-		error,
-		create,
-		update,
-		delete: deleteCustomer
-	} = useCollectionQuery('customer', {
+	const customers = useChimeraCollection('customer', {
 		filter: { status: 'active' },
 		order: [{ field: 'name', direction: 'asc' }]
 	});
 
-	if (isLoading) return <div>Loading...</div>;
-	if (error) return <div>Error: {String(error)}</div>;
+	if (!customers.ready) return <div>Loading...</div>;
+	if (customers.lastError) return <div>Error: {String(customers.lastError)}</div>;
 
 	return (
 		<div>
 			{customers.map(customer => (
 				<div key={customer.id}>
 					{customer.name}
-					<button onClick={() => deleteCustomer(customer.id)}>Delete</button>
+					<button onClick={() => customers.delete(customer.id)}>Delete</button>
 				</div>
 			))}
-			<button onClick={() => create({ name: 'New Customer' })}>
+			<button onClick={() => customers.create({ name: 'New Customer' })}>
 				Add Customer
 			</button>
 		</div>
@@ -122,192 +116,260 @@ function CustomerList() {
 ### 3. Use Item Queries
 
 ```tsx
-import { useItemQuery } from '@hf-chimera/store';
+import { useChimeraItem } from '@hf-chimera/store/react';
 
 function CustomerDetail({ customerId }: { customerId: string }) {
-	const {
-		data: customer,
-		isLoading,
-		error,
-		update,
-		mutable
-	} = useItemQuery('customer', customerId);
+	const customer = useChimeraItem('customer', customerId);
 
-	if (isLoading) return <div>Loading...</div>;
-	if (error) return <div>Error: {String(error)}</div>;
-	if (!customer) return <div>Customer not found</div>;
+	if (!customer.ready) return <div>Loading...</div>;
+	if (customer.lastError) return <div>Error: {String(customer.lastError)}</div>;
+	if (!customer.data) return <div>Customer not found</div>;
 
 	const handleUpdate = () => {
-		if (mutable) {
-			mutable.name = 'Updated Name';
-			update(mutable);
-		}
+		customer.mutable.name = 'Updated Name';
+		customer.commit();
 	};
 
 	return (
 		<div>
-			<h3>{customer.name}</h3>
+			<h3>{customer.data.name}</h3>
 			<button onClick={handleUpdate}>Update Name</button>
 		</div>
 	);
 }
 ```
 
+### 4. Using with Query Builder
+
+You can use the `ChimeraQueryBuilder` with React hooks by passing a builder function instead of the query descriptor. This provides a more fluent and type-safe API:
+
+```tsx
+import { getChimeraTypedHooks } from '@hf-chimera/store/react';
+import { store, type MyChimeraStore } from './store';
+
+// Create typed hooks
+const { useChimeraCollection, useChimeraItem } = getChimeraTypedHooks<MyChimeraStore>();
+
+function ActiveUsers() {
+	// Pass a builder function - the hook will call it and build the query
+	const activeUsers = useChimeraCollection('customer', (q) => {
+		q.where('email', 'contains', '@example.com')
+		 .orderBy('createdAt', true);
+	});
+
+	if (!activeUsers.ready) {
+		return <div>Loading...</div>;
+	}
+
+	return (
+		<div>
+			{activeUsers.map(user => (
+				<div key={user.id}>{user.name}</div>
+			))}
+		</div>
+	);
+}
+```
+
+**With the Store Provider Pattern:**
+
+```tsx
+import { ChimeraStoreProvider } from '@hf-chimera/store/react';
+import { store } from './store';
+import { getChimeraTypedHooks } from '@hf-chimera/store/react';
+
+const { useChimeraCollection } = getChimeraTypedHooks<typeof store>();
+
+function App() {
+	return (
+		<ChimeraStoreProvider store={store}>
+			<ActiveOrdersList />
+		</ChimeraStoreProvider>
+	);
+}
+
+function ActiveOrdersList() {
+	const orders = useChimeraCollection('order', (q) => {
+		q.where('status', 'eq', 'completed')
+		 .where('totalAmount', 'gte', 100)
+		 .orderBy('createdAt', true)
+		 .orderBy('totalAmount', true);
+	});
+
+	if (!orders.ready) return <div>Loading orders...</div>;
+
+	return (
+		<div>
+			<h2>Active Orders</h2>
+			{orders.map(order => (
+				<div key={order.id}>
+					<p>{order.productName} - ${order.totalAmount}</p>
+				</div>
+			))}
+		</div>
+	);
+}
+```
+
+**Complex Query with Groups:**
+
+```tsx
+import { getChimeraTypedHooks } from '@hf-chimera/store/react';
+import { store } from './store';
+
+const { useChimeraCollection } = getChimeraTypedHooks<typeof store>();
+
+function FeaturedOrders() {
+	const orders = useChimeraCollection('order', (q) => {
+		q.where('status', 'eq', 'completed')
+		 // Must be either high value OR from VIP customer
+		 .group('or', (group) => {
+			 group.where('totalAmount', 'gte', 1000)
+						.where('customerId', 'in', [1, 2, 3]); // VIP customers
+		 })
+		 // But not cancelled
+		 .whereNot('status', 'eq', 'cancelled')
+		 .orderBy('totalAmount', true);
+	});
+
+	return (
+		<div>
+			{orders.map(order => (
+				<div key={order.id}>{order.productName}</div>
+			))}
+		</div>
+	);
+}
+```
+
+For more information on using the query builder, see the [ChimeraQueryBuilder documentation](../../qb/README.md).
+
 ## API Reference
 
-### Hooks
+### Provider
 
-#### `useStore<EntityMap, FilterConfig>()`
-
-Access the ChimeraStore instance directly.
-
-```tsx
-const store = useStore<EntityMap>();
-const customerRepo = store.from('customer');
-```
-
-#### `useRepository<EntityMap, EntityName, FilterConfig>(entityName)`
-
-Access a specific entity repository.
-
-```tsx
-const customerRepo = useRepository<EntityMap, 'customer'>('customer');
-```
-
-####
-
-`useCollectionQuery<EntityMap, EntityName, FilterConfig, Meta>(entityName, options)`
-
-Hook for collection queries with automatic state management.
-
-**Options:**
-
-- `filter?: ChimeraSimplifiedFilter` - Filter criteria
-- `order?: ChimeraSimplifiedOrderDescriptor[]` - Sort order
-- `meta?: Meta` - Additional metadata
-- `enabled?: boolean` - Enable/disable the query
-
-**Returns:**
-
-- `data: Item[]` - Array of items
-- `state: ChimeraQueryFetchingState` - Current query state
-- `error: unknown` - Error if any
-- `isLoading: boolean` - Loading state
-- `isError: boolean` - Error state
-- `isSuccess: boolean` - Success state
-- `isReady: boolean` - Data ready state
-- `refetch: () => Promise<void>` - Refetch function
-- `create: (item: Partial<Item>) => Promise<Item>` - Create item
-- `update: (item: Item) => Promise<Item>` - Update item
-- `delete: (id: ChimeraEntityId) => Promise<void>` - Delete item
-- `batchedCreate: (items: Partial<Item>[]) => Promise<Item[]>` - Batch create
-- `batchedUpdate: (items: Item[]) => Promise<Item[]>` - Batch update
-- `batchedDelete: (ids: ChimeraEntityId[]) => Promise<void>` - Batch delete
-
-####
-
-`useItemQuery<EntityMap, EntityName, FilterConfig, Meta>(entityName, id, options)`
-
-Hook for individual item queries with automatic state management.
-
-**Options:**
-
-- `meta?: Meta` - Additional metadata
-- `enabled?: boolean` - Enable/disable the query
-
-**Returns:**
-
-- `data: Item | null` - Item data
-- `state: ChimeraQueryFetchingState` - Current query state
-- `error: unknown` - Error if any
-- `isLoading: boolean` - Loading state
-- `isError: boolean` - Error state
-- `isSuccess: boolean` - Success state
-- `isReady: boolean` - Data ready state
-- `refetch: () => Promise<void>` - Refetch function
-- `update: (item: Item) => Promise<Item>` - Update item
-- `mutate: (mutator: (draft: Item) => Item) => Promise<Item>` - Mutate item
-- `commit: () => Promise<Item>` - Commit mutable changes
-- `delete: () => Promise<void>` - Delete item
-- `mutable: Item | null` - Mutable reference to item
-
-#### Utility Hooks
-
-- `useCreateItem<EntityMap, EntityName>(entityName)` - Create items without
-  query management
-- `useUpdateItem<EntityMap, EntityName>(entityName)` - Update items without
-  query management
-- `useDeleteItem<EntityMap, EntityName>(entityName)` - Delete items without
-  query management
-- `useGetItem<EntityMap, EntityName>(entityName)` - Get items without query
-  management
-
-### Components
-
-#### `ChimeraStoreProvider<EntityMap, FilterConfig>`
+#### `ChimeraStoreProvider<Store>`
 
 Provider component that makes the store available to child components.
 
 **Props:**
 
 - `children: ReactNode` - Child components
-- `config: ChimeraStoreConfig` - Store configuration
+- `store: Store` - ChimeraStore instance
 
-#### `CollectionQuery<EntityMap, EntityName, FilterConfig, Meta>`
+### Hooks
 
-Component for collection queries using render props pattern.
+#### `useChimeraStore<Store>()`
+
+Access the ChimeraStore instance directly.
 
 ```tsx
-<CollectionQuery entityName="customer" filter={{ status: 'active' }}>
-	{({ data, isLoading, error, create, update, delete: deleteItem }) => (
-		<div>
-			{data.map(item => (
-				<div key={item.id}>{item.name}</div>
-			))}
-		</div>
-	)}
-</CollectionQuery>
+const store = useChimeraStore<MyChimeraStore>();
+const customerRepo = store.from('customer');
 ```
 
-#### `ItemQuery<EntityMap, EntityName, FilterConfig, Meta>`
+#### `useChimeraRepository<Store, EntityName>(entityName)`
 
-Component for individual item queries using render props pattern.
+Access a specific entity repository.
 
 ```tsx
-<ItemQuery entityName="customer" id="customer-1">
-	{({ data, isLoading, error, update, mutable }) => (
-		<div>
-			{data && <h3>{data.name}</h3>}
-		</div>
-	)}
-</ItemQuery>
+const customerRepo = useChimeraRepository<MyChimeraStore, 'customer'>('customer');
 ```
 
-#### Form Components
+#### `useChimeraCollection<Store, EntityName, Meta>(entityName, params, deps?)`
 
-- `CreateItemForm<EntityMap, EntityName>` - Form for creating new items
-- `UpdateItemForm<EntityMap, EntityName>` - Form for updating existing items
-- `DeleteItemButton<EntityMap, EntityName>` - Button for deleting items
+Hook for collection queries with automatic state management.
 
-#### `QueryState`
+**Parameters:**
 
-Utility component for handling query states.
+- `entityName: EntityName` - Name of the entity
+- `params: ChimeraCollectionParams | QueryBuilderCreator` - Query parameters or query builder function
+- `deps?: unknown[]` - Optional dependency array for memoization
+
+**Returns:** `ChimeraCollectionQuery<Item, OperatorsMap>`
+
+**Properties:**
+
+- `state: ChimeraQueryFetchingState` - Current query state
+- `inProgress: boolean` - Whether query is in progress
+- `ready: boolean` - Whether data is ready
+- `lastError: unknown` - Last error if any
+- `length: number` - Number of items
+
+**Methods:**
+
+- `create(item: DeepPartial<Item>): Promise<...>` - Create a new item
+- `batchedCreate(items: Iterable<DeepPartial<Item>>): Promise<...>` - Create multiple items
+- `update(item: Item): Promise<...>` - Update an item
+- `batchedUpdate(items: Iterable<Item>): Promise<...>` - Update multiple items
+- `delete(id: ChimeraEntityId): Promise<...>` - Delete an item
+- `batchedDelete(ids: Iterable<ChimeraEntityId>): Promise<...>` - Delete multiple items
+- `refetch(force?: boolean): Promise<...>` - Refetch the query
+
+**Array Methods:**
+
+The collection query is iterable and supports standard array methods:
+
+- `map()`, `filter()`, `find()`, `forEach()`, `slice()`, etc.
+- `entries()`, `values()`, `keys()`
+
+#### `useChimeraItem<Store, EntityName, Meta>(entityName, id, meta?)`
+
+Hook for individual item queries with automatic state management.
+
+**Parameters:**
+
+- `entityName: EntityName` - Name of the entity
+- `id: ChimeraEntityId` - Item ID
+- `meta?: Meta` - Optional metadata
+
+**Returns:** `ChimeraItemQuery<Item>`
+
+**Properties:**
+
+- `state: ChimeraQueryFetchingState` - Current query state
+- `inProgress: boolean` - Whether query is in progress
+- `ready: boolean` - Whether data is ready
+- `lastError: unknown` - Last error if any
+- `id: ChimeraEntityId` - Item ID
+- `data: Item` - Item data (throws if not ready)
+- `mutable: Item` - Mutable reference to item (throws if not ready)
+
+**Methods:**
+
+- `refetch(force?: boolean): Promise<...>` - Refetch the item
+- `update(item: Item, force?: boolean): Promise<...>` - Update the item
+- `mutate(mutator: (draft: Item) => Item, force?: boolean): Promise<...>` - Mutate item using a function
+- `commit(force?: boolean): Promise<...>` - Commit mutable changes
+- `delete(force?: boolean): Promise<...>` - Delete the item
+
+#### `getChimeraTypedHooks<Store>(withoutPrefix?)`
+
+Returns typed hooks for a specific store type.
+
+**Parameters:**
+
+- `withoutPrefix?: boolean` - If `true`, returns hooks without the "Chimera" prefix (e.g., `useStore` instead of `useChimeraStore`)
+
+**Returns:**
+
+- `useChimeraStore` (or `useStore` if `withoutPrefix` is `true`)
+- `useChimeraRepository` (or `useRepository` if `withoutPrefix` is `true`)
+- `useChimeraCollection` (or `useCollection` if `withoutPrefix` is `true`)
+- `useChimeraItem` (or `useItem` if `withoutPrefix` is `true`)
+
+**Example:**
 
 ```tsx
-<QueryState
-	state={queryState}
-	error={error}
-	loadingComponent={<div>Loading...</div>}
-	errorComponent={<div>Error occurred</div>}
->
-	<YourContent/>
-</QueryState>
+const { useChimeraCollection, useChimeraItem } = getChimeraTypedHooks<MyChimeraStore>();
+
+// Or without prefix
+const { useCollection, useItem } = getChimeraTypedHooks<MyChimeraStore>(true);
 ```
 
 ## TypeScript Support
 
-The React integration provides full TypeScript support with proper type
-inference:
+The React integration provides full TypeScript support with proper type inference:
 
 ```tsx
 // Define your entity map
@@ -317,29 +379,26 @@ type EntityMap = {
 };
 
 // Use with full type safety
-const { data: customers } = useCollectionQuery<EntityMap, 'customer'>('customer');
-// customers is typed as Customer[]
+const customers = useChimeraCollection<typeof store, 'customer'>('customer');
+// customers is typed as ChimeraCollectionQuery<Customer, ...>
 
-const { data: customer } = useItemQuery<EntityMap, 'customer'>('customer', 'id');
-// customer is typed as Customer | null
+const customer = useChimeraItem<typeof store, 'customer'>('customer', 'id');
+// customer is typed as ChimeraItemQuery<Customer>
 ```
 
 ## Tips
 
 1. **Use the Provider**: Always wrap your app with `ChimeraStoreProvider`
-2. **Type Safety**: Define your entity map type for full type safety
-3. **Error Handling**: Always handle loading and error states
-4. **Optimistic Updates**: Use the mutable references for optimistic updates
+2. **Type Safety**: Use `getChimeraTypedHooks` for full type safety
+3. **Error Handling**: Always check `ready` and `lastError` properties
+4. **Optimistic Updates**: Use the `mutable` property for optimistic updates on item queries
 5. **Batch Operations**: Use batch operations for multiple items when possible
+6. **Query Builder**: Use the query builder function syntax for better type safety and readability
 
 ## Migration from Vanilla ChimeraStore
 
-If you're already using ChimeraStore without React, you can gradually migrate
-by:
+If you're already using ChimeraStore without React, you can gradually migrate by:
 
-1. Adding the `ChimeraStoreProvider` to your app
+1. Adding the `ChimeraStoreProvider` to your app (pass your existing store instance)
 2. Replacing direct store usage with hooks
-3. Using the provided components for common operations
-
-The React integration is fully compatible with existing ChimeraStore
-configurations.
+3. The React integration is fully compatible with existing ChimeraStore instances

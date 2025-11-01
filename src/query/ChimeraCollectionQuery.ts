@@ -269,24 +269,26 @@ export class ChimeraCollectionQuery<Item extends object, OperatorsMap extends Ch
 	}
 
 	[ChimeraSetOneSym](item: Item) {
-		this.#setOne(item);
+		this.#items && this.#setOne(item);
 	}
 
 	[ChimeraDeleteOneSym](id: ChimeraEntityId) {
-		this.#deleteById(id);
+		this.#items && this.#deleteById(id);
 	}
 
 	[ChimeraSetManySym](items: Iterable<Item>) {
-		for (const item of items) this.#setOne(item);
+		if (this.#items) for (const item of items) this.#setOne(item);
 	}
 
 	[ChimeraDeleteManySym](ids: Iterable<ChimeraEntityId>) {
-		for (const id of ids) this.#deleteById(id);
+		if (this.#items) for (const id of ids) this.#deleteById(id);
 	}
 
 	[ChimeraUpdateMixedSym](toAdd: Iterable<Item>, toDelete: Iterable<ChimeraEntityId>) {
-		for (const id of toDelete) this.#deleteById(id);
-		for (const item of toAdd) this.#setOne(item);
+		if (this.#items) {
+			for (const id of toDelete) this.#deleteById(id);
+			for (const item of toAdd) this.#setOne(item);
+		}
 	}
 
 	get state(): ChimeraQueryFetchingState {

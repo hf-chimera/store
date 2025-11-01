@@ -151,7 +151,9 @@ export function getChimeraTypedHooks<T extends AnyChimeraStore>(
 	) => ChimeraEntityRepository<ChimeraStoreEntityType<T, EntityName>, ChimeraStoreOperatorMap<T>>;
 	useChimeraCollection: <EntityName extends ChimeraStoreEntities<T>, Meta = any>(
 		entityName: EntityName,
-		params: ChimeraCollectionParams<ChimeraStoreOperatorMap<T>, ChimeraStoreEntityType<T, EntityName>, Meta>,
+		params:
+			| ChimeraCollectionParams<ChimeraStoreOperatorMap<T>, ChimeraStoreEntityType<T, EntityName>, Meta>
+			| QueryBuilderCreator<T, ChimeraStoreEntityType<T, EntityName>, ChimeraStoreOperatorMap<T>>,
 		deps?: unknown[],
 	) => ChimeraCollectionQuery<ChimeraStoreEntityType<T, EntityName>, ChimeraStoreOperatorMap<T>>;
 	useChimeraItem: <EntityName extends ChimeraStoreEntities<T>, Meta = any>(

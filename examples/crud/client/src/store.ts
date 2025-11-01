@@ -36,6 +36,8 @@ export const store = new ChimeraStore<{
 	},
 });
 
+window.store = store;
+
 subscribeToEvents((event: Event) => {
 	if (event.operation === "delete") {
 		store.deleteOne(

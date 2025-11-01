@@ -54,7 +54,7 @@ export const buildComparator = <Entity>(
 			}
 			result = comparator(descriptor.get(a), descriptor.get(b));
 			descriptor.desc && (result *= -1);
-			if (!result) break;
+			if (result) break;
 		}
 		return result;
 	};
