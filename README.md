@@ -269,10 +269,16 @@ const store = new ChimeraStore<EntityMap>(config)
 #### Methods
 
 - `from<EntityName>(entityName: EntityName)`: Get repository for specific entity
-- `updateOne<EntityName>(entityName: EntityName, item: EntityMap[EntityName])`: Update single item
-- `updateMany<EntityName>(entityName: EntityName, items: Iterable<EntityMap[EntityName]>)`: Update multiple items
-- `deleteOne<EntityName>(entityName: EntityName, id: ChimeraEntityId)`: Delete single item
-- `deleteMany<EntityName>(entityName: EntityName, ids: Iterable<ChimeraEntityId>)`: Delete multiple items
+- `updateOne<EntityName>(entityName: EntityName, item: EntityMap[EntityName])`:
+  Update single item
+-
+`updateMany<EntityName>(entityName: EntityName, items: Iterable<EntityMap[EntityName]>)`:
+Update multiple items
+- `deleteOne<EntityName>(entityName: EntityName, id: ChimeraEntityId)`: Delete
+  single item
+-
+`deleteMany<EntityName>(entityName: EntityName, ids: Iterable<ChimeraEntityId>)`:
+Delete multiple items
 
 ### ChimeraEntityRepository
 
@@ -282,7 +288,8 @@ Entity-specific repository with query capabilities.
 
 - `createItem(item: DeepPartial<Item>, meta?: any)`: Create new item
 - `getItem(id: ChimeraEntityId, meta?: any)`: Get single item
-- `getCollection(params: ChimeraCollectionParams)`: Get filtered/sorted collection
+- `getCollection(params: ChimeraCollectionParams)`: Get filtered/sorted
+  collection
 
 ### ChimeraItemQuery
 
@@ -300,7 +307,8 @@ Represents a single item query with full CRUD operations.
 
 - `refetch(force?: boolean)`: Refetch data
 - `update(item: Item, force?: boolean)`: Update item
-- `mutate(mutator: (draft: Item) => Item, force?: boolean)`: Update using mutator function
+- `mutate(mutator: (draft: Item) => Item, force?: boolean)`: Update using
+  mutator function
 - `commit(force?: boolean)`: Commit mutable changes
 - `delete(force?: boolean)`: Delete item
 
