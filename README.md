@@ -65,66 +65,89 @@ const store = new ChimeraStore<EntityMap>({
 	query: {
 		defaults: {
 			trustQuery: true,
-			updateDebounceTimeout: 0,
 			// idGetter can be a string (object key) or a function
 			// String: Uses the specified property as the ID (e.g., 'id', 'uuid', 'key')
 			// Function: Custom ID extraction logic (entityName, value) => string | number
 			idGetter: 'id',
-			collectionFetcher: async (entityName, params, requestParams) => {
-				// Implement your data fetching logic
-				const response = await fetch(`/api/${entityName}`, {
-					signal: requestParams.signal,
-					// Add your request logic here
-				});
-				return {data: await response.json()};
-			},
-			itemFetcher: async (entityName, params, requestParams) => {
-				const response = await fetch(`/api/${entityName}/${params.id}`, {
-					signal: requestParams.signal,
-				});
-				return {data: await response.json()};
-			},
-			itemUpdater: async (entityName, item, requestParams) => {
-				const response = await fetch(`/api/${entityName}/${item.id}`, {
-					method: 'PUT',
-					body: JSON.stringify(item),
-					signal: requestParams.signal,
-				});
-				return {data: await response.json()};
-			},
-			itemDeleter: async (entityName, id, requestParams) => {
-				await fetch(`/api/${entityName}/${id}`, {
-					method: 'DELETE',
-					signal: requestParams.signal,
-				});
-				return {result: {id, success: true}};
-			},
-			itemCreator: async (entityName, item, requestParams) => {
-				const response = await fetch(`/api/${entityName}`, {
-					method: 'POST',
-					body: JSON.stringify(item),
-					signal: requestParams.signal,
-				});
-				return {data: await response.json()};
-			},
 		},
 		entities: {
 			// Define configuration for each entity in your EntityMap
-			// At minimum, provide empty objects to register entities with the store
-			// You can override defaults or add entity-specific configuration here
+			// Each entity must have its own fetchers, updaters, deleters, and creators
 			users: {
-				// Entity-specific configuration (optional)
-				// Overrides defaults for this entity
+				collectionFetcher: async (params, requestParams) => {
+					const response = await fetch(`/api/users`, {
+						signal: requestParams.signal,
+					});
+					return { data: await response.json() };
+				},
+				itemFetcher: async (params, requestParams) => {
+					const response = await fetch(`/api/users/${params.id}`, {
+						signal: requestParams.signal,
+					});
+					return { data: await response.json() };
+				},
+				itemUpdater: async (item, requestParams) => {
+					const response = await fetch(`/api/users/${item.id}`, {
+						method: 'PUT',
+						body: JSON.stringify(item),
+						signal: requestParams.signal,
+					});
+					return { data: await response.json() };
+				},
+				itemDeleter: async (id, requestParams) => {
+					await fetch(`/api/users/${id}`, {
+						method: 'DELETE',
+						signal: requestParams.signal,
+					});
+					return { result: { id, success: true } };
+				},
+				itemCreator: async (item, requestParams) => {
+					const response = await fetch(`/api/users`, {
+						method: 'POST',
+						body: JSON.stringify(item),
+						signal: requestParams.signal,
+					});
+					return { data: await response.json() };
+				},
 			},
 			posts: {
-				// Entity-specific configuration (optional)
-				// Overrides defaults for this entity
+				collectionFetcher: async (params, requestParams) => {
+					const response = await fetch(`/api/posts`, {
+						signal: requestParams.signal,
+					});
+					return { data: await response.json() };
+				},
+				itemFetcher: async (params, requestParams) => {
+					const response = await fetch(`/api/posts/${params.id}`, {
+						signal: requestParams.signal,
+					});
+					return { data: await response.json() };
+				},
+				itemUpdater: async (item, requestParams) => {
+					const response = await fetch(`/api/posts/${item.id}`, {
+						method: 'PUT',
+						body: JSON.stringify(item),
+						signal: requestParams.signal,
+					});
+					return { data: await response.json() };
+				},
+				itemDeleter: async (id, requestParams) => {
+					await fetch(`/api/posts/${id}`, {
+						method: 'DELETE',
+						signal: requestParams.signal,
+					});
+					return { result: { id, success: true } };
+				},
+				itemCreator: async (item, requestParams) => {
+					const response = await fetch(`/api/posts`, {
+						method: 'POST',
+						body: JSON.stringify(item),
+						signal: requestParams.signal,
+					});
+					return { data: await response.json() };
+				},
 			},
 		},
-	},
-	debug: {
-		devMode: true,
-		logs: true,
 	},
 });
 ```
@@ -215,7 +238,7 @@ Chimera Store provides a powerful filtering system with support for:
 
 - **Operators**: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `contains`,
   `startsWith`, `endsWith`, `in`, `notIn`
-- **Conjunctions**: `and`, `or` for complex filter combinations
+- **Conjunctions**: `and`, `or`, `not`
 - **Custom Operators**: Extensible operator system for custom logic
 - **Utility Functions**: Use `chimeraCreateOperator` and
   `chimeraCreateConjunction` to build filters
@@ -240,28 +263,16 @@ operations.
 #### Constructor
 
 ```typescript
-new ChimeraStore<EntityMap, FilterConfig, Config>(config
-:
-Config
-)
+const store = new ChimeraStore<EntityMap>(config)
 ```
 
 #### Methods
 
 - `from<EntityName>(entityName: EntityName)`: Get repository for specific entity
-- `updateOne<EntityName>(entityName: EntityName, item: EntityMap[EntityName])`:
-  Update single item
--
-
-`updateMany<EntityName>(entityName: EntityName, items: Iterable<EntityMap[EntityName]>)`:
-Update multiple items
-
-- `deleteOne<EntityName>(entityName: EntityName, id: ChimeraEntityId)`: Delete
-  single item
--
-
-`deleteMany<EntityName>(entityName: EntityName, ids: Iterable<ChimeraEntityId>)`:
-Delete multiple items
+- `updateOne<EntityName>(entityName: EntityName, item: EntityMap[EntityName])`: Update single item
+- `updateMany<EntityName>(entityName: EntityName, items: Iterable<EntityMap[EntityName]>)`: Update multiple items
+- `deleteOne<EntityName>(entityName: EntityName, id: ChimeraEntityId)`: Delete single item
+- `deleteMany<EntityName>(entityName: EntityName, ids: Iterable<ChimeraEntityId>)`: Delete multiple items
 
 ### ChimeraEntityRepository
 
@@ -271,8 +282,7 @@ Entity-specific repository with query capabilities.
 
 - `createItem(item: DeepPartial<Item>, meta?: any)`: Create new item
 - `getItem(id: ChimeraEntityId, meta?: any)`: Get single item
-- `getCollection(params: ChimeraCollectionParams)`: Get filtered/sorted
-  collection
+- `getCollection(params: ChimeraCollectionParams)`: Get filtered/sorted collection
 
 ### ChimeraItemQuery
 
@@ -290,8 +300,7 @@ Represents a single item query with full CRUD operations.
 
 - `refetch(force?: boolean)`: Refetch data
 - `update(item: Item, force?: boolean)`: Update item
-- `mutate(mutator: (draft: Item) => Item, force?: boolean)`: Update using
-  mutator function
+- `mutate(mutator: (draft: Item) => Item, force?: boolean)`: Update using mutator function
 - `commit(force?: boolean)`: Commit mutable changes
 - `delete(force?: boolean)`: Delete item
 
@@ -367,7 +376,7 @@ const customFilterConfig = {
 	},
 };
 
-const store = new ChimeraStore({
+const store = new ChimeraStore<EntityMap, typeof customFilterConfig.operators>({
 	filter: customFilterConfig,
 	// ... other config
 });
@@ -442,7 +451,7 @@ const customOrderConfig = {
 	primitiveComparator: (a: unknown, b: unknown, nulls: ChimeraOrderNulls) => {
 		// Custom comparison logic
 		if (typeof a === 'string' && typeof b === 'string') {
-			return a.localeCompare(b, undefined, {numeric: true});
+			return a.localeCompare(b, undefined, { numeric: true });
 		}
 		return chimeraDefaultOrderConfig.primitiveComparator(a, b, nulls);
 	},
@@ -494,100 +503,63 @@ try {
 ### Query Configuration
 
 ```typescript
-{
+type ConfigExample = {
 	query: {
 		defaults: {
-			trustQuery: boolean,           // Trust external data providers
-				updateDebounceTimeout
-		:
-			number, // Debounce update operations
-				idGetter
-		:
-			Function,            // Default ID getter
-				collectionFetcher
-		:
-			Function,   // Default collection fetcher
-				itemFetcher
-		:
-			Function,         // Default item fetcher
-				itemUpdater
-		:
-			Function,         // Default item updater
-				itemDeleter
-		:
-			Function,         // Default item deleter
-				itemCreator
-		:
-			Function,         // Default item creator
+			trustQuery: boolean; // Trust external data providers
+			idGetter: ((entityName: string, value: unknown) => string | number) | string; // Default ID getter
+			collectionFetcher?: (params: any, request: {
+				signal?: AbortSignal
+			}) => Promise<{ data: any[] }>;
+			itemFetcher?: (params: any, request: {
+				signal?: AbortSignal
+			}) => Promise<{ data: any }>;
+			itemUpdater?: (item: any, request: { signal?: AbortSignal }) => Promise<{
+				data: any
+			}>;
+			itemDeleter?: (id: string | number, request: {
+				signal?: AbortSignal
+			}) => Promise<{ result?: any }>;
+			itemCreator?: (item: any, request: { signal?: AbortSignal }) => Promise<{
+				data: any
+			}>;
 			// ... batched operations
-		}
-	,
+		};
 		entities: {
-			[entityName]
-		:
-			{
+			[entityName: string]: {
 				// Entity-specific overrides
-			}
-		}
-	}
-}
+			};
+		};
+	};
+};
 ```
 
 ### Filter Configuration
 
 ```typescript
-{
+type FilterConfigExample = {
 	filter: {
-		conjunctions: {
-			and: Function,
-				or
-		:
-			Function,
-		}
-	,
 		operators: {
-			eq: Function,
-				neq
-		:
-			Function,
-				gt
-		:
-			Function,
+			eq: <T>(a: T, b: T) => boolean;
+			neq: <T>(a: T, b: T) => boolean;
+			gt?: (a: number, b: number) => boolean;
 			// ... custom operators
-		}
-	,
-		getKey: Function, // Cache key generator
-	}
-}
+		};
+		getFilterKey?: (input: unknown) => string; // Cache key generator for filters
+		getOperatorKey?: (input: unknown) => string; // Cache key generator for operators
+	};
+};
 ```
 
 ### Order Configuration
 
 ```typescript
-{
+type OrderConfigExample = {
 	order: {
-		primitiveComparator: Function, // Custom comparator
-			getKey
-	:
-		Function,              // Cache key generator
-	}
-}
-```
-
-### Debug Configuration
-
-```typescript
-{
-	debug: {
-		name: string,      // Debug name
-			devMode
-	:
-		boolean,  // Development mode
-			logs
-	:
-		boolean,     // Enable logging
-	}
-}
+		primitiveComparator: (a: unknown, b: unknown, nulls: ChimeraOrderNulls) => number; // Custom comparator
+		getKey: (input: unknown) => string; // Cache key generator
+	};
+};
 ```
 
 ## Performance Considerations
@@ -607,7 +579,6 @@ try {
 ### Update Optimization
 
 - Batch operations for multiple updates
-- Debounced updates to reduce API calls
 - Optimistic updates for better UX
 
 ## Browser Support
@@ -626,11 +597,11 @@ try {
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) file for details.
 
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/hf-chimera/store/issues)
 - **Documentation**: [GitHub Wiki](https://github.com/hf-chimera/store/wiki)
 - **Discussions
-  **: [GitHub Discussions](https://github.com/hf-chimera/store/discussions) 
+  **: [GitHub Discussions](https://github.com/hf-chimera/store/discussions)
