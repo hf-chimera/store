@@ -1,5 +1,11 @@
 # @hf-chimera/store
 
+## 0.0.15
+
+### Patch Changes
+
+- Fix readme
+
 ## 0.0.14
 
 ### Patch Changes
