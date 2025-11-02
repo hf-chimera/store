@@ -7,11 +7,12 @@ export {
 	chimeraCreateConjunction,
 	chimeraCreateNot,
 	chimeraCreateOperator,
-	isFilterSubset,
+	chimeraIsConjunction,
+	chimeraIsOperator,
 } from "./filter.ts";
 export type {
 	ChimeraConjunctionDescriptor,
-	ChimeraConjunctionOperation,
+	ChimeraConjunctionOperationDescriptor,
 	ChimeraConjunctionType,
 	ChimeraFilterChecker,
 	ChimeraFilterConfig,
@@ -21,6 +22,7 @@ export type {
 	ChimeraKeyFromOperatorGetter,
 	ChimeraOperatorFunction,
 	ChimeraOperatorMap,
+	ChimeraSimplifiedConjunctionOperation,
 	ChimeraSimplifiedFilter,
 	ChimeraSimplifiedOperator,
 } from "./types.ts";

@@ -5,7 +5,7 @@ import { ChimeraConjunctionSymbol, ChimeraOperatorSymbol } from "./constants.ts"
 import { ChimeraFilterOperatorNotFoundError } from "./errors.ts";
 import type {
 	ChimeraConjunctionDescriptor,
-	ChimeraConjunctionOperation,
+	ChimeraConjunctionOperationDescriptor,
 	ChimeraConjunctionType,
 	ChimeraFilterChecker,
 	ChimeraFilterConfig,
@@ -13,6 +13,7 @@ import type {
 	ChimeraFilterOperatorDescriptor,
 	ChimeraKeyFromOperatorGetter,
 	ChimeraOperatorMap,
+	ChimeraSimplifiedConjunctionOperation,
 	ChimeraSimplifiedFilter,
 	ChimeraSimplifiedOperator,
 	ConjunctionMap,
@@ -163,7 +164,7 @@ export const chimeraCreateConjunction = <
 	Conj extends Exclude<ChimeraConjunctionType, "not"> = Exclude<ChimeraConjunctionType, "not">,
 >(
 	kind: Conj,
-	operations: ChimeraConjunctionOperation<OperatorsMap, Entity>[],
+	operations: ChimeraConjunctionOperationDescriptor<OperatorsMap, Entity>[],
 ): ChimeraConjunctionDescriptor<OperatorsMap, Entity, Conj> => ({
 	kind,
 	operations,
@@ -171,12 +172,40 @@ export const chimeraCreateConjunction = <
 });
 
 export const chimeraCreateNot = <Entity, OperatorsMap extends ChimeraOperatorMap>(
-	operation: ChimeraConjunctionOperation<OperatorsMap, Entity>,
+	operation: ChimeraConjunctionOperationDescriptor<OperatorsMap, Entity>,
 ): ChimeraConjunctionDescriptor<OperatorsMap, Entity, "not"> => ({
 	kind: "not",
 	operations: [operation],
 	type: ChimeraConjunctionSymbol,
 });
+
+export function chimeraIsConjunction(
+	item: ChimeraConjunctionOperationDescriptor<ChimeraOperatorMap, any>,
+): item is ChimeraConjunctionDescriptor<ChimeraOperatorMap, any>;
+export function chimeraIsConjunction(
+	item: ChimeraSimplifiedConjunctionOperation<ChimeraOperatorMap>,
+): item is SimplifiedConjunction<ChimeraOperatorMap>;
+export function chimeraIsConjunction(
+	item:
+		| ChimeraConjunctionOperationDescriptor<ChimeraOperatorMap, any>
+		| ChimeraSimplifiedConjunctionOperation<ChimeraOperatorMap>,
+): item is ChimeraConjunctionDescriptor<ChimeraOperatorMap, any> | SimplifiedConjunction<ChimeraOperatorMap> {
+	return item.type === ChimeraConjunctionSymbol;
+}
+
+export function chimeraIsOperator(
+	item: ChimeraConjunctionOperationDescriptor<ChimeraOperatorMap, any>,
+): item is ChimeraFilterOperatorDescriptor<ChimeraOperatorMap, any>;
+export function chimeraIsOperator(
+	item: ChimeraSimplifiedConjunctionOperation<ChimeraOperatorMap>,
+): item is ChimeraSimplifiedOperator<ChimeraOperatorMap>;
+export function chimeraIsOperator(
+	item:
+		| ChimeraConjunctionOperationDescriptor<ChimeraOperatorMap, any>
+		| ChimeraSimplifiedConjunctionOperation<ChimeraOperatorMap>,
+): item is ChimeraFilterOperatorDescriptor<ChimeraOperatorMap, any> | ChimeraSimplifiedOperator<ChimeraOperatorMap> {
+	return item.type === ChimeraOperatorSymbol;
+}
 
 export const compileFilter = <Entity, OperatorsMap extends ChimeraOperatorMap>(
 	config: ChimeraFilterConfig<OperatorsMap>,

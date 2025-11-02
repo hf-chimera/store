@@ -1,7 +1,7 @@
 import type {
 	AnyChimeraStore,
 	ChimeraConjunctionDescriptor,
-	ChimeraConjunctionOperation,
+	ChimeraConjunctionOperationDescriptor,
 	ChimeraConjunctionType,
 	ChimeraFilterDescriptor,
 	ChimeraOrderDescriptor,
@@ -40,7 +40,7 @@ export class ChimeraQueryBuilder<
 		return this;
 	}
 
-	private filters: ChimeraConjunctionOperation<OperatorsMap, Entity>[] = [];
+	private filters: ChimeraConjunctionOperationDescriptor<OperatorsMap, Entity>[] = [];
 	private rootConjunction: Exclude<ChimeraConjunctionType, "not"> = "and";
 
 	private conjunction(type: Exclude<ChimeraConjunctionType, "not">) {

@@ -26,7 +26,7 @@ export type ChimeraFilterOperatorDescriptor<
 	};
 }[Op];
 
-export type ChimeraConjunctionOperation<OperatorsMap extends ChimeraOperatorMap, Entity> =
+export type ChimeraConjunctionOperationDescriptor<OperatorsMap extends ChimeraOperatorMap, Entity> =
 	| ChimeraFilterOperatorDescriptor<OperatorsMap, Entity>
 	| ChimeraConjunctionDescriptor<OperatorsMap, Entity>;
 export type ChimeraConjunctionDescriptor<
@@ -37,7 +37,7 @@ export type ChimeraConjunctionDescriptor<
 	[K in Conj]: {
 		type: typeof ChimeraConjunctionSymbol;
 		kind: K;
-		operations: ChimeraConjunctionOperation<OperatorsMap, Entity>[];
+		operations: ChimeraConjunctionOperationDescriptor<OperatorsMap, Entity>[];
 	};
 }[Conj];
 
@@ -59,6 +59,10 @@ export type ChimeraSimplifiedOperator<
 	};
 }[Op];
 
+export type ChimeraSimplifiedConjunctionOperation<
+	OperatorsMap extends ChimeraOperatorMap,
+	Keys extends string = string,
+> = ChimeraSimplifiedOperator<OperatorsMap, Keys> | SimplifiedConjunction<OperatorsMap, Keys>;
 export type SimplifiedConjunction<
 	OperatorsMap extends ChimeraOperatorMap,
 	Keys extends string = string,
@@ -67,7 +71,7 @@ export type SimplifiedConjunction<
 	[K in Conj]: {
 		type: typeof ChimeraConjunctionSymbol;
 		kind: K;
-		operations: (ChimeraSimplifiedOperator<OperatorsMap, Keys> | SimplifiedConjunction<OperatorsMap, Keys>)[];
+		operations: ChimeraSimplifiedConjunctionOperation<OperatorsMap, Keys>[];
 	};
 }[Conj];
 

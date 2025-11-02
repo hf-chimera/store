@@ -6,6 +6,8 @@ import {
 	chimeraCreateConjunction,
 	chimeraCreateNot,
 	chimeraCreateOperator,
+	chimeraIsConjunction,
+	chimeraIsOperator,
 	compileConjunction,
 	compileFilter,
 	isFilterSubset,
@@ -302,6 +304,83 @@ describe("Filter", () => {
 				operations: [orConj],
 				type: expect.any(Symbol),
 			});
+		});
+	});
+
+	describe("chimeraIsConjunction", () => {
+		it("should return true for conjunction descriptors", () => {
+			const conjDesc = chimeraCreateConjunction<TestEntity, TestConfig>("and", [
+				chimeraCreateOperator<TestEntity, TestConfig, "eq">("eq", "a", 1),
+			]);
+			expect(chimeraIsConjunction(conjDesc)).toBe(true);
+		});
+
+		it("should return true for 'or' conjunction descriptors", () => {
+			const orDesc = chimeraCreateConjunction<TestEntity, TestConfig>("or", [
+				chimeraCreateOperator<TestEntity, TestConfig, "eq">("eq", "a", 1),
+			]);
+			expect(chimeraIsConjunction(orDesc)).toBe(true);
+		});
+
+		it("should return true for 'not' conjunction descriptors", () => {
+			const notDesc = chimeraCreateNot<TestEntity, TestConfig>(
+				chimeraCreateOperator<TestEntity, TestConfig, "eq">("eq", "a", 1),
+			);
+			expect(chimeraIsConjunction(notDesc)).toBe(true);
+		});
+
+		it("should return false for operator descriptors", () => {
+			const opDesc = chimeraCreateOperator<TestEntity, TestConfig, "eq">("eq", "a", 1);
+			expect(chimeraIsConjunction(opDesc)).toBe(false);
+		});
+
+		it("should return true for simplified conjunctions", () => {
+			const conjDesc = chimeraCreateConjunction<TestEntity, TestConfig>("and", [
+				chimeraCreateOperator<TestEntity, TestConfig, "eq">("eq", "a", 1),
+			]);
+			const simplified = simplifyConjunction(conjDesc);
+			expect(chimeraIsConjunction(simplified)).toBe(true);
+		});
+
+		it("should return false for simplified operators", () => {
+			const opDesc = chimeraCreateOperator<TestEntity, TestConfig, "eq">("eq", "a", 1);
+			const simplified = simplifyOperator(opDesc);
+			expect(chimeraIsConjunction(simplified)).toBe(false);
+		});
+	});
+
+	describe("chimeraIsOperator", () => {
+		it("should return true for operator descriptors", () => {
+			const opDesc = chimeraCreateOperator<TestEntity, TestConfig, "eq">("eq", "a", 1);
+			expect(chimeraIsOperator(opDesc)).toBe(true);
+		});
+
+		it("should return false for conjunction descriptors", () => {
+			const conjDesc = chimeraCreateConjunction<TestEntity, TestConfig>("and", [
+				chimeraCreateOperator<TestEntity, TestConfig, "eq">("eq", "a", 1),
+			]);
+			expect(chimeraIsOperator(conjDesc)).toBe(false);
+		});
+
+		it("should return false for 'not' conjunction descriptors", () => {
+			const notDesc = chimeraCreateNot<TestEntity, TestConfig>(
+				chimeraCreateOperator<TestEntity, TestConfig, "eq">("eq", "a", 1),
+			);
+			expect(chimeraIsOperator(notDesc)).toBe(false);
+		});
+
+		it("should return true for simplified operators", () => {
+			const opDesc = chimeraCreateOperator<TestEntity, TestConfig, "eq">("eq", "a", 1);
+			const simplified = simplifyOperator(opDesc);
+			expect(chimeraIsOperator(simplified)).toBe(true);
+		});
+
+		it("should return false for simplified conjunctions", () => {
+			const conjDesc = chimeraCreateConjunction<TestEntity, TestConfig>("and", [
+				chimeraCreateOperator<TestEntity, TestConfig, "eq">("eq", "a", 1),
+			]);
+			const simplified = simplifyConjunction(conjDesc);
+			expect(chimeraIsOperator(simplified)).toBe(false);
 		});
 	});
 
