@@ -7,19 +7,14 @@ ordering, and real-time updates.
 
 ## Features
 
-- **🔄 Cross-Platform Reactivity**: Works seamlessly across web, mobile, and
-  desktop platforms
-- **💾 Intelligent Cache Management**: Automatic deduplication and
-  memory-efficient caching
-- **🔍 Advanced Querying**: Built-in filtering, and sorting support (Pagination
-  in development)
-- **⚡ Real-Time Updates**: Event-driven architecture with automatic cache
-  invalidation
+- **🔄 Cross-Platform Reactivity**: Works seamlessly across web, mobile, and desktop platforms
+- **💾 Intelligent Cache Management**: Automatic deduplication and memory-efficient caching
+- **🔍 Advanced Querying**: Built-in filtering, and sorting support (Pagination in development)
+- **⚡ Real-Time Updates**: Event-driven architecture with automatic cache invalidation
 - **🎯 Type Safety**: Full TypeScript support with comprehensive type definitions
 - **🛡️ Error Handling**: Robust error handling with detailed error messages
 - **📦 Modular Architecture**: Composable components for flexible integration
-- **🌐 Universal Compatibility**: Works with any data source (REST APIs, GraphQL,
-  WebSockets, etc.)
+- **🌐 Universal Compatibility**: Works with any data source (REST APIs, GraphQL, WebSockets, etc.)
 
 ## Installation
 
@@ -236,12 +231,10 @@ Chimera Store is built around several key concepts:
 
 Chimera Store provides a powerful filtering system with support for:
 
-- **Operators**: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `contains`,
-  `startsWith`, `endsWith`, `in`, `notIn`
+- **Operators**: `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `contains`, `startsWith`, `endsWith`, `in`, `notIn`
 - **Conjunctions**: `and`, `or`, `not`
 - **Custom Operators**: Extensible operator system for custom logic
-- **Utility Functions**: Use `chimeraCreateOperator` and
-  `chimeraCreateConjunction` to build filters
+- **Utility Functions**: Use `chimeraCreateOperator` and `chimeraCreateConjunction` to build filters
 
 ### Ordering System
 
@@ -249,8 +242,7 @@ Flexible ordering with support for:
 
 - **Multiple Fields**: Sort by multiple properties
 - **Direction**: Ascending/descending order
-- **Null Handling**: Configurable null value positioning using
-  `ChimeraOrderNulls.First` or `ChimeraOrderNulls.Last`
+- **Null Handling**: Configurable null value positioning using `ChimeraOrderNulls.First` or `ChimeraOrderNulls.Last`
 - **Utility Functions**: Use `chimeraCreateOrderBy` to build order descriptors
 
 ## API Reference
@@ -269,16 +261,10 @@ const store = new ChimeraStore<EntityMap>(config)
 #### Methods
 
 - `from<EntityName>(entityName: EntityName)`: Get repository for specific entity
-- `updateOne<EntityName>(entityName: EntityName, item: EntityMap[EntityName])`:
-  Update single item
--
-`updateMany<EntityName>(entityName: EntityName, items: Iterable<EntityMap[EntityName]>)`:
-Update multiple items
-- `deleteOne<EntityName>(entityName: EntityName, id: ChimeraEntityId)`: Delete
-  single item
--
-`deleteMany<EntityName>(entityName: EntityName, ids: Iterable<ChimeraEntityId>)`:
-Delete multiple items
+- `updateOne<EntityName>(entityName: EntityName, item: EntityMap[EntityName])`: Update single item
+- `updateMany<EntityName>(entityName: EntityName, items: Iterable<EntityMap[EntityName]>)`: Update multiple items
+- `deleteOne<EntityName>(entityName: EntityName, id: ChimeraEntityId)`: Delete single item
+- `deleteMany<EntityName>(entityName: EntityName, ids: Iterable<ChimeraEntityId>)`: Delete multiple items
 
 ### ChimeraEntityRepository
 
@@ -288,8 +274,7 @@ Entity-specific repository with query capabilities.
 
 - `createItem(item: DeepPartial<Item>, meta?: any)`: Create new item
 - `getItem(id: ChimeraEntityId, meta?: any)`: Get single item
-- `getCollection(params: ChimeraCollectionParams)`: Get filtered/sorted
-  collection
+- `getCollection(params: ChimeraCollectionParams)`: Get filtered/sorted collection
 
 ### ChimeraItemQuery
 
@@ -307,8 +292,7 @@ Represents a single item query with full CRUD operations.
 
 - `refetch(force?: boolean)`: Refetch data
 - `update(item: Item, force?: boolean)`: Update item
-- `mutate(mutator: (draft: Item) => Item, force?: boolean)`: Update using
-  mutator function
+- `mutate(mutator: (draft: Item) => Item, force?: boolean)`: Update using mutator function
 - `commit(force?: boolean)`: Commit mutable changes
 - `delete(force?: boolean)`: Delete item
 
@@ -580,7 +564,7 @@ type OrderConfigExample = {
 
 ### Caching Strategy
 
-- Collection queries are cached by filter/order combination
+- Collection queries are cached by a filter/order combination
 - Item queries are cached by ID
 - Cache keys are generated automatically for optimal performance
 
@@ -611,5 +595,4 @@ MIT License — see [LICENSE](LICENSE) file for details.
 
 - **Issues**: [GitHub Issues](https://github.com/hf-chimera/store/issues)
 - **Documentation**: [GitHub Wiki](https://github.com/hf-chimera/store/wiki)
-- **Discussions
-  **: [GitHub Discussions](https://github.com/hf-chimera/store/discussions)
+- **Discussions**: [GitHub Discussions](https://github.com/hf-chimera/store/discussions) 
