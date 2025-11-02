@@ -5,6 +5,7 @@ export default defineConfig({
 	dts: true,
 	entry: {
 		index: "./src/index.ts",
+		defaults: "./src/defaults.ts",
 		qb: "./packages/qb/index.ts",
 		"adapters/react": "./packages/adapters/react/index.ts",
 	},

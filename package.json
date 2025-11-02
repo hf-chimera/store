@@ -27,6 +27,11 @@
 			"require": "./dist/index.cjs",
 			"import": "./dist/index.js"
 		},
+		"./defaults": {
+			"types": "./dist/defaults.d.ts",
+			"require": "./dist/defaults.cjs",
+			"import": "./dist/defaults.js"
+		},
 		"./qb": {
 			"types": "./dist/qb.d.ts",
 			"require": "./dist/qb.cjs",
