@@ -11,20 +11,26 @@ export const Route = createRootRoute({
 								Admin Panel
 							</Link>
 						</div>
-						<div className="flex items-center space-x-8">
-							<Link
-								to="/"
-								className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-							>
-								Dashboard
-							</Link>
-							<Link
-								to="/orders"
-								className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-							>
-								Orders
-							</Link>
-						</div>
+					<div className="flex items-center space-x-8">
+						<Link
+							to="/"
+							className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+						>
+							Dashboard
+						</Link>
+						<Link
+							to="/orders"
+							className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+						>
+							Orders
+						</Link>
+						<Link
+							to="/customers"
+							className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+						>
+							Customers
+						</Link>
+					</div>
 					</div>
 				</div>
 			</nav>

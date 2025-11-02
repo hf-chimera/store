@@ -277,8 +277,7 @@ async function handleCrudRoute(
 		// Delete
 		if (itemPattern.test(fullUrl.pathname) && method === "DELETE") {
 			operations.delete(id, config);
-			res.writeHead(204);
-			res.end();
+			sendJSON(res, { success: true }, 204);
 			return true;
 		}
 

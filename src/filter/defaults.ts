@@ -21,6 +21,7 @@ export const chimeraDefaultFilterOperators = {
 		return false;
 	},
 	endsWith: (a: string, b: string) => a.endsWith(b),
+	startsWith: (a: string, b: string) => a.startsWith(b),
 	eq: <T>(a: T, b: T) => a === b,
 	gt: (a, b) => a > b,
 	gte: (a, b) => a >= b,
@@ -30,7 +31,6 @@ export const chimeraDefaultFilterOperators = {
 	lte: (a, b) => a <= b,
 	neq: <T>(a: T, b: T) => a !== b,
 	notIn: (a, b) => (Array.isArray(a) ? a : [a]).every((v) => !b.includes(v)),
-	startsWith: (a: string, b: string) => a.startsWith(b),
 } satisfies ChimeraOperatorMap;
 
 export const chimeraDefaultFilterConfig = {
