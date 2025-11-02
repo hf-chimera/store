@@ -1,5 +1,11 @@
 # @hf-chimera/store
 
+## 0.0.9
+
+### Patch Changes
+
+- Add defaults export
+
 ## 0.0.8
 
 ### Patch Changes
