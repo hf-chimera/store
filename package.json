@@ -80,6 +80,6 @@
 		"prepare": "husky",
 		"test": "vitest run --passWithNoTests",
 		"test:coverage": "vitest --ui --coverage.enabled --coverage.all",
-		"release": "pnpm run build && changeset publish"
+		"release": "pnpm run build && pnpm publish --provenance --access public"
 	}
 }
