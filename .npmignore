@@ -1,7 +1,8 @@
-src
-tests
-.github
-.changeset
-biome.json
-tsconfig.json
-tsdown.config.ts
+*
+
+!dist/*
+!package.json
+!README.md
+!CHANGELOG.md
+
+!*/
