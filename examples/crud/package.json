@@ -1,7 +1,8 @@
 {
-	"name": "client",
+	"name": "crud",
 	"type": "module",
 	"private": true,
+	"packageManager": "pnpm@10.20.0",
 	"dependencies": {
 		"@hf-chimera/store": "^0.0.11",
 		"@tailwindcss/vite": "^4.0.6",
@@ -24,7 +25,7 @@
 	"scripts": {
 		"build": "vite build && tsc",
 		"start": "vite --port 3003",
-		"server": "node ./server/server.ts --experimental-strip-types",
+		"server": "node server/server.ts --experimental-strip-types",
 		"serve": "vite preview",
 		"test": "vitest run"
 	}

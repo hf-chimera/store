@@ -55,10 +55,7 @@ describe("Order", () => {
 		const entity3: TestEntity = { name: "Bob", age: 20, date: new Date("2022-01-01") };
 
 		// Order by name first, then age (ascending)
-		const orderBy = [
-			chimeraCreateOrderBy<TestEntity>("name"),
-			chimeraCreateOrderBy<TestEntity>("age"),
-		];
+		const orderBy = [chimeraCreateOrderBy<TestEntity>("name"), chimeraCreateOrderBy<TestEntity>("age")];
 		const cmp = buildComparator<TestEntity>(chimeraDefaultComparator, orderBy);
 
 		// When names are equal, second condition (age) should be applied
