@@ -1,7 +1,6 @@
 import http from "node:http";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { IncomingMessage, ServerResponse } from "http";
 import type { ApiOrder, Event, Filter, WhereClause } from "./types";
 
 interface EntityConfig {
@@ -211,6 +210,8 @@ async function handleCrudRoute(
 	entityName: string,
 	config: EntityConfig,
 ) {
+	if (!req.url) return false;
+
 	const fullUrl = new URL(req.url, "http://localhost"); // base required for Node URL
 	const method = req.method || "";
 
@@ -290,71 +291,60 @@ async function handleCrudRoute(
 }
 
 // Main API Server
-const apiServer = http.createServer(
-	async (
-		req: InstanceType<IncomingMessage>,
-		res: InstanceType<ServerResponse<InstanceType<IncomingMessage>>> & { req: InstanceType<IncomingMessage> },
-	) => {
-		// Handle CORS preflight
-		if (req.method === "OPTIONS") {
-			res.writeHead(204, {
-				"Access-Control-Allow-Origin": "*",
-				"Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-				"Access-Control-Allow-Headers": "Content-Type, Authorization",
-				"Access-Control-Max-Age": "86400", // cache preflight for 24h
-			});
-			res.end();
-			return;
-		}
+const apiServer = http.createServer(async (req, res) => {
+	// Handle CORS preflight
+	if (req.method === "OPTIONS") {
+		res.writeHead(204, {
+			"Access-Control-Allow-Origin": "*",
+			"Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+			"Access-Control-Allow-Headers": "Content-Type, Authorization",
+			"Access-Control-Max-Age": "86400", // cache preflight for 24h
+		});
+		res.end();
+		return;
+	}
 
-		// Try to handle the route with each entity
-		for (const [entityName, config] of Object.entries(entities)) {
-			if (await handleCrudRoute(req, res, entityName, config)) return;
-		}
+	// Try to handle the route with each entity
+	for (const [entityName, config] of Object.entries(entities)) {
+		if (await handleCrudRoute(req, res, entityName, config)) return;
+	}
 
-		// No route matched
-		sendJSON(res, { error: "Not found" }, 404);
-	},
-);
+	// No route matched
+	sendJSON(res, { error: "Not found" }, 404);
+});
 
 // Event Processing Server
-const eventServer = http.createServer(
-	(
-		req: InstanceType<IncomingMessage>,
-		res: InstanceType<ServerResponse<InstanceType<IncomingMessage>>> & { req: InstanceType<IncomingMessage> },
-	) => {
-		// Handle CORS preflight
-		if (req.method === "OPTIONS") {
-			res.writeHead(204, {
-				"Access-Control-Allow-Origin": "*",
-				"Access-Control-Allow-Methods": "GET,OPTIONS",
-				"Access-Control-Allow-Headers": "Content-Type, Authorization",
-				"Access-Control-Max-Age": "86400",
-			});
-			res.end();
-			return;
-		}
-
-		res.writeHead(200, {
-			"Content-Type": "text/event-stream",
-			"Cache-Control": "no-cache",
-			Connection: "keep-alive",
+const eventServer = http.createServer((req, res) => {
+	// Handle CORS preflight
+	if (req.method === "OPTIONS") {
+		res.writeHead(204, {
 			"Access-Control-Allow-Origin": "*",
+			"Access-Control-Allow-Methods": "GET,OPTIONS",
+			"Access-Control-Allow-Headers": "Content-Type, Authorization",
+			"Access-Control-Max-Age": "86400",
 		});
+		res.end();
+		return;
+	}
 
-		const id = Math.random().toString(36).slice(2);
-		connections.set(id, Date.now());
-		const interval = setInterval(() => {
-			if (events.length > 0) {
-				const lastEventTime = connections.get(id) ?? 0;
-				for (const event of events)
-					if (lastEventTime < event.timestamp) res.write(`data: ${JSON.stringify(event)}\n\n`);
-			}
-		}, 100);
+	res.writeHead(200, {
+		"Content-Type": "text/event-stream",
+		"Cache-Control": "no-cache",
+		Connection: "keep-alive",
+		"Access-Control-Allow-Origin": "*",
+	});
 
-		req.on("close", () => clearInterval(interval));
-	},
-);
+	const id = Math.random().toString(36).slice(2);
+	connections.set(id, Date.now());
+	const interval = setInterval(() => {
+		if (events.length > 0) {
+			const lastEventTime = connections.get(id) ?? 0;
+			for (const event of events) if (lastEventTime < event.timestamp) res.write(`data: ${JSON.stringify(event)}\n\n`);
+		}
+	}, 100);
+
+	req.on("close", () => clearInterval(interval));
+});
 
 // Start servers
 function start() {

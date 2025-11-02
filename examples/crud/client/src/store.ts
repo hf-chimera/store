@@ -1,7 +1,6 @@
-import { getChimeraTypedHooks } from "../../../../packages/adapters/react";
-import type { ChimeraStoreEntities } from "../../../../src";
-import { ChimeraStore } from "../../../../src";
-import type { Customer, Event, Order } from "../../server/types";
+import { ChimeraStore, type ChimeraStoreEntities } from "@hf-chimera/store";
+import { getChimeraTypedHooks } from "@hf-chimera/store/adapters/react";
+import type { Customer, Event, Order } from "../server/types";
 import { create, endpointEntityMap, getAll, getById, remove, subscribeToEvents, update } from "./api";
 
 export type MyChimeraStore = typeof store;
@@ -35,8 +34,6 @@ export const store = new ChimeraStore<{
 		},
 	},
 });
-
-window.store = store;
 
 subscribeToEvents((event: Event) => {
 	if (event.operation === "delete") {

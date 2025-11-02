@@ -1,8 +1,12 @@
-import type { ChimeraSimplifiedOrderDescriptor } from "../../../../src";
-import { ChimeraConjunctionSymbol, ChimeraOperatorSymbol } from "../../../../src/filter/constants";
-import type { chimeraDefaultFilterOperators } from "../../../../src/filter/defaults";
-import type { ChimeraSimplifiedFilter, ChimeraSimplifiedOperator } from "../../../../src/filter/types";
-import type { FieldFilter, Filter } from "../../server/types";
+import {
+	type ChimeraSimplifiedFilter,
+	type ChimeraSimplifiedOperator,
+	type ChimeraSimplifiedOrderDescriptor,
+	chimeraIsConjunction,
+	chimeraIsOperator,
+} from "@hf-chimera/store";
+import type { chimeraDefaultFilterOperators } from "@hf-chimera/store/defaults";
+import type { Filter } from "../server/types";
 
 // Configuration
 const API_BASE = "http://localhost:3000";
@@ -21,7 +25,7 @@ export const endpointEntityMap = {
 type OperatorMap = typeof chimeraDefaultFilterOperators;
 
 /**
- * Transform Chimera filter to unified filter format
+ * Transform Chimera filter to a unified filter format
  */
 export function transformChimeraFilterToUnified(
 	node: ChimeraSimplifiedFilter<OperatorMap> | ChimeraSimplifiedOperator<OperatorMap>,
@@ -31,16 +35,16 @@ export function transformChimeraFilterToUnified(
 	}
 
 	// Operator node
-	if ("type" in node && node.type === ChimeraOperatorSymbol) {
+	if (chimeraIsOperator(node)) {
 		return {
 			field: node.key,
-			op: node.op as FieldFilter["op"],
+			op: node.op,
 			value: node.test,
 		};
 	}
 
 	// Conjunction node
-	if ("type" in node && node.type === ChimeraConjunctionSymbol) {
+	if (chimeraIsConjunction(node)) {
 		const transformed = node.operations.map(transformChimeraFilterToUnified);
 
 		switch (node.kind) {
