@@ -1,9 +1,50 @@
 {
 	"author": "hewston",
+	"name": "@hf-chimera/store",
+	"description": "Cross-end reactivity API",
+	"version": "0.0.6",
+	"license": "MIT",
+	"keywords": [
+		"state-management",
+		"reactivity",
+		"reactive",
+		"store",
+		"cross-platform",
+		"react",
+		"query-builder",
+		"typescript",
+		"fullstack",
+		"client-server",
+		"state-sync"
+	],
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"require": "./dist/index.cjs",
+			"import": "./dist/index.js"
+		},
+		"./qb": {
+			"types": "./dist/qb.d.ts",
+			"require": "./dist/qb.cjs",
+			"import": "./dist/qb.js"
+		},
+		"./adapters/react": {
+			"types": "./dist/adapters/react.d.ts",
+			"require": "./dist/adapters/react.cjs",
+			"import": "./dist/adapters/react.js"
+		}
+	},
 	"bugs": {
 		"url": "https://github.com/hf-chimera/store/issues"
 	},
-	"description": "Cross-end reactivity API",
+	"repository": {
+		"url": "https://github.com/hf-chimera/store"
+	},
+	"packageManager": "pnpm@10.15.1",
 	"devDependencies": {
 		"@biomejs/biome": "2.2.7",
 		"@changesets/cli": "^2.27.12",
@@ -16,24 +57,6 @@
 		"typescript": "^5.7.3",
 		"vitest": "^3.2.4"
 	},
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"require": "./dist/index.cjs",
-			"import": "./dist/index.js"
-		},
-		"./react": {
-			"types": "./dist/react.d.ts",
-			"require": "./dist/react.cjs",
-			"import": "./dist/react.js"
-		}
-	},
-	"keywords": [],
-	"license": "MIT",
-	"main": "./dist/index.js",
-	"module": "./dist/index.mjs",
-	"name": "@hf-chimera/store",
-	"packageManager": "pnpm@10.15.1",
 	"peerDependencies": {
 		"@types/react": ">=16.8.0",
 		"react": ">=16.8.0"
@@ -46,9 +69,6 @@
 			"optional": true
 		}
 	},
-	"repository": {
-		"url": "https://github.com/hf-chimera/store"
-	},
 	"scripts": {
 		"build": "tsdown",
 		"lint": "tsc && pnpm biome check --write",
@@ -57,8 +77,5 @@
 		"test": "vitest run --passWithNoTests",
 		"test:coverage": "vitest --ui --coverage.enabled --coverage.all",
 		"test:run": "vitest run"
-	},
-	"type": "module",
-	"types": "./dist/index.d.ts",
-	"version": "0.0.6"
+	}
 }
