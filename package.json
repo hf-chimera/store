@@ -22,16 +22,22 @@
 			"require": "./dist/index.cjs",
 			"import": "./dist/index.js"
 		},
-		"./react": {
-			"types": "./dist/react.d.ts",
-			"require": "./dist/react.cjs",
-			"import": "./dist/react.js"
+		"./adapters/react": {
+			"types": "./dist/adapters/react.d.ts",
+			"require": "./dist/adapters/react.cjs",
+			"import": "./dist/adapters/react.js"
+		},
+		"./qb": {
+			"types": "./dist/qb.d.ts",
+			"require": "./dist/qb.cjs",
+			"import": "./dist/qb.js"
 		}
 	},
 	"keywords": [],
 	"license": "MIT",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
 	"name": "@hf-chimera/store",
 	"packageManager": "pnpm@10.15.1",
 	"peerDependencies": {
@@ -59,6 +65,5 @@
 		"test:run": "vitest run"
 	},
 	"type": "module",
-	"types": "./dist/index.d.ts",
 	"version": "0.0.4"
 }
