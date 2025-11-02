@@ -1,5 +1,11 @@
 # @hf-chimera/store
 
+## 0.0.10
+
+### Patch Changes
+
+- Export correct types
+
 ## 0.0.9
 
 ### Patch Changes
