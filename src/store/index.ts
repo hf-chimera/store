@@ -7,4 +7,4 @@ export type {
 	ChimeraStoreOperatorMap,
 } from "./ChimeraStore.ts";
 export { ChimeraStore } from "./ChimeraStore.ts";
-export type { ChimeraStoreConfig } from "./types.ts";
+export type { ChimeraCollectionParams, ChimeraStoreConfig } from "./types.ts";

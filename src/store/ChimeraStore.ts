@@ -24,7 +24,7 @@ import { ChimeraEventEmitter, type EventArgs, type EventNames } from "../shared/
 import { deepObjectAssign, deepObjectClone, deepObjectFreeze } from "../shared/shared.ts";
 import type { ChimeraEntityId, ChimeraEntityMap, ChimeraIdGetterFunc, StrKeys } from "../shared/types.ts";
 import { ChimeraEntityRepository } from "./ChimeraEntityRepository.ts";
-import type { ChimeraRepositoryConfigMap, ChimeraRepositoryMap, ChimeraStoreConfig } from "./types.ts";
+import type { ChimeraStoreConfig, RepositoryConfigMap, RepositoryMap } from "./types.ts";
 
 const resolveIdGetter = <EntityMap extends ChimeraEntityMap>(
 	key: string,
@@ -114,8 +114,8 @@ export class ChimeraStore<
 	OperatorsMap extends ChimeraOperatorMap = typeof chimeraDefaultFilterOperators,
 	Config extends ChimeraStoreConfig<EntityMap, OperatorsMap> = ChimeraStoreConfig<EntityMap, OperatorsMap>,
 > extends ChimeraEventEmitter<ChimeraStoreEventMap<EntityMap, OperatorsMap>> {
-	readonly #reposMap: ChimeraRepositoryMap<EntityMap, OperatorsMap>;
-	readonly #queryConfig: ChimeraRepositoryConfigMap<EntityMap, OperatorsMap>;
+	readonly #reposMap: RepositoryMap<EntityMap, OperatorsMap>;
+	readonly #queryConfig: RepositoryConfigMap<EntityMap, OperatorsMap>;
 	readonly #filterConfig: Required<ChimeraFilterConfig<OperatorsMap>>;
 	readonly #orderConfig: Required<ChimeraOrderConfig>;
 	readonly #debugConfig: Required<ChimeraDebugConfig>;
@@ -205,7 +205,7 @@ export class ChimeraStore<
 					updateDebounceTimeout: value.updateDebounceTimeout ?? query.updateDebounceTimeout,
 				} satisfies QueryEntityConfig<any, any>,
 			]),
-		) as unknown as ChimeraRepositoryConfigMap<EntityMap, OperatorsMap>;
+		) as unknown as RepositoryConfigMap<EntityMap, OperatorsMap>;
 
 		this.#reposMap = {};
 

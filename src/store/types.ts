@@ -5,14 +5,11 @@ import type { ChimeraQueryConfig, QueryEntityConfig } from "../query/types.ts";
 import type { ChimeraEntityMap, StrKeys } from "../shared/types.ts";
 import type { ChimeraEntityRepository } from "./ChimeraEntityRepository.ts";
 
-export type ChimeraRepositoryMap<
-	EntityMap extends ChimeraEntityMap,
-	OperatorsMap extends ChimeraOperatorMap,
-> = Partial<{
+export type RepositoryMap<EntityMap extends ChimeraEntityMap, OperatorsMap extends ChimeraOperatorMap> = Partial<{
 	[K in StrKeys<EntityMap>]: ChimeraEntityRepository<EntityMap[K], OperatorsMap>;
 }>;
 
-export type ChimeraRepositoryConfigMap<EntityMap extends ChimeraEntityMap, OperatorsMap extends ChimeraOperatorMap> = {
+export type RepositoryConfigMap<EntityMap extends ChimeraEntityMap, OperatorsMap extends ChimeraOperatorMap> = {
 	[K in StrKeys<EntityMap>]: QueryEntityConfig<EntityMap[K], OperatorsMap>;
 };
 

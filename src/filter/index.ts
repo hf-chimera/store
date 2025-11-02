@@ -17,7 +17,10 @@ export type {
 	ChimeraFilterConfig,
 	ChimeraFilterDescriptor,
 	ChimeraFilterOperatorDescriptor,
+	ChimeraKeyFromFilterGetter,
+	ChimeraKeyFromOperatorGetter,
 	ChimeraOperatorFunction,
 	ChimeraOperatorMap,
-	ConjunctionMap,
+	ChimeraSimplifiedFilter,
+	ChimeraSimplifiedOperator,
 } from "./types.ts";

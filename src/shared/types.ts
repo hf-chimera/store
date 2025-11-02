@@ -35,7 +35,6 @@ export type ChimeraCancellablePromise<Result = unknown> = Promise<Result> & {
 export type ChimeraEntityId = string | number;
 
 export type ChimeraEntityMap = Record<string, object>;
-
 export type ChimeraEntityGetter<Entity, Return = unknown> = (entity: Entity) => Return;
 export type ChimeraPropertyGetter<Entity, Type = unknown, Return = unknown> = {
 	get: ChimeraEntityGetter<Entity, Return> | KeysOfType<Entity, Type>;

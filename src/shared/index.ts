@@ -4,6 +4,7 @@ export { ChimeraError, ChimeraInternalError } from "./errors.ts";
 export type {
 	ChimeraEntityGetter,
 	ChimeraEntityId,
+	ChimeraEntityMap,
 	ChimeraIdGetterFunc,
 	ChimeraMutationRequester,
 	ChimeraPropertyGetter,
