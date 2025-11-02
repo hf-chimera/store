@@ -2,7 +2,7 @@
 	"author": "hewston",
 	"name": "@hf-chimera/store",
 	"description": "Cross-end reactivity API",
-	"version": "0.0.10",
+	"version": "0.0.11",
 	"license": "MIT",
 	"keywords": [
 		"state-management",

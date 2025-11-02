@@ -1,5 +1,11 @@
 # @hf-chimera/store
 
+## 0.0.11
+
+### Patch Changes
+
+- Add filter utils
+
 ## 0.0.10
 
 ### Patch Changes
