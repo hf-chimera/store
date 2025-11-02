@@ -1,5 +1,11 @@
 # @hf-chimera/store
 
+## 0.0.14
+
+### Patch Changes
+
+- Try to get npm confirmation v1
+
 ## 0.0.13
 
 ### Patch Changes
