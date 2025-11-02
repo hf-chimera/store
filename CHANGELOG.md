@@ -1,5 +1,11 @@
 # @hf-chimera/store
 
+## 0.0.6
+
+### Patch Changes
+
+- Update npmignore
+
 ## 0.0.5
 
 ### Patch Changes
