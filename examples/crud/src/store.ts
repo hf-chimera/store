@@ -1,6 +1,6 @@
 import { ChimeraStore, type ChimeraStoreEntities } from "@hf-chimera/store";
 import { getChimeraTypedHooks } from "@hf-chimera/store/adapters/react";
-import type { Customer, Event, Order } from "../server/types";
+import type { Customer, Event, Order } from "../../server/types";
 import { create, endpointEntityMap, getAll, getById, remove, subscribeToEvents, update } from "./api";
 
 export type MyChimeraStore = typeof store;

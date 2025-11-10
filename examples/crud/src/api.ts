@@ -6,7 +6,7 @@ import {
 	chimeraIsOperator,
 } from "@hf-chimera/store";
 import type { chimeraDefaultFilterOperators } from "@hf-chimera/store/defaults";
-import type { Filter } from "../server/types";
+import type { Filter } from "../../server/types";
 
 // Configuration
 const API_BASE = "http://localhost:3000";

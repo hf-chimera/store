@@ -9,6 +9,7 @@ export default defineConfig({
 		defaults: "./src/defaults.ts",
 		qb: "./packages/qb/index.ts",
 		"adapters/react": "./packages/adapters/react/index.ts",
+		"adapters/vue": "./packages/adapters/vue/index.ts",
 	},
 	format: ["cjs", "esm"],
 	shims: true,

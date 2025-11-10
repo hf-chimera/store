@@ -25,7 +25,7 @@
 	"scripts": {
 		"build": "vite build && tsc",
 		"start": "vite --port 3003",
-		"server": "node server/server.ts --experimental-strip-types",
+		"server": "node ../server/server.ts --experimental-strip-types",
 		"serve": "vite preview",
 		"test": "vitest run"
 	}

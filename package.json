@@ -41,6 +41,11 @@
 			"types": "./dist/adapters/react.d.ts",
 			"require": "./dist/adapters/react.cjs",
 			"import": "./dist/adapters/react.js"
+		},
+		"./adapters/vue": {
+			"types": "./dist/adapters/vue.d.ts",
+			"require": "./dist/adapters/vue.cjs",
+			"import": "./dist/adapters/vue.js"
 		}
 	},
 	"bugs": {
@@ -64,13 +69,17 @@
 	},
 	"peerDependencies": {
 		"@types/react": ">=16.8.0",
-		"react": ">=16.8.0"
+		"react": ">=16.8.0",
+		"vue": ">=3.0.0"
 	},
 	"peerDependenciesMeta": {
 		"@types/react": {
 			"optional": true
 		},
 		"react": {
+			"optional": true
+		},
+		"vue": {
 			"optional": true
 		}
 	},
