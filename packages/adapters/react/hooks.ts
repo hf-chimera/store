@@ -9,6 +9,7 @@ import type {
 	ChimeraStoreEntityType,
 	ChimeraStoreOperatorMap,
 } from "../../../src/store/ChimeraStore";
+import { type ChimeraQueryBuilder, DefaultChimeraQueryBuilder } from "../../qb";
 import { type AnyChimeraParams, normalizeParams } from "../shared/params";
 
 const CHIMERA_COLLECTION_UPDATE_EVENTS = [
@@ -35,32 +36,58 @@ const CHIMERA_ITEM_UPDATE_EVENTS = [
 	"error",
 ] as const;
 
-export const createChimeraHooks = <T extends AnyChimeraStore>(
-	store: T,
-): {
-	useChimeraStore: () => T;
-	useChimeraRepository: <EntityName extends ChimeraStoreEntities<T>>(
-		entityName: EntityName,
-	) => ChimeraEntityRepository<ChimeraStoreEntityType<T, EntityName>, ChimeraStoreOperatorMap<T>>;
-	useChimeraCollection: <EntityName extends ChimeraStoreEntities<T>, Meta = any>(
-		entityName: EntityName,
-		params: AnyChimeraParams<T, EntityName, Meta>,
+type ChimeraHooks<TStore extends AnyChimeraStore, TQueryBuilder extends ChimeraQueryBuilder<TStore>> = {
+	useChimeraStore: () => TStore;
+	useChimeraRepository: <TEntityName extends ChimeraStoreEntities<TStore>>(
+		entityName: TEntityName,
+	) => ChimeraEntityRepository<ChimeraStoreEntityType<TStore, TEntityName>, ChimeraStoreOperatorMap<TStore>>;
+	useChimeraCollection: <TEntityName extends ChimeraStoreEntities<TStore>, Meta = any>(
+		entityName: TEntityName,
+		params: AnyChimeraParams<
+			TStore,
+			TEntityName,
+			Meta,
+			Extract<TQueryBuilder, ChimeraQueryBuilder<TStore, TEntityName>>
+		>,
 		deps?: unknown[],
-	) => ChimeraCollectionQuery<ChimeraStoreEntityType<T, EntityName>, ChimeraStoreOperatorMap<T>>;
-	useChimeraItem: <EntityName extends ChimeraStoreEntities<T>, Meta = any>(
-		entityName: EntityName,
+	) => ChimeraCollectionQuery<ChimeraStoreEntityType<TStore, TEntityName>, ChimeraStoreOperatorMap<TStore>>;
+	useChimeraItem: <TEntityName extends ChimeraStoreEntities<TStore>, Meta = any>(
+		entityName: TEntityName,
 		id: ChimeraEntityId,
 		meta?: Meta,
-	) => ChimeraItemQuery<ChimeraStoreEntityType<T, EntityName>>;
-} => {
-	const useChimeraRepository = <EntityName extends ChimeraStoreEntities<T>>(entityName: EntityName) =>
+	) => ChimeraItemQuery<ChimeraStoreEntityType<TStore, TEntityName>>;
+};
+
+export function createChimeraHooks<TStore extends AnyChimeraStore>(
+	store: TStore,
+): ChimeraHooks<TStore, DefaultChimeraQueryBuilder<TStore>>;
+export function createChimeraHooks<TStore extends AnyChimeraStore, TQueryBuilder extends ChimeraQueryBuilder<TStore>>(
+	store: TStore,
+	createQueryBuilder: () => TQueryBuilder,
+): ChimeraHooks<TStore, TQueryBuilder>;
+export function createChimeraHooks<TStore extends AnyChimeraStore, TQueryBuilder extends ChimeraQueryBuilder<TStore>>(
+	store: TStore,
+	createQueryBuilder?: () => TQueryBuilder,
+): ChimeraHooks<TStore, TQueryBuilder> {
+	createQueryBuilder ||= () => new DefaultChimeraQueryBuilder() as unknown as TQueryBuilder;
+
+	const useChimeraRepository = <EntityName extends ChimeraStoreEntities<TStore>>(entityName: EntityName) =>
 		// biome-ignore lint/correctness/useExhaustiveDependencies: this hook is generated for a specific store so it never changes
 		useMemo(() => store.from(entityName), [entityName]);
 
 	return {
 		useChimeraStore: () => store,
 		useChimeraRepository,
-		useChimeraCollection: (entityName, params, deps?) => {
+		useChimeraCollection: <TEntityName extends ChimeraStoreEntities<TStore>, Meta = any>(
+			entityName: TEntityName,
+			params: AnyChimeraParams<
+				TStore,
+				TEntityName,
+				Meta,
+				Extract<TQueryBuilder, ChimeraQueryBuilder<TStore, TEntityName>>
+			>,
+			deps?: unknown[],
+		) => {
 			const [, trigger] = useState(() => ({}));
 
 			const repository = useChimeraRepository(entityName);
@@ -76,7 +103,7 @@ export const createChimeraHooks = <T extends AnyChimeraStore>(
 			oldDeps.current = deps;
 
 			const memeParams = useMemo(
-				() => normalizeParams(params),
+				() => normalizeParams(createQueryBuilder, params),
 				// biome-ignore lint/correctness/useExhaustiveDependencies: Very unlikely it will be changed over time, anyway warning for this already added.
 				deps ? deps : [params],
 			);
@@ -117,4 +144,4 @@ export const createChimeraHooks = <T extends AnyChimeraStore>(
 			return item;
 		},
 	};
-};
+}

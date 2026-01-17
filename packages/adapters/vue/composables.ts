@@ -9,6 +9,7 @@ import type {
 	ChimeraStoreOperatorMap,
 } from "../../../src";
 import type { ChimeraEntityRepository } from "../../../src/store/ChimeraEntityRepository";
+import { type ChimeraQueryBuilder, DefaultChimeraQueryBuilder } from "../../qb";
 import { type AnyChimeraParams, normalizeParams } from "../shared/params";
 
 type MaybeRef<T> = T | Ref<T>;
@@ -50,32 +51,47 @@ export type ChimeraItemRef<T extends AnyChimeraStore, EntityName extends Chimera
 	ChimeraItemQuery<ChimeraStoreEntityType<T, EntityName>>
 >;
 
-export const createChimeraComposables = <T extends AnyChimeraStore>(
-	store: T,
-): {
-	useChimeraStore: () => T;
-	useChimeraRepository: <EntityName extends ChimeraStoreEntities<T>>(
-		entityName: MaybeRefOrGetter<EntityName>,
-	) => Ref<ChimeraEntityRepository<ChimeraStoreEntityType<T, EntityName>, ChimeraStoreOperatorMap<T>>>;
-	useChimeraCollection: <EntityName extends ChimeraStoreEntities<T>, Meta = any>(
-		entityName: MaybeRefOrGetter<EntityName>,
-		params: MaybeRefOrGetter<AnyChimeraParams<T, EntityName, Meta>>,
-	) => ChimeraCollectionRef<T, EntityName>;
-	useChimeraItem: <EntityName extends ChimeraStoreEntities<T>, Meta = any>(
-		entityName: MaybeRefOrGetter<EntityName>,
+type ChimeraComposables<TStore extends AnyChimeraStore, TQueryBuilder extends ChimeraQueryBuilder<TStore>> = {
+	useChimeraStore: () => TStore;
+	useChimeraRepository: <TEntityName extends ChimeraStoreEntities<TStore>>(
+		entityName: MaybeRefOrGetter<TEntityName>,
+	) => Ref<ChimeraEntityRepository<ChimeraStoreEntityType<TStore, TEntityName>, ChimeraStoreOperatorMap<TStore>>>;
+	useChimeraCollection: <TEntityName extends ChimeraStoreEntities<TStore>, TMeta = any>(
+		entityName: MaybeRefOrGetter<TEntityName>,
+		params: MaybeRefOrGetter<
+			AnyChimeraParams<TStore, TEntityName, TMeta, Extract<TQueryBuilder, ChimeraQueryBuilder<TStore, TEntityName>>>
+		>,
+	) => ChimeraCollectionRef<TStore, TEntityName>;
+	useChimeraItem: <TEntityName extends ChimeraStoreEntities<TStore>, TMeta = any>(
+		entityName: MaybeRefOrGetter<TEntityName>,
 		id: MaybeRefOrGetter<ChimeraEntityId>,
-		meta?: MaybeRefOrGetter<Meta>,
-	) => ChimeraItemRef<T, EntityName>;
-} => {
-	const useChimeraRepository = <EntityName extends ChimeraStoreEntities<T>>(entityName: MaybeRefOrGetter<EntityName>) =>
-		computed(() => store.from(toValue(entityName)));
+		meta?: MaybeRefOrGetter<TMeta>,
+	) => ChimeraItemRef<TStore, TEntityName>;
+};
+
+export function createChimeraComposables<TStore extends AnyChimeraStore>(
+	store: TStore,
+): ChimeraComposables<TStore, DefaultChimeraQueryBuilder<TStore>>;
+export function createChimeraComposables<
+	TStore extends AnyChimeraStore,
+	TQueryBuilder extends ChimeraQueryBuilder<TStore>,
+>(store: TStore, createQueryBuilder: () => TQueryBuilder): ChimeraComposables<TStore, TQueryBuilder>;
+export function createChimeraComposables<
+	TStore extends AnyChimeraStore,
+	TQueryBuilder extends ChimeraQueryBuilder<TStore>,
+>(store: TStore, createQueryBuilder?: () => TQueryBuilder): ChimeraComposables<TStore, TQueryBuilder> {
+	createQueryBuilder ||= () => new DefaultChimeraQueryBuilder() as unknown as TQueryBuilder;
+
+	const useChimeraRepository = <EntityName extends ChimeraStoreEntities<TStore>>(
+		entityName: MaybeRefOrGetter<EntityName>,
+	) => computed(() => store.from(toValue(entityName)));
 
 	return {
 		useChimeraStore: () => store,
 		useChimeraRepository,
 		useChimeraCollection: (entityName, params) => {
 			const repository = useChimeraRepository(entityName);
-			const normalizedParams = computed(() => normalizeParams(toValue(params)));
+			const normalizedParams = computed(() => normalizeParams(createQueryBuilder, toValue(params)));
 			const collection = computed(() => repository.value.getCollection(normalizedParams.value));
 
 			return customRef((track, trigger) => {
@@ -139,4 +155,4 @@ export const createChimeraComposables = <T extends AnyChimeraStore>(
 			});
 		},
 	};
-};
+}
