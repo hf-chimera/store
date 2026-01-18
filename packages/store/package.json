@@ -43,5 +43,9 @@
 	"scripts": {
 		"build": "tsdown",
 		"changeset:patch": "node ../../scripts/changeset-patch.mjs @hf-chimera/store"
+	},
+	"publishConfig": {
+		"access": "public",
+		"provenance": true
 	}
 }
