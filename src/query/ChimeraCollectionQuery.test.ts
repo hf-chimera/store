@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+import { chimeraDefaultDebugConfig } from "../debug/defaults.ts";
+import type { ChimeraDebugConfig } from "../debug/types.ts";
 import type { ChimeraFilterChecker } from "../filter";
 import type { ChimeraOrderByComparator } from "../order";
 import { ChimeraCollectionQuery } from "./ChimeraCollectionQuery.ts";
@@ -37,15 +39,16 @@ type OperationsMap = {
 };
 
 describe("ChimeraCollectionQuery", () => {
-	let mockConfig: QueryEntityConfig<TestItem, OperationsMap>;
+	let mockConfig: QueryEntityConfig<"test-collection", TestItem, OperationsMap>;
+	let mockDebugConfig: ChimeraDebugConfig;
 	let mockParams: ChimeraQueryEntityCollectionFetcherParams<TestItem, OperationsMap>;
-	let mockCollectionFetcher: Mock<ChimeraQueryEntityCollectionFetcher<TestItem, OperationsMap>>;
-	let mockItemUpdater: Mock<ChimeraQueryEntityItemUpdater<TestItem>>;
-	let mockItemDeleter: Mock<ChimeraQueryEntityItemDeleter>;
-	let mockItemCreator: Mock<ChimeraQueryEntityItemCreator<TestItem>>;
-	let mockBatchedUpdater: Mock<ChimeraQueryEntityBatchedUpdater<TestItem>>;
-	let mockBatchedDeleter: Mock<ChimeraQueryEntityBatchedDeleter>;
-	let mockBatchedCreator: Mock<ChimeraQueryEntityBatchedCreator<TestItem>>;
+	let mockCollectionFetcher: Mock<ChimeraQueryEntityCollectionFetcher<"test-collection", TestItem, OperationsMap>>;
+	let mockItemUpdater: Mock<ChimeraQueryEntityItemUpdater<"test-collection", TestItem>>;
+	let mockItemDeleter: Mock<ChimeraQueryEntityItemDeleter<"test-collection">>;
+	let mockItemCreator: Mock<ChimeraQueryEntityItemCreator<"test-collection", TestItem>>;
+	let mockBatchedUpdater: Mock<ChimeraQueryEntityBatchedUpdater<"test-collection", TestItem>>;
+	let mockBatchedDeleter: Mock<ChimeraQueryEntityBatchedDeleter<"test-collection">>;
+	let mockBatchedCreator: Mock<ChimeraQueryEntityBatchedCreator<"test-collection", TestItem>>;
 	let mockOrder: Mock<ChimeraOrderByComparator<TestItem>>;
 	let mockFilter: Mock<ChimeraFilterChecker<TestItem>>;
 
@@ -65,7 +68,6 @@ describe("ChimeraCollectionQuery", () => {
 			batchedDeleter: mockBatchedDeleter,
 			batchedUpdater: mockBatchedUpdater,
 			collectionFetcher: mockCollectionFetcher,
-			devMode: true,
 			idGetter: (item: TestItem) => item.id,
 			itemCreator: mockItemCreator,
 			itemDeleter: mockItemDeleter,
@@ -74,6 +76,12 @@ describe("ChimeraCollectionQuery", () => {
 			name: "test-collection",
 			trustQuery: false,
 			updateDebounceTimeout: 100,
+		};
+
+		mockDebugConfig = {
+			...chimeraDefaultDebugConfig,
+			devMode: true,
+			logs: "debug",
 		};
 
 		mockParams = {
@@ -94,7 +102,15 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-2", name: "Item 2", value: 20 },
 			];
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			expect(query.state).toBe(ChimeraQueryFetchingState.Prefetched);
 			expect(query.ready).toBe(true);
@@ -105,7 +121,15 @@ describe("ChimeraCollectionQuery", () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Fetched Item", value: 42 }];
 			mockCollectionFetcher.mockResolvedValue({ data: items });
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			expect(query.state).toBe(ChimeraQueryFetchingState.Fetching);
 			expect(query.inProgress).toBe(true);
@@ -126,7 +150,15 @@ describe("ChimeraCollectionQuery", () => {
 			mockFilter.mockImplementation((item: TestItem) => item.value > 15);
 			mockOrder.mockImplementation((a: TestItem, b: TestItem) => a.value - b.value);
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			expect(query.length).toBe(1);
 			expect(query.at(0)?.id).toBe("test-2");
@@ -134,12 +166,28 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should validate items when alreadyValid is true", () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Item 1", value: 10 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, true);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				true,
+			);
 			expect(Array.from(query)).toEqual(items);
 		});
 
 		it("should handle empty iterable input", () => {
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, [], mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				[],
+				mockOrder,
+				mockFilter,
+				false,
+			);
 			expect(Array.from(query)).toEqual([]);
 			expect(query.ready).toBe(true);
 		});
@@ -148,7 +196,15 @@ describe("ChimeraCollectionQuery", () => {
 	describe("State Management", () => {
 		it("should track inProgress states correctly", async () => {
 			mockCollectionFetcher.mockResolvedValue({ data: [{ id: "test-1", name: "Test", value: 42 }] });
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			expect(query.inProgress).toBe(true); // Fetching
 			await query.progress;
@@ -157,7 +213,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should handle ready state correctly", () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Test Item", value: 42 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			expect(query.ready).toBe(true);
 			expect(Array.from(query)).toEqual(items);
@@ -165,14 +229,30 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should throw when accessing data before ready", () => {
 			mockCollectionFetcher.mockResolvedValue({ data: [{ id: "test-1", name: "Test", value: 42 }] });
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			expect(() => Array.from(query)).toThrow(ChimeraQueryNotReadyError);
 		});
 
 		it("should throw when accessing length before ready", () => {
 			mockCollectionFetcher.mockResolvedValue({ data: [{ id: "test-1", name: "Test", value: 42 }] });
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			expect(() => query.length).toThrow(ChimeraQueryNotReadyError);
 		});
@@ -185,7 +265,15 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-2", name: "Item 2", value: 20 },
 			];
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const foundItem = query.getById("test-2");
 			expect(foundItem).toEqual({ id: "test-2", name: "Item 2", value: 20 });
@@ -196,7 +284,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should return mutable item by index", () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Item 1", value: 10 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const mutable = query.mutableAt(0);
 			expect(mutable).toEqual(items[0]);
@@ -205,7 +301,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should return mutable item by id", () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Item 1", value: 10 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const mutable = query.mutableGetById("test-1");
 			expect(mutable).toEqual(items[0]);
@@ -217,7 +321,15 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-1", name: "Item 1", value: 10 },
 				{ id: "test-2", name: "Item 2", value: 20 },
 			];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			expect(query.at(0)).toEqual(items[0]);
 			expect(query.at(-1)).toEqual(items[1]);
@@ -231,7 +343,15 @@ describe("ChimeraCollectionQuery", () => {
 			const initialItems: TestItem[] = [{ id: "test-1", name: "Initial", value: 42 }];
 			const newItems: TestItem[] = [{ id: "test-1", name: "Updated", value: 100 }];
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, initialItems, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				initialItems,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockCollectionFetcher.mockResolvedValue({ data: newItems });
 
@@ -246,7 +366,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should return existing promise when refetch already running", async () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockCollectionFetcher.mockImplementation(
 				() => new Promise((resolve) => setTimeout(() => resolve({ data: items }), 100)),
@@ -260,7 +388,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should force refetch when force=true", async () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockCollectionFetcher.mockImplementation(
 				() => new Promise((resolve) => setTimeout(() => resolve({ data: items }), 100)),
@@ -278,12 +414,20 @@ describe("ChimeraCollectionQuery", () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Initial", value: 42 }];
 			const updatedItem: TestItem = { id: "test-1", name: "Updated", value: 100 };
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockItemUpdater.mockResolvedValue({ data: updatedItem });
 
 			await query.update(updatedItem);
-			expect(mockItemUpdater).toHaveBeenCalledWith(updatedItem, expect.any(Object));
+			expect(mockItemUpdater).toHaveBeenCalledWith(updatedItem, expect.any(Object), mockConfig.name);
 		});
 
 		it("should update multiple items using batchedUpdate", async () => {
@@ -296,17 +440,33 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-2", name: "Updated 2", value: 200 },
 			];
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockBatchedUpdater.mockResolvedValue({ data: updatedItems });
 
 			await query.batchedUpdate(updatedItems);
-			expect(mockBatchedUpdater).toHaveBeenCalledWith(updatedItems, expect.any(Object));
+			expect(mockBatchedUpdater).toHaveBeenCalledWith(updatedItems, expect.any(Object), mockConfig.name);
 		});
 
 		it("should handle update when collection is not ready", async () => {
 			mockCollectionFetcher.mockResolvedValue({ data: [] });
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const updatedItem: TestItem = { id: "test-1", name: "Updated", value: 100 };
 			mockItemUpdater.mockResolvedValue({ data: updatedItem });
@@ -320,30 +480,54 @@ describe("ChimeraCollectionQuery", () => {
 	describe("Delete Functionality", () => {
 		it("should delete single item successfully", async () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockItemDeleter.mockResolvedValue({ result: { id: "test-1", success: true } });
 
 			await query.delete("test-1");
-			expect(mockItemDeleter).toHaveBeenCalledWith("test-1", expect.any(Object));
+			expect(mockItemDeleter).toHaveBeenCalledWith("test-1", expect.any(Object), mockConfig.name);
 		});
 
 		it("should handle delete with id mismatch in trust mode", async () => {
 			const config = { ...mockConfig, devMode: false, trustQuery: true };
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];
-			const query = new ChimeraCollectionQuery(config, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				config,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// Server returns different id than requested
 			mockItemDeleter.mockResolvedValue({ result: { id: "different-id", success: true } });
 
 			await query.delete("test-1");
-			expect(mockItemDeleter).toHaveBeenCalledWith("test-1", expect.any(Object));
+			expect(mockItemDeleter).toHaveBeenCalledWith("test-1", expect.any(Object), mockConfig.name);
 		});
 
 		it("should warn about id mismatch in dev mode with trust query", async () => {
-			const config = { ...mockConfig, devMode: true, trustQuery: true };
+			const config = { ...mockConfig, trustQuery: true };
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];
-			const query = new ChimeraCollectionQuery(config, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				config,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
@@ -360,17 +544,33 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-1", name: "Item 1", value: 10 },
 				{ id: "test-2", name: "Item 2", value: 20 },
 			];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockBatchedDeleter.mockResolvedValue({ result: [{ id: "test-1", success: true }] });
 
 			await query.batchedDelete(["test-1"]);
-			expect(mockBatchedDeleter).toHaveBeenCalledWith(["test-1"], expect.any(Object));
+			expect(mockBatchedDeleter).toHaveBeenCalledWith(["test-1"], expect.any(Object), mockConfig.name);
 		});
 
 		it("should handle unsuccessful deletion", async () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockItemDeleter.mockResolvedValue({ result: { id: "test-1", success: false } });
 
@@ -380,7 +580,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should handle unsuccessful batch deletion", async () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockBatchedDeleter.mockResolvedValue({
 				result: [
@@ -394,7 +602,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should handle delete when collection is not ready", async () => {
 			mockCollectionFetcher.mockResolvedValue({ data: [] });
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockItemDeleter.mockResolvedValue({ result: { id: "test-1", success: true } });
 
@@ -410,12 +626,20 @@ describe("ChimeraCollectionQuery", () => {
 			const newItemData = { name: "New Item", value: 100 };
 			const createdItem: TestItem = { id: "new-1", name: "New Item", value: 100 };
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockItemCreator.mockResolvedValue({ data: createdItem });
 
 			await query.create(newItemData);
-			expect(mockItemCreator).toHaveBeenCalledWith(newItemData, expect.any(Object));
+			expect(mockItemCreator).toHaveBeenCalledWith(newItemData, expect.any(Object), mockConfig.name);
 		});
 
 		it("should create multiple items using batchedCreate", async () => {
@@ -429,17 +653,33 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "new-2", name: "New Item 2", value: 200 },
 			];
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockBatchedCreator.mockResolvedValue({ data: createdItems });
 
 			await query.batchedCreate(newItemsData);
-			expect(mockBatchedCreator).toHaveBeenCalledWith(newItemsData, expect.any(Object));
+			expect(mockBatchedCreator).toHaveBeenCalledWith(newItemsData, expect.any(Object), mockConfig.name);
 		});
 
 		it("should handle create when collection is not ready", async () => {
 			mockCollectionFetcher.mockResolvedValue({ data: [] });
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const newItemData = { name: "New Item", value: 100 };
 			const createdItem: TestItem = { id: "new-1", name: "New Item", value: 100 };
@@ -455,7 +695,15 @@ describe("ChimeraCollectionQuery", () => {
 		it("should emit initialized event on construction", async () => {
 			const events: any[] = [];
 			mockCollectionFetcher.mockResolvedValue({ data: [] });
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			query.on("initialized", (q) => events.push({ query: q, type: "initialized" }));
 
@@ -470,7 +718,15 @@ describe("ChimeraCollectionQuery", () => {
 			const events: any[] = [];
 			mockCollectionFetcher.mockResolvedValue({ data: [{ id: "test-1", name: "Test", value: 42 }] });
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 			query.on("ready", (q) => events.push({ query: q, type: "ready" }));
 
 			await query.progress;
@@ -483,7 +739,15 @@ describe("ChimeraCollectionQuery", () => {
 		it("should emit selfItemCreated event on create", async () => {
 			const events: any[] = [];
 			const items: TestItem[] = [];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			query.on("selfItemCreated", (event) => events.push({ event, type: "selfItemCreated" }));
 
@@ -500,7 +764,15 @@ describe("ChimeraCollectionQuery", () => {
 		it("should emit selfItemDeleted event on delete", async () => {
 			const events: any[] = [];
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			query.on("selfItemDeleted", (event) => events.push({ event, type: "selfItemDeleted" }));
 
@@ -517,7 +789,15 @@ describe("ChimeraCollectionQuery", () => {
 			const events: any[] = [];
 			mockCollectionFetcher.mockRejectedValue(new Error("Network error"));
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 			query.on("error", (event) => events.push({ event, type: "error" }));
 
 			await expect(query.result).rejects.toThrow("Network error");
@@ -528,7 +808,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should prevent external event emission", () => {
 			mockCollectionFetcher.mockResolvedValue({ data: [] });
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// @ts-expect-error
 			expect(() => query.emit("test")).toThrow();
@@ -538,7 +826,15 @@ describe("ChimeraCollectionQuery", () => {
 	describe("External Updates via Symbols", () => {
 		it("should handle external item update via setOne symbol", () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const updatedItem: TestItem = { id: "test-1", name: "External Update", value: 100 };
 			query[ChimeraSetOneSym](updatedItem);
@@ -552,7 +848,15 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-1", name: "Test 1", value: 42 },
 				{ id: "test-2", name: "Test 2", value: 84 },
 			];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			query[ChimeraDeleteOneSym]("test-1");
 
@@ -562,7 +866,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should handle external batch operations via symbols", () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const newItems: TestItem[] = [
 				{ id: "test-2", name: "New Item", value: 100 },
@@ -583,7 +895,15 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-1", name: "Test 1", value: 42 },
 				{ id: "test-2", name: "Test 2", value: 84 },
 			];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const newItems: TestItem[] = [{ id: "test-3", name: "New Item", value: 100 }];
 			const idsToDelete = ["test-1"];
@@ -606,7 +926,15 @@ describe("ChimeraCollectionQuery", () => {
 
 			mockOrder.mockImplementation((a: TestItem, b: TestItem) => a.value - b.value);
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const newItem: TestItem = { id: "test-2", name: "Item 2", value: 20 };
 			query[ChimeraSetOneSym](newItem);
@@ -622,7 +950,15 @@ describe("ChimeraCollectionQuery", () => {
 			// Mock order that considers items with the same value as equal
 			mockOrder.mockImplementation((a: TestItem, b: TestItem) => (a.value === b.value ? 0 : a.value - b.value));
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// This item should replace the existing one since order returns 0
 			const sameValueItem: TestItem = { id: "test-1", name: "Updated Item", value: 100 };
@@ -637,7 +973,15 @@ describe("ChimeraCollectionQuery", () => {
 
 			mockFilter.mockImplementation((item: TestItem) => item.value >= 50);
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// This should be added (value >= 50)
 			const validItem: TestItem = { id: "test-2", name: "Valid Item", value: 50 }; // Edge case: exactly 50
@@ -657,7 +1001,15 @@ describe("ChimeraCollectionQuery", () => {
 
 			mockFilter.mockImplementation((item: TestItem) => item.value >= 50);
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// Item doesn't exist and doesn't match filter - should be ignored
 			const nonMatchingNewItem: TestItem = { id: "test-new", name: "New Item", value: 25 };
@@ -676,7 +1028,15 @@ describe("ChimeraCollectionQuery", () => {
 			// Mock order that always returns <= 0, so findIndex will return -1
 			mockOrder.mockImplementation(() => -1);
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const newItem: TestItem = { id: "test-3", name: "Item 3", value: 30 };
 			query[ChimeraSetOneSym](newItem);
@@ -699,14 +1059,22 @@ describe("ChimeraCollectionQuery", () => {
 			mockFilter.mockReturnValue(false); // Would normally filter out all items
 			mockOrder.mockImplementation((a: TestItem, b: TestItem) => b.value - a.value); // Would reverse order
 
-			const query = new ChimeraCollectionQuery(config, mockParams, serverItems, mockOrder, mockFilter, true);
+			const query = new ChimeraCollectionQuery(
+				config,
+				mockDebugConfig,
+				mockParams,
+				serverItems,
+				mockOrder,
+				mockFilter,
+				true,
+			);
 
 			// In trust mode, should keep server data as-is
 			expect(Array.from(query)).toEqual(serverItems);
 		});
 
 		it("should warn in dev mode with trust query when validation fails", () => {
-			const config = { ...mockConfig, devMode: true, trustQuery: true };
+			const config = { ...mockConfig, trustQuery: true };
 			const serverItems: TestItem[] = [
 				{ id: "test-1", name: "Server Item", value: 42 },
 				{ id: "test-2", name: "Another Item", value: 100 },
@@ -717,14 +1085,14 @@ describe("ChimeraCollectionQuery", () => {
 			// Set up filter that would normally filter out the first item
 			mockFilter.mockImplementation((item: TestItem) => item.value > 50);
 
-			new ChimeraCollectionQuery(config, mockParams, serverItems, mockOrder, mockFilter, true);
+			new ChimeraCollectionQuery(config, mockDebugConfig, mockParams, serverItems, mockOrder, mockFilter, true);
 
 			expect(consoleSpy).toHaveBeenCalled();
 			consoleSpy.mockRestore();
 		});
 
 		it("should not warn in dev mode when validation passes", () => {
-			const config = { ...mockConfig, devMode: true, trustQuery: true };
+			const config = { ...mockConfig, trustQuery: true };
 			const serverItems: TestItem[] = [{ id: "test-1", name: "Server Item", value: 42 }];
 
 			const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -733,7 +1101,7 @@ describe("ChimeraCollectionQuery", () => {
 			mockFilter.mockReturnValue(true);
 			mockOrder.mockReturnValue(0);
 
-			new ChimeraCollectionQuery(config, mockParams, serverItems, mockOrder, mockFilter, true);
+			new ChimeraCollectionQuery(config, mockDebugConfig, mockParams, serverItems, mockOrder, mockFilter, true);
 
 			expect(consoleSpy).not.toHaveBeenCalled();
 			consoleSpy.mockRestore();
@@ -747,7 +1115,15 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-2", name: "Item 2", value: 20 },
 				{ id: "test-3", name: "Item 3", value: 15 },
 			];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// Test some() method
 			expect(query.some((item) => item.value > 15)).toBe(true);
@@ -774,7 +1150,15 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-2", name: "Item 2", value: 20 },
 				{ id: "test-3", name: "Item 3", value: 15 },
 			];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// Test reduce
 			const sum = query.reduce((acc, item) => acc + item.value, 0);
@@ -791,7 +1175,15 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-2", name: "Item 2", value: 20 },
 				{ id: "test-3", name: "Item 3", value: 15 },
 			];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// Test slice
 			const sliced = query.slice(1, 3);
@@ -810,7 +1202,15 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-1", name: "Item 1", value: 10 },
 				{ id: "test-2", name: "Item 2", value: 20 },
 			];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// Test Symbol.iterator
 			const iteratedItems: TestItem[] = [];
@@ -839,7 +1239,15 @@ describe("ChimeraCollectionQuery", () => {
 	describe("Error Handling and Edge Cases", () => {
 		it("should handle fetch errors", async () => {
 			mockCollectionFetcher.mockRejectedValue(new Error("Network error"));
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			await query.progress;
 
@@ -849,7 +1257,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should handle create errors correctly", async () => {
 			const items: TestItem[] = [];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			mockItemCreator.mockRejectedValue(new Error("Create failed"));
 
@@ -858,7 +1274,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should handle promise progress when no promise is active", async () => {
 			const items: TestItem[] = [{ id: "test-1", name: "Item", value: 42 }];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// Should resolve immediately when no promise is active
 			await expect(query.progress).resolves.toBeUndefined();
@@ -869,7 +1293,15 @@ describe("ChimeraCollectionQuery", () => {
 				{ id: "test-1", name: "Item 1", value: 10 },
 				{ id: "test-2", name: "Item 2", value: 20 },
 			];
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// Test the specific destructuring pattern used in #deleteAtIndex
 			// const { 0: old } = items.splice(0, 1);
@@ -881,7 +1313,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should handle accessing data properties when not ready", () => {
 			mockCollectionFetcher.mockResolvedValue({ data: [] });
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// All these should throw ChimeraQueryNotReadyError
 			expect(() => query.length).toThrow(ChimeraQueryNotReadyError);
@@ -893,7 +1333,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should handle accessing mutable methods when not ready", () => {
 			mockCollectionFetcher.mockResolvedValue({ data: [] });
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			expect(() => query.mutableAt(0)).toThrow(ChimeraQueryNotReadyError);
 			expect(() => query.mutableGetById("test-1")).toThrow(ChimeraQueryNotReadyError);
@@ -910,7 +1358,15 @@ describe("ChimeraCollectionQuery", () => {
 				return 0;
 			});
 
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			const newItem: TestItem = { id: "test-1", name: "Item 1", value: 10 };
 			query[ChimeraSetOneSym](newItem);
@@ -922,7 +1378,15 @@ describe("ChimeraCollectionQuery", () => {
 		it("should handle id mismatch scenarios correctly in delete operations", async () => {
 			const config = { ...mockConfig, trustQuery: false };
 			const items: TestItem[] = [{ id: "test-1", name: "Test", value: 42 }];
-			const query = new ChimeraCollectionQuery(config, mockParams, items, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				config,
+				mockDebugConfig,
+				mockParams,
+				items,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// Server returns different id than requested
 			mockItemDeleter.mockResolvedValue({ result: { id: "different-id", success: true } });
@@ -932,7 +1396,15 @@ describe("ChimeraCollectionQuery", () => {
 
 		it("should properly handle progress promise cancellation edge case", async () => {
 			mockCollectionFetcher.mockImplementation(() => new Promise(() => {})); // Never resolves
-			const query = new ChimeraCollectionQuery(mockConfig, mockParams, null, mockOrder, mockFilter, false);
+			const query = new ChimeraCollectionQuery(
+				mockConfig,
+				mockDebugConfig,
+				mockParams,
+				null,
+				mockOrder,
+				mockFilter,
+				false,
+			);
 
 			// Force a new operation that should cancel the previous promise
 			mockCollectionFetcher.mockResolvedValue({ data: [] });

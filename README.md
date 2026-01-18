@@ -16,7 +16,23 @@ ordering, and real-time updates.
 - **📦 Modular Architecture**: Composable components for flexible integration
 - **🌐 Universal Compatibility**: Works with any data source (REST APIs, GraphQL, WebSockets, etc.)
 
+## Packages
+
+Chimera Store is published as multiple packages to support different use cases:
+
+| Package                                          | Description              | Use Case                             |
+| ------------------------------------------------ | ------------------------ | ------------------------------------ |
+| [`@hf-chimera/store`](./packages/store)          | Core store library       | Required for all projects            |
+| [`@hf-chimera/react`](./packages/adapters/react) | React integration        | React applications using hooks       |
+| [`@hf-chimera/vue`](./packages/adapters/vue)     | Vue integration          | Vue 3 applications using composables |
+| [`@hf-chimera/query-builder`](./packages/qb)     | Fluent query builder     | Type-safe query construction         |
+| `@hf-chimera/adapters-shared`                    | Shared adapter utilities | Internal package (auto-installed)    |
+
 ## Installation
+
+### Core Store
+
+The core store is required for all projects:
 
 ```bash
 npm install @hf-chimera/store
@@ -26,124 +42,143 @@ yarn add @hf-chimera/store
 pnpm add @hf-chimera/store
 ```
 
+### React Integration
+
+For React applications, install the React adapter:
+
+```bash
+npm install @hf-chimera/store @hf-chimera/react react
+# or
+yarn add @hf-chimera/store @hf-chimera/react react
+# or
+pnpm add @hf-chimera/store @hf-chimera/react react
+```
+
+### Vue Integration
+
+For Vue 3 applications, install the Vue adapter:
+
+```bash
+npm install @hf-chimera/store @hf-chimera/vue vue
+# or
+yarn add @hf-chimera/store @hf-chimera/vue vue
+# or
+pnpm add @hf-chimera/store @hf-chimera/vue vue
+```
+
+### Query Builder (Optional)
+
+For a fluent, type-safe query building API:
+
+```bash
+npm install @hf-chimera/query-builder
+# or
+yarn add @hf-chimera/query-builder
+# or
+pnpm add @hf-chimera/query-builder
+```
+
 ## Quick Start
 
 ### Basic Setup
 
 ```typescript
-import { ChimeraStore } from '@hf-chimera/store';
+import { createChimeraEntityStore } from "@hf-chimera/store";
 
-// Define your entity types
+// Define your entity type
 type User = {
-	id: string;
-	name: string;
-	email: string;
-	age: number;
+  id: number;
+  name: string;
+  email: string;
+  age: number;
 };
 
+// Create an entity store for users
+const userStore = createChimeraEntityStore<"user", User>({
+  name: "user",
+  idGetter: "id", // Can be a string (property name) or function
+  trustQuery: true,
+
+  // Collection fetcher - fetch multiple items
+  collectionFetcher: async (params, requestParams) => {
+    const response = await fetch(`/api/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filter: params.filter, order: params.order }),
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
+  },
+
+  // Item fetcher - fetch single item by ID
+  itemFetcher: async (params, requestParams) => {
+    const response = await fetch(`/api/users/${params.id}`, {
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
+  },
+
+  // Item creator - create new item
+  itemCreator: async (item, requestParams) => {
+    const response = await fetch(`/api/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item),
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
+  },
+
+  // Item updater - update existing item
+  itemUpdater: async (item, requestParams) => {
+    const response = await fetch(`/api/users/${item.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item),
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
+  },
+
+  // Item deleter - delete item by ID
+  itemDeleter: async (id, requestParams) => {
+    await fetch(`/api/users/${id}`, {
+      method: "DELETE",
+      signal: requestParams.signal,
+    });
+    return { result: { id, success: true } };
+  },
+});
+
+// Create additional entity stores as needed
 type Post = {
-	id: string;
-	title: string;
-	content: string;
-	authorId: string;
-	createdAt: Date;
+  id: number;
+  title: string;
+  content: string;
+  userId: number;
+  createdAt: Date;
 };
 
-// Define your entity map
-type EntityMap = {
-	users: User;
-	posts: Post;
-};
-
-// Create store configuration
-const store = new ChimeraStore<EntityMap>({
-	query: {
-		defaults: {
-			trustQuery: true,
-			// idGetter can be a string (object key) or a function
-			// String: Uses the specified property as the ID (e.g., 'id', 'uuid', 'key')
-			// Function: Custom ID extraction logic (entityName, value) => string | number
-			idGetter: 'id',
-		},
-		entities: {
-			// Define configuration for each entity in your EntityMap
-			// Each entity must have its own fetchers, updaters, deleters, and creators
-			users: {
-				collectionFetcher: async (params, requestParams) => {
-					const response = await fetch(`/api/users`, {
-						signal: requestParams.signal,
-					});
-					return { data: await response.json() };
-				},
-				itemFetcher: async (params, requestParams) => {
-					const response = await fetch(`/api/users/${params.id}`, {
-						signal: requestParams.signal,
-					});
-					return { data: await response.json() };
-				},
-				itemUpdater: async (item, requestParams) => {
-					const response = await fetch(`/api/users/${item.id}`, {
-						method: 'PUT',
-						body: JSON.stringify(item),
-						signal: requestParams.signal,
-					});
-					return { data: await response.json() };
-				},
-				itemDeleter: async (id, requestParams) => {
-					await fetch(`/api/users/${id}`, {
-						method: 'DELETE',
-						signal: requestParams.signal,
-					});
-					return { result: { id, success: true } };
-				},
-				itemCreator: async (item, requestParams) => {
-					const response = await fetch(`/api/users`, {
-						method: 'POST',
-						body: JSON.stringify(item),
-						signal: requestParams.signal,
-					});
-					return { data: await response.json() };
-				},
-			},
-			posts: {
-				collectionFetcher: async (params, requestParams) => {
-					const response = await fetch(`/api/posts`, {
-						signal: requestParams.signal,
-					});
-					return { data: await response.json() };
-				},
-				itemFetcher: async (params, requestParams) => {
-					const response = await fetch(`/api/posts/${params.id}`, {
-						signal: requestParams.signal,
-					});
-					return { data: await response.json() };
-				},
-				itemUpdater: async (item, requestParams) => {
-					const response = await fetch(`/api/posts/${item.id}`, {
-						method: 'PUT',
-						body: JSON.stringify(item),
-						signal: requestParams.signal,
-					});
-					return { data: await response.json() };
-				},
-				itemDeleter: async (id, requestParams) => {
-					await fetch(`/api/posts/${id}`, {
-						method: 'DELETE',
-						signal: requestParams.signal,
-					});
-					return { result: { id, success: true } };
-				},
-				itemCreator: async (item, requestParams) => {
-					const response = await fetch(`/api/posts`, {
-						method: 'POST',
-						body: JSON.stringify(item),
-						signal: requestParams.signal,
-					});
-					return { data: await response.json() };
-				},
-			},
-		},
-	},
+const postStore = createChimeraEntityStore<"post", Post>({
+  name: "post",
+  idGetter: "id",
+  trustQuery: true,
+  collectionFetcher: async (params, requestParams) => {
+    const response = await fetch(`/api/posts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filter: params.filter, order: params.order }),
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
+  },
+  itemFetcher: async (params, requestParams) => {
+    const response = await fetch(`/api/posts/${params.id}`, {
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
+  },
+  // ... other CRUD operations
 });
 ```
 
@@ -151,64 +186,195 @@ const store = new ChimeraStore<EntityMap>({
 
 ```typescript
 import {
-	ChimeraStore,
-	chimeraCreateConjunction,
-	chimeraCreateOperator,
-	chimeraCreateOrderBy,
-	ChimeraOrderNulls
-} from '@hf-chimera/store';
-
-// Get a repository for a specific entity
-const userRepo = store.from('users');
-const postRepo = store.from('posts');
+  chimeraCreateConjunction,
+  chimeraCreateOperator,
+  chimeraCreateOrderBy,
+  ChimeraOrderNulls,
+} from "@hf-chimera/store";
 
 // Create a new user
-const newUserQuery = userRepo.createItem({
-	name: 'John Doe',
-	email: 'john@example.com',
-	age: 30,
+const newUserQuery = userStore.createItem({
+  name: "John Doe",
+  email: "john@example.com",
+  age: 30,
 });
 
 // Listen for creation events
-newUserQuery.on('created', (query) => {
-	console.log('User created:', query.data);
+newUserQuery.on("created", (query) => {
+  console.log("User created:", query.data);
 });
 
 // Get a specific user
-const userQuery = userRepo.getItem('user-123');
+const userQuery = userStore.getItem("user-123");
 
 // Listen for data updates
-userQuery.on('ready', (query) => {
-	console.log('User loaded:', query.data);
+userQuery.on("ready", (query) => {
+  console.log("User loaded:", query.data);
 });
 
 // Update user data
-userQuery.mutable.name = 'Jane Doe';
+userQuery.mutable.name = "Jane Doe";
 await userQuery.commit();
 
 // Get a collection with filtering and sorting
-const activeUsersQuery = userRepo.getCollection({
-	filter: chimeraCreateConjunction('and', [
-		chimeraCreateOperator('gte', 'age', 18),
-	]),
-	order: [
-		chimeraCreateOrderBy('name', false, ChimeraOrderNulls.Last),
-	],
+const activeUsersQuery = userStore.getCollection({
+  filter: chimeraCreateConjunction("and", [
+    chimeraCreateOperator("gte", "age", 18),
+  ]),
+  order: [chimeraCreateOrderBy("name", false, ChimeraOrderNulls.Last)],
 });
 
 // Listen for collection updates
-activeUsersQuery.on('updated', (query, items, oldItems) => {
-	console.log('Active users updated:', items);
+activeUsersQuery.on("updated", (query, items, oldItems) => {
+  console.log("Active users updated:", items);
 });
 
 // External updates (e.g., from WebSocket)
-store.updateOne('users', {
-	id: 'user-123',
-	name: 'Updated Name',
-	email: 'updated@example.com',
-	age: 31,
+userStore.updateOne({
+  id: 123,
+  name: "Updated Name",
+  email: "updated@example.com",
+  age: 31,
 });
 ```
+
+### React Integration
+
+For React applications, use the `@hf-chimera/react` package which provides hooks for seamless integration:
+
+```tsx
+import { createChimeraStoreHooks } from "@hf-chimera/react";
+import { createChimeraEntityStore } from "@hf-chimera/store";
+
+// Define your entity type
+type User = {
+  id: number;
+  name: string;
+  email: string;
+  age: number;
+};
+
+// Create your entity store
+const userStore = createChimeraEntityStore<"user", User>({
+  name: "user",
+  idGetter: "id",
+  // ... CRUD operations (collectionFetcher, itemFetcher, etc.)
+});
+
+// Create hooks bound to your user store
+// This generates: useChimeraUserStore, useChimeraUserCollection, useChimeraUserItem
+export const {
+  useChimeraUserStore,
+  useChimeraUserCollection,
+  useChimeraUserItem,
+} = createChimeraStoreHooks(userStore);
+
+// Use in components
+function UserList() {
+  const users = useChimeraUserCollection({
+    filter: chimeraCreateOperator("gte", "age", 18),
+    order: [chimeraCreateOrderBy("name", false, ChimeraOrderNulls.Last)],
+  });
+
+  if (!users.ready) return <div>Loading...</div>;
+  if (users.lastError) return <div>Error: {String(users.lastError)}</div>;
+
+  return (
+    <div>
+      {users.map((user) => (
+        <div key={user.id}>{user.name}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+**Learn more:** See the [React adapter documentation](./packages/adapters/react/README.md) for detailed usage.
+
+### Vue Integration
+
+For Vue 3 applications, use the `@hf-chimera/vue` package which provides composables:
+
+```vue
+<script setup lang="ts">
+import { createChimeraStoreComposables } from "@hf-chimera/vue";
+import { createChimeraEntityStore, chimeraCreateOperator, chimeraCreateOrderBy, ChimeraOrderNulls } from "@hf-chimera/store";
+
+// Define your entity type
+type User = {
+  id: number;
+  name: string;
+  email: string;
+  age: number;
+};
+
+// Create your entity store
+const userStore = createChimeraEntityStore<"user", User>({
+  name: "user",
+  idGetter: "id",
+  // ... CRUD operations (collectionFetcher, itemFetcher, etc.)
+});
+
+// Create composables bound to your user store
+// This generates: useChimeraUserStore, useChimeraUserCollection, useChimeraUserItem
+export const {
+  useChimeraUserStore,
+  useChimeraUserCollection,
+  useChimeraUserItem,
+} = createChimeraStoreComposables(userStore);
+
+// Use in components
+const users = useChimeraUserCollection({
+  filter: chimeraCreateOperator("gte", "age", 18),
+  order: [chimeraCreateOrderBy("name", false, ChimeraOrderNulls.Last)],
+});
+</script>
+
+<template>
+  <div>
+    <div v-if="!users.ready">Loading...</div>
+    <div v-else-if="users.lastError">Error: {{ String(users.lastError) }}</div>
+    <div v-else>
+      <div v-for="user in users" :key="user.id">{{ user.name }}</div>
+    </div>
+  </div>
+</template>
+```
+
+**Learn more:** See the [Vue adapter documentation](./packages/adapters/vue/README.md) for detailed usage.
+
+### Query Builder
+
+For complex queries, use the `@hf-chimera/query-builder` package for a fluent, type-safe API:
+
+```typescript
+import { ChimeraQueryBuilder } from "@hf-chimera/query-builder";
+
+// Create a query builder
+const query = new ChimeraQueryBuilder<typeof userStore, User, OperatorsMap>()
+  .where("active", "eq", true)
+  .where("age", "gte", 18)
+  .group("or", (q) => {
+    q.where("role", "eq", "admin").where("verified", "eq", true);
+  })
+  .orderBy("createdAt", true)
+  .orderBy("name");
+
+// Use with entity store
+const collection = userStore.getCollection(query.build());
+
+// Or with React hooks
+const users = useChimeraUserCollection((q) => {
+  q.where("active", "eq", true).where("age", "gte", 18).orderBy("name");
+});
+
+// Or with Vue composables
+const users = useChimeraUserCollection((q) => {
+  q.where("active", "eq", true).where("age", "gte", 18).orderBy("name");
+});
+```
+
+**Learn more:** See the [Query Builder documentation](./packages/qb/README.md) for detailed usage.
 
 ## Core Concepts
 
@@ -216,11 +382,10 @@ store.updateOne('users', {
 
 Chimera Store is built around several key concepts:
 
-1. **Store**: The main entry point that manages all entities
-2. **Repository**: Entity-specific data management with query capabilities
-3. **Query**: Represents a specific data request (single item or collection)
-4. **Cache**: Intelligent deduplication and memory management
-5. **Events**: Real-time updates and state synchronization
+1. **Entity Store**: Individual store instance for each entity type (created via `createChimeraEntityStore`)
+2. **Query**: Represents a specific data request (single item or collection)
+3. **Cache**: Intelligent deduplication and memory management per entity
+4. **Events**: Real-time updates and state synchronization
 
 ### Query Types
 
@@ -247,34 +412,56 @@ Flexible ordering with support for:
 
 ## API Reference
 
-### ChimeraStore
+### createChimeraEntityStore
 
-The main store class that manages all entities and provides cross-entity
-operations.
+The main function to create an entity store instance.
 
-#### Constructor
+#### Signature
 
 ```typescript
-const store = new ChimeraStore<EntityMap>(config)
+function createChimeraEntityStore<
+  TEntityName extends string,
+  TItem extends object,
+>(
+  config: ChimeraQueryEntityConfig<TEntityName, TItem, OperatorsMap>,
+): ChimeraEntityStore<TEntityName, TItem, OperatorsMap>;
 ```
 
-#### Methods
+#### Parameters
 
-- `from<EntityName>(entityName: EntityName)`: Get repository for specific entity
-- `updateOne<EntityName>(entityName: EntityName, item: EntityMap[EntityName])`: Update single item
-- `updateMany<EntityName>(entityName: EntityName, items: Iterable<EntityMap[EntityName]>)`: Update multiple items
-- `deleteOne<EntityName>(entityName: EntityName, id: ChimeraEntityId)`: Delete single item
-- `deleteMany<EntityName>(entityName: EntityName, ids: Iterable<ChimeraEntityId>)`: Delete multiple items
+- `config`: Entity configuration object containing:
+  - `name`: Entity name (string)
+  - `idGetter`: Property name (string) or function to extract ID from entity
+  - `trustQuery`: Whether to trust query results (boolean)
+  - `collectionFetcher`: Function to fetch multiple items
+  - `itemFetcher`: Function to fetch single item by ID
+  - `itemCreator`: Function to create new item
+  - `itemUpdater`: Function to update existing item
+  - `itemDeleter`: Function to delete item by ID
+  - Optional: `batchedCreator`, `batchedUpdater`, `batchedDeleter` for batch operations
 
-### ChimeraEntityRepository
+#### Returns
 
-Entity-specific repository with query capabilities.
+`ChimeraEntityStore<TEntityName, TItem, OperatorsMap>` instance
+
+### ChimeraEntityStore
+
+Entity-specific store with query capabilities.
+
+#### Properties
+
+- `name`: Entity name (readonly)
 
 #### Methods
 
 - `createItem(item: DeepPartial<Item>, meta?: any)`: Create new item
 - `getItem(id: ChimeraEntityId, meta?: any)`: Get single item
 - `getCollection(params: ChimeraCollectionParams)`: Get filtered/sorted collection
+- `updateOne(item: Item)`: Update single item externally
+- `updateMany(items: Item[])`: Update multiple items externally
+- `deleteOne(id: ChimeraEntityId)`: Delete single item externally
+- `deleteMany(ids: ChimeraEntityId[])`: Delete multiple items externally
+- `updateMixed(toAdd: Item[], toDelete: ChimeraEntityId[])`: Mixed update/delete operation
 
 ### ChimeraItemQuery
 
@@ -358,80 +545,101 @@ Collection queries implement the standard Array interface:
 ### Custom Filter Operators
 
 ```typescript
+import {
+  createChimeraEntityStore,
+  chimeraDefaultFilterConfig,
+} from "@hf-chimera/store";
+
+// Define custom filter config with custom operators
 const customFilterConfig = {
-	...chimeraDefaultFilterConfig,
-	operators: {
-		...chimeraDefaultFilterConfig.operators,
-		// Custom operator for text search
-		textSearch: (text: string, searchTerm: string) =>
-			text.toLowerCase().includes(searchTerm.toLowerCase()),
-	},
+  ...chimeraDefaultFilterConfig,
+  operators: {
+    ...chimeraDefaultFilterConfig.operators,
+    // Custom operator for text search
+    textSearch: (text: string, searchTerm: string) =>
+      text.toLowerCase().includes(searchTerm.toLowerCase()),
+  },
 };
 
-const store = new ChimeraStore<EntityMap, typeof customFilterConfig.operators>({
-	filter: customFilterConfig,
-	// ... other config
-});
+// Create entity store with custom filter config as second parameter
+const userStore = createChimeraEntityStore<
+  "user",
+  User,
+  typeof customFilterConfig.operators
+>(
+  {
+    name: "user",
+    idGetter: "id",
+    collectionFetcher: async (params, requestParams) => {
+      /* ... */
+    },
+    itemFetcher: async (params, requestParams) => {
+      /* ... */
+    },
+    // ... other CRUD operations
+  },
+  customFilterConfig, // Pass as second parameter
+);
 ```
 
 ### Complex Filtering Examples
 
 ```typescript
 import {
-	chimeraCreateConjunction,
-	chimeraCreateOperator,
-	chimeraCreateOrderBy,
-	ChimeraOrderNulls
-} from '@hf-chimera/store';
+  chimeraCreateConjunction,
+  chimeraCreateOperator,
+  chimeraCreateOrderBy,
+  ChimeraOrderNulls,
+} from "@hf-chimera/store";
 
 // Simple filter: users with age >= 18
-const adultUsers = userRepo.getCollection({
-	filter: chimeraCreateOperator('gte', 'age', 18),
+const adultUsers = userStore.getCollection({
+  filter: chimeraCreateOperator("gte", "age", 18),
 });
 
 // Complex filter: active users with specific age range and email domain
-const activeUsers = userRepo.getCollection({
-	filter: chimeraCreateConjunction('and', [
-		chimeraCreateOperator('gte', 'age', 18),
-		chimeraCreateOperator('lte', 'age', 65),
-		chimeraCreateOperator('endsWith', 'email', '@company.com'),
-		chimeraCreateOperator('eq', 'isActive', true),
-	]),
+const activeUsers = userStore.getCollection({
+  filter: chimeraCreateConjunction("and", [
+    chimeraCreateOperator("gte", "age", 18),
+    chimeraCreateOperator("lte", "age", 65),
+    chimeraCreateOperator("endsWith", "email", "@company.com"),
+    chimeraCreateOperator("eq", "isActive", true),
+  ]),
 });
 
 // OR filter: users with specific names or email domains
-const specificUsers = userRepo.getCollection({
-	filter: chimeraCreateConjunction('or', [
-		chimeraCreateOperator('in', 'name', ['John', 'Jane', 'Bob']),
-		chimeraCreateOperator('endsWith', 'email', '@gmail.com'),
-	]),
+const specificUsers = userStore.getCollection({
+  filter: chimeraCreateConjunction("or", [
+    chimeraCreateOperator("in", "name", ["John", "Jane", "Bob"]),
+    chimeraCreateOperator("endsWith", "email", "@gmail.com"),
+  ]),
 });
 
 // Nested filters: complex business logic
-const premiumUsers = userRepo.getCollection({
-	filter: chimeraCreateConjunction('and', [
-		chimeraCreateOperator('gte', 'age', 21),
-		chimeraCreateConjunction('or', [
-			chimeraCreateOperator('gte', 'subscriptionLevel', 'premium'),
-			chimeraCreateOperator('gte', 'totalSpent', 1000),
-		]),
-		chimeraCreateOperator('neq', 'status', 'suspended'),
-	]),
+const premiumUsers = userStore.getCollection({
+  filter: chimeraCreateConjunction("and", [
+    chimeraCreateOperator("gte", "age", 21),
+    chimeraCreateConjunction("or", [
+      chimeraCreateOperator("gte", "subscriptionLevel", "premium"),
+      chimeraCreateOperator("gte", "totalSpent", 1000),
+    ]),
+    chimeraCreateOperator("neq", "status", "suspended"),
+  ]),
 });
 
 // Text search with multiple conditions
-const searchResults = userRepo.getCollection({
-	filter: chimeraCreateConjunction('and', [
-		chimeraCreateConjunction('or', [
-			chimeraCreateOperator('contains', 'name', searchTerm),
-			chimeraCreateOperator('contains', 'email', searchTerm),
-		]),
-		chimeraCreateOperator('eq', 'isActive', true),
-	]),
-	order: [
-		chimeraCreateOrderBy('name', false, ChimeraOrderNulls.Last),
-		chimeraCreateOrderBy('createdAt', true, ChimeraOrderNulls.Last), // newest first
-	],
+const searchResults = userStore.getCollection({
+  filter: chimeraCreateConjunction("and", [
+    chimeraCreateConjunction("or", [
+      chimeraCreateOperator("contains", "name", searchTerm),
+      chimeraCreateOperator("contains", "email", searchTerm),
+    ]),
+    chimeraCreateOperator("eq", "isActive", true),
+  ]),
+  order: [
+    chimeraCreateOrderBy("name", false, ChimeraOrderNulls.Last),
+    chimeraCreateOrderBy("createdAt", true, ChimeraOrderNulls.Last), // newest first
+  ],
 });
 ```
 
@@ -439,35 +647,33 @@ const searchResults = userRepo.getCollection({
 
 ```typescript
 const customOrderConfig = {
-	...chimeraDefaultOrderConfig,
-	primitiveComparator: (a: unknown, b: unknown, nulls: ChimeraOrderNulls) => {
-		// Custom comparison logic
-		if (typeof a === 'string' && typeof b === 'string') {
-			return a.localeCompare(b, undefined, { numeric: true });
-		}
-		return chimeraDefaultOrderConfig.primitiveComparator(a, b, nulls);
-	},
+  ...chimeraDefaultOrderConfig,
+  primitiveComparator: (a: unknown, b: unknown, nulls: ChimeraOrderNulls) => {
+    // Custom comparison logic
+    if (typeof a === "string" && typeof b === "string") {
+      return a.localeCompare(b, undefined, { numeric: true });
+    }
+    return chimeraDefaultOrderConfig.primitiveComparator(a, b, nulls);
+  },
 };
 ```
 
 ### Event Handling
 
 ```typescript
-// Listen to store-level events
-store.on('itemAdded', (repository, item) => {
-	console.log('Item added to', repository, item);
+// Listen to entity store events
+userStore.on("itemAdded", ({ instance, item }) => {
+  console.log("Item added:", item);
 });
 
-// Listen to repository events
-const userRepo = store.from('users');
-userRepo.on('itemUpdated', (repo, item, oldItem) => {
-	console.log('User updated:', item, 'was:', oldItem);
+userStore.on("itemUpdated", ({ instance, item, oldItem }) => {
+  console.log("User updated:", item, "was:", oldItem);
 });
 
 // Listen to query events
-const userQuery = userRepo.getItem('user-123');
-userQuery.on('updated', (query, item, oldItem) => {
-	console.log('Query updated:', item);
+const userQuery = userStore.getItem(123);
+userQuery.on("updated", (query, item, oldItem) => {
+  console.log("Query updated:", item);
 });
 ```
 
@@ -475,18 +681,18 @@ userQuery.on('updated', (query, item, oldItem) => {
 
 ```typescript
 // Optimistic update with rollback
-const userQuery = userRepo.getItem('user-123');
+const userQuery = userStore.getItem(123);
 
 // Update optimistically
-userQuery.mutable.name = 'New Name';
+userQuery.mutable.name = "New Name";
 
 try {
-	await userQuery.commit();
-	console.log('Update successful');
+  await userQuery.commit();
+  console.log("Update successful");
 } catch (error) {
-	// Rollback on error
-	await userQuery.refetch();
-	console.log('Update failed, rolled back');
+  // Rollback on error
+  await userQuery.refetch();
+  console.log("Update failed, rolled back");
 }
 ```
 
@@ -496,33 +702,50 @@ try {
 
 ```typescript
 type ConfigExample = {
-	query: {
-		defaults: {
-			trustQuery: boolean; // Trust external data providers
-			idGetter: ((entityName: string, value: unknown) => string | number) | string; // Default ID getter
-			collectionFetcher?: (params: any, request: {
-				signal?: AbortSignal
-			}) => Promise<{ data: any[] }>;
-			itemFetcher?: (params: any, request: {
-				signal?: AbortSignal
-			}) => Promise<{ data: any }>;
-			itemUpdater?: (item: any, request: { signal?: AbortSignal }) => Promise<{
-				data: any
-			}>;
-			itemDeleter?: (id: string | number, request: {
-				signal?: AbortSignal
-			}) => Promise<{ result?: any }>;
-			itemCreator?: (item: any, request: { signal?: AbortSignal }) => Promise<{
-				data: any
-			}>;
-			// ... batched operations
-		};
-		entities: {
-			[entityName: string]: {
-				// Entity-specific overrides
-			};
-		};
-	};
+  query: {
+    defaults: {
+      trustQuery: boolean; // Trust external data providers
+      idGetter:
+        | ((entityName: string, value: unknown) => string | number)
+        | string; // Default ID getter
+      collectionFetcher?: (
+        params: any,
+        request: {
+          signal?: AbortSignal;
+        },
+      ) => Promise<{ data: any[] }>;
+      itemFetcher?: (
+        params: any,
+        request: {
+          signal?: AbortSignal;
+        },
+      ) => Promise<{ data: any }>;
+      itemUpdater?: (
+        item: any,
+        request: { signal?: AbortSignal },
+      ) => Promise<{
+        data: any;
+      }>;
+      itemDeleter?: (
+        id: string | number,
+        request: {
+          signal?: AbortSignal;
+        },
+      ) => Promise<{ result?: any }>;
+      itemCreator?: (
+        item: any,
+        request: { signal?: AbortSignal },
+      ) => Promise<{
+        data: any;
+      }>;
+      // ... batched operations
+    };
+    entities: {
+      [entityName: string]: {
+        // Entity-specific overrides
+      };
+    };
+  };
 };
 ```
 
@@ -530,16 +753,16 @@ type ConfigExample = {
 
 ```typescript
 type FilterConfigExample = {
-	filter: {
-		operators: {
-			eq: <T>(a: T, b: T) => boolean;
-			neq: <T>(a: T, b: T) => boolean;
-			gt?: (a: number, b: number) => boolean;
-			// ... custom operators
-		};
-		getFilterKey?: (input: unknown) => string; // Cache key generator for filters
-		getOperatorKey?: (input: unknown) => string; // Cache key generator for operators
-	};
+  filter: {
+    operators: {
+      eq: <T>(a: T, b: T) => boolean;
+      neq: <T>(a: T, b: T) => boolean;
+      gt?: (a: number, b: number) => boolean;
+      // ... custom operators
+    };
+    getFilterKey?: (input: unknown) => string; // Cache key generator for filters
+    getOperatorKey?: (input: unknown) => string; // Cache key generator for operators
+  };
 };
 ```
 
@@ -547,10 +770,14 @@ type FilterConfigExample = {
 
 ```typescript
 type OrderConfigExample = {
-	order: {
-		primitiveComparator: (a: unknown, b: unknown, nulls: ChimeraOrderNulls) => number; // Custom comparator
-		getKey: (input: unknown) => string; // Cache key generator
-	};
+  order: {
+    primitiveComparator: (
+      a: unknown,
+      b: unknown,
+      nulls: ChimeraOrderNulls,
+    ) => number; // Custom comparator
+    getKey: (input: unknown) => string; // Cache key generator
+  };
 };
 ```
 
@@ -595,4 +822,4 @@ MIT License — see [LICENSE](LICENSE) file for details.
 
 - **Issues**: [GitHub Issues](https://github.com/hf-chimera/store/issues)
 - **Documentation**: [GitHub Wiki](https://github.com/hf-chimera/store/wiki)
-- **Discussions**: [GitHub Discussions](https://github.com/hf-chimera/store/discussions) 
+- **Discussions**: [GitHub Discussions](https://github.com/hf-chimera/store/discussions)

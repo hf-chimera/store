@@ -1,0 +1,44 @@
+{
+	"name": "@hf-chimera/react",
+	"version": "0.2.0",
+	"description": "Cross-end reactivity API - React adapter",
+	"license": "MIT",
+	"author": "hewston",
+	"keywords": [
+		"reactivity",
+		"reactive",
+		"react",
+		"hooks",
+		"typescript",
+		"state-management"
+	],
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"require": "./dist/index.cjs",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"bugs": {
+		"url": "https://github.com/hf-chimera/store/issues"
+	},
+	"repository": {
+		"url": "https://github.com/hf-chimera/store"
+	},
+	"peerDependencies": {
+		"@hf-chimera/store": "workspace:^",
+		"@hf-chimera/adapters-shared": "workspace:^",
+		"react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+	},
+	"scripts": {
+		"build": "tsdown",
+		"changeset:patch": "node ../../../scripts/changeset-patch.mjs @hf-chimera/react"
+	}
+}

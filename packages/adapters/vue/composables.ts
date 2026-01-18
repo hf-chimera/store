@@ -1,158 +1,131 @@
-import { computed, customRef, isRef, type Ref, watch } from "vue";
+import {
+	type AnyChimeraParams,
+	CHIMERA_COLLECTION_UPDATE_EVENTS,
+	CHIMERA_ENTITY_STORE_UPDATE_EVENTS,
+	CHIMERA_ITEM_UPDATE_EVENTS,
+	normalizeParams,
+} from "@hf-chimera/adapters-shared";
+import { type ChimeraQueryBuilder, DefaultChimeraQueryBuilder } from "@hf-chimera/query-builder";
 import type {
-	AnyChimeraStore,
+	AnyChimeraEntityStore,
+	AnyChimeraEventEmitter,
 	ChimeraCollectionQuery,
 	ChimeraEntityId,
+	ChimeraEntityStoreEntity,
+	ChimeraEntityStoreName,
+	ChimeraEntityStoreOperatorsMap,
+	ChimeraEventEmitterEventNames,
 	ChimeraItemQuery,
-	ChimeraStoreEntities,
-	ChimeraStoreEntityType,
-	ChimeraStoreOperatorMap,
-} from "../../../src";
-import type { ChimeraEntityRepository } from "../../../src/store/ChimeraEntityRepository";
-import { type ChimeraQueryBuilder, DefaultChimeraQueryBuilder } from "../../qb";
-import { type AnyChimeraParams, normalizeParams } from "../shared/params";
+} from "@hf-chimera/store";
+import { computed, customRef, isRef, type Ref, watch } from "vue";
 
 type MaybeRef<T> = T | Ref<T>;
 type MaybeRefOrGetter<T> = MaybeRef<T> | (() => T);
 
+type ChimeraComposables<
+	TStore extends AnyChimeraEntityStore,
+	TQueryBuilder extends ChimeraQueryBuilder<TStore>,
+	TEntityName extends ChimeraEntityStoreName<TStore> = ChimeraEntityStoreName<TStore>,
+> = {
+	[K in TEntityName as `useChimera${Capitalize<K>}Store`]: () => Ref<TStore>;
+} & {
+	[K in TEntityName as `useChimera${Capitalize<K>}Collection`]: <TMeta = any>(
+		params: MaybeRefOrGetter<AnyChimeraParams<TStore, TMeta, Extract<TQueryBuilder, ChimeraQueryBuilder<TStore>>>>,
+	) => Ref<
+		ChimeraCollectionQuery<
+			ChimeraEntityStoreName<TStore>,
+			ChimeraEntityStoreEntity<TStore>,
+			ChimeraEntityStoreOperatorsMap<TStore>
+		>
+	>;
+} & {
+	[K in TEntityName as `useChimera${Capitalize<K>}Item`]: <TMeta = any>(
+		id: MaybeRefOrGetter<ChimeraEntityId>,
+		meta?: MaybeRefOrGetter<TMeta>,
+	) => Ref<ChimeraItemQuery<ChimeraEntityStoreName<TStore>, ChimeraEntityStoreEntity<TStore>>>;
+};
+
 const isFunction = (value: any): value is () => any => typeof value === "function";
 const toValue = <T>(value: MaybeRefOrGetter<T>): T =>
 	isFunction(value) ? value() : isRef(value) ? value.value : value;
+const capitalize = <T extends string>(s: T): Capitalize<T> =>
+	s !== "" ? (((s[0] as string).toUpperCase() + s.slice(1)) as Capitalize<T>) : ("" as Capitalize<T>);
 
-const CHIMERA_COLLECTION_UPDATE_EVENTS = [
-	"ready",
-	"updated",
-	"selfUpdated",
-	"selfItemCreated",
-	"itemAdded",
-	"itemUpdated",
-	"selfItemUpdated",
-	"itemDeleted",
-	"selfItemDeleted",
-	"error",
-] as const;
+const createEmitterRef = <TEventEmitter extends AnyChimeraEventEmitter>(
+	value: MaybeRefOrGetter<TEventEmitter>,
+	events: ChimeraEventEmitterEventNames<TEventEmitter>[],
+	name: string,
+) =>
+	customRef((track, trigger) => {
+		watch(
+			value,
+			(value, _, onCleanup) => {
+				const actualValue = toValue(value);
 
-const CHIMERA_ITEM_UPDATE_EVENTS = [
-	"initialized",
-	"selfCreated",
-	"ready",
-	"updated",
-	"selfUpdated",
-	"deleted",
-	"selfDeleted",
-	"error",
-] as const;
+				const handler = () => trigger();
+				events.forEach((event) => {
+					actualValue.on(event, handler);
+				});
+				onCleanup(() =>
+					events.forEach((event) => {
+						actualValue.off(event, handler);
+					}),
+				);
+			},
+			{ immediate: true },
+		);
 
-export type ChimeraCollectionRef<T extends AnyChimeraStore, EntityName extends ChimeraStoreEntities<T>> = Ref<
-	ChimeraCollectionQuery<ChimeraStoreEntityType<T, EntityName>, ChimeraStoreOperatorMap<T>>
->;
+		return {
+			get() {
+				track();
+				return toValue(value);
+			},
+			set() {
+				console.warn(`${name} ref is readonly`);
+			},
+		};
+	});
 
-export type ChimeraItemRef<T extends AnyChimeraStore, EntityName extends ChimeraStoreEntities<T>> = Ref<
-	ChimeraItemQuery<ChimeraStoreEntityType<T, EntityName>>
->;
-
-type ChimeraComposables<TStore extends AnyChimeraStore, TQueryBuilder extends ChimeraQueryBuilder<TStore>> = {
-	useChimeraStore: () => TStore;
-	useChimeraRepository: <TEntityName extends ChimeraStoreEntities<TStore>>(
-		entityName: MaybeRefOrGetter<TEntityName>,
-	) => Ref<ChimeraEntityRepository<ChimeraStoreEntityType<TStore, TEntityName>, ChimeraStoreOperatorMap<TStore>>>;
-	useChimeraCollection: <TEntityName extends ChimeraStoreEntities<TStore>, TMeta = any>(
-		entityName: MaybeRefOrGetter<TEntityName>,
-		params: MaybeRefOrGetter<
-			AnyChimeraParams<TStore, TEntityName, TMeta, Extract<TQueryBuilder, ChimeraQueryBuilder<TStore, TEntityName>>>
-		>,
-	) => ChimeraCollectionRef<TStore, TEntityName>;
-	useChimeraItem: <TEntityName extends ChimeraStoreEntities<TStore>, TMeta = any>(
-		entityName: MaybeRefOrGetter<TEntityName>,
-		id: MaybeRefOrGetter<ChimeraEntityId>,
-		meta?: MaybeRefOrGetter<TMeta>,
-	) => ChimeraItemRef<TStore, TEntityName>;
-};
-
-export function createChimeraComposables<TStore extends AnyChimeraStore>(
+export function createChimeraStoreComposables<TStore extends AnyChimeraEntityStore>(
 	store: TStore,
 ): ChimeraComposables<TStore, DefaultChimeraQueryBuilder<TStore>>;
-export function createChimeraComposables<
-	TStore extends AnyChimeraStore,
+export function createChimeraStoreComposables<
+	TStore extends AnyChimeraEntityStore,
 	TQueryBuilder extends ChimeraQueryBuilder<TStore>,
 >(store: TStore, createQueryBuilder: () => TQueryBuilder): ChimeraComposables<TStore, TQueryBuilder>;
-export function createChimeraComposables<
-	TStore extends AnyChimeraStore,
+export function createChimeraStoreComposables<
+	TStore extends AnyChimeraEntityStore,
 	TQueryBuilder extends ChimeraQueryBuilder<TStore>,
 >(store: TStore, createQueryBuilder?: () => TQueryBuilder): ChimeraComposables<TStore, TQueryBuilder> {
 	createQueryBuilder ||= () => new DefaultChimeraQueryBuilder() as unknown as TQueryBuilder;
 
-	const useChimeraRepository = <EntityName extends ChimeraStoreEntities<TStore>>(
-		entityName: MaybeRefOrGetter<EntityName>,
-	) => computed(() => store.from(toValue(entityName)));
-
 	return {
-		useChimeraStore: () => store,
-		useChimeraRepository,
-		useChimeraCollection: (entityName, params) => {
-			const repository = useChimeraRepository(entityName);
+		[`useChimera${capitalize(store.name)}Store`]: () =>
+			createEmitterRef(store, CHIMERA_ENTITY_STORE_UPDATE_EVENTS, "ChimeraEntityStore"),
+		[`useChimera${capitalize(store.name)}Collection`]: <TMeta = any>(
+			params: MaybeRefOrGetter<AnyChimeraParams<TStore, TMeta, Extract<TQueryBuilder, ChimeraQueryBuilder<TStore>>>>,
+		): Ref<
+			ChimeraCollectionQuery<
+				ChimeraEntityStoreName<TStore>,
+				ChimeraEntityStoreEntity<TStore>,
+				ChimeraEntityStoreOperatorsMap<TStore>
+			>
+		> => {
 			const normalizedParams = computed(() => normalizeParams(createQueryBuilder, toValue(params)));
-			const collection = computed(() => repository.value.getCollection(normalizedParams.value));
-
-			return customRef((track, trigger) => {
-				watch(
-					collection,
-					(collection, _, onCleanup) => {
-						const handler = () => trigger();
-						CHIMERA_COLLECTION_UPDATE_EVENTS.forEach((event) => {
-							collection.on(event, handler);
-						});
-						onCleanup(() =>
-							CHIMERA_COLLECTION_UPDATE_EVENTS.forEach((event) => {
-								collection.off(event, handler);
-							}),
-						);
-					},
-					{ immediate: true },
-				);
-
-				return {
-					get() {
-						track();
-						return collection.value;
-					},
-					set() {
-						console.warn("ChimeraCollectionRef is readonly");
-					},
-				};
-			});
+			return createEmitterRef(
+				computed(() => store.getCollection(normalizedParams.value)),
+				CHIMERA_COLLECTION_UPDATE_EVENTS,
+				"ChimeraCollectionQuery",
+			);
 		},
-		useChimeraItem: (entityName, id, meta) => {
-			const repository = useChimeraRepository(entityName);
-			const item = computed(() => repository.value.getItem(toValue(id), toValue(meta)));
-
-			return customRef((track, trigger) => {
-				watch(
-					item,
-					(item, _, onCleanup) => {
-						const handler = () => trigger();
-						CHIMERA_ITEM_UPDATE_EVENTS.forEach((event) => {
-							item.on(event, handler);
-						});
-						onCleanup(() =>
-							CHIMERA_ITEM_UPDATE_EVENTS.forEach((event) => {
-								item.off(event, handler);
-							}),
-						);
-					},
-					{ immediate: true },
-				);
-
-				return {
-					get() {
-						track();
-						return item.value;
-					},
-					set() {
-						console.warn("ChimeraItemRef is readonly");
-					},
-				};
-			});
-		},
-	};
+		[`useChimera${capitalize(store.name)}Item`]: <TMeta = any>(
+			id: MaybeRefOrGetter<ChimeraEntityId>,
+			meta?: MaybeRefOrGetter<TMeta>,
+		): Ref<ChimeraItemQuery<ChimeraEntityStoreName<TStore>, ChimeraEntityStoreEntity<TStore>>> =>
+			createEmitterRef(
+				computed(() => store.getItem(toValue(id), toValue(meta))),
+				CHIMERA_ITEM_UPDATE_EVENTS,
+				"ChimeraItemQuery",
+			),
+	} as ChimeraComposables<TStore, TQueryBuilder>;
 }

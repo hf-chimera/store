@@ -1,53 +1,9 @@
 {
 	"author": "hewston",
-	"name": "@hf-chimera/store",
-	"description": "Cross-end reactivity API",
-	"version": "0.1.0",
+	"description": "Cross-end reactivity API - Monorepo",
 	"license": "MIT",
-	"keywords": [
-		"state-management",
-		"reactivity",
-		"reactive",
-		"store",
-		"cross-platform",
-		"react",
-		"query-builder",
-		"typescript",
-		"fullstack",
-		"client-server",
-		"state-sync"
-	],
 	"type": "module",
-	"types": "./dist/index.d.ts",
-	"main": "./dist/index.cjs",
-	"module": "./dist/index.js",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"require": "./dist/index.cjs",
-			"import": "./dist/index.js"
-		},
-		"./defaults": {
-			"types": "./dist/defaults.d.ts",
-			"require": "./dist/defaults.cjs",
-			"import": "./dist/defaults.js"
-		},
-		"./qb": {
-			"types": "./dist/qb.d.ts",
-			"require": "./dist/qb.cjs",
-			"import": "./dist/qb.js"
-		},
-		"./adapters/react": {
-			"types": "./dist/adapters/react.d.ts",
-			"require": "./dist/adapters/react.cjs",
-			"import": "./dist/adapters/react.js"
-		},
-		"./adapters/vue": {
-			"types": "./dist/adapters/vue.d.ts",
-			"require": "./dist/adapters/vue.cjs",
-			"import": "./dist/adapters/vue.js"
-		}
-	},
+	"private": true,
 	"bugs": {
 		"url": "https://github.com/hf-chimera/store/issues"
 	},
@@ -56,39 +12,34 @@
 	},
 	"packageManager": "pnpm@10.20.0",
 	"devDependencies": {
-		"@biomejs/biome": "2.3.2",
-		"@changesets/cli": "^2.29.7",
-		"@commitlint/cli": "^20.1.0",
-		"@commitlint/config-conventional": "^20.0.0",
-		"@vitest/coverage-v8": "^4.0.6",
-		"@vitest/ui": "^4.0.6",
-		"husky": "^9.1.7",
-		"tsdown": "^0.15.12",
-		"typescript": "^5.9.3",
-		"vitest": "^4.0.6"
-	},
-	"peerDependencies": {
-		"@types/react": ">=16.8.0",
-		"react": ">=16.8.0",
-		"vue": ">=3.0.0"
-	},
-	"peerDependenciesMeta": {
-		"@types/react": {
-			"optional": true
-		},
-		"react": {
-			"optional": true
-		},
-		"vue": {
-			"optional": true
-		}
+		"@biomejs/biome": "2.3.11",
+		"@changesets/cli": "2.29.8",
+		"@commitlint/cli": "20.3.1",
+		"@commitlint/config-conventional": "20.3.1",
+		"@vitest/coverage-v8": "4.0.17",
+		"@vitest/ui": "4.0.17",
+		"husky": "9.1.7",
+		"react": "16.8.0",
+		"@types/react": "16.8.0",
+		"vue": "3.0.0",
+		"tsdown": "0.19.0",
+		"typescript": "5.9.3",
+		"vitest": "4.0.17"
 	},
 	"scripts": {
-		"build": "tsdown",
+		"build:store": "pnpm --filter @hf-chimera/store build",
+		"build:qb": "pnpm --filter @hf-chimera/query-builder build",
+		"build:shared": "pnpm --filter @hf-chimera/adapters-shared build",
+		"build:react": "pnpm --filter @hf-chimera/react build",
+		"build:vue": "pnpm --filter @hf-chimera/vue build",
+		"build:all": "pnpm build:store && pnpm build:qb && pnpm build:shared && pnpm build:react && pnpm build:vue",
+		"build": "pnpm build:all",
 		"lint": "tsc && pnpm biome check --write",
 		"prepare": "husky",
 		"test": "vitest run --passWithNoTests",
 		"test:coverage": "vitest --ui --coverage.enabled --coverage.all",
-		"release": "pnpm run build && pnpm publish --provenance --access public"
+		"changeset:minor": "node scripts/changeset-minor.mjs",
+		"changeset:major": "node scripts/changeset-major.mjs",
+		"release": "pnpm build:all && pnpm changeset publish"
 	}
 }

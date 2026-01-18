@@ -1,0 +1,41 @@
+{
+	"name": "@hf-chimera/query-builder",
+	"version": "0.2.0",
+	"description": "Cross-end reactivity API - Query builder",
+	"license": "MIT",
+	"author": "hewston",
+	"keywords": [
+		"query-builder",
+		"reactivity",
+		"reactive",
+		"typescript",
+		"fullstack"
+	],
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"require": "./dist/index.cjs",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"bugs": {
+		"url": "https://github.com/hf-chimera/store/issues"
+	},
+	"repository": {
+		"url": "https://github.com/hf-chimera/store"
+	},
+	"peerDependencies": {
+		"@hf-chimera/store": "workspace:^"
+	},
+	"scripts": {
+		"build": "tsdown",
+		"changeset:patch": "node ../../scripts/changeset-patch.mjs @hf-chimera/query-builder"
+	}
+}

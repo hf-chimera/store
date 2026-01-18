@@ -1,40 +1,32 @@
+import type { ChimeraQueryBuilder, QueryBuilderCreator } from "@hf-chimera/query-builder";
 import type {
-	AnyChimeraStore,
+	AnyChimeraEntityStore,
 	ChimeraCollectionParams,
-	ChimeraStoreEntities,
-	ChimeraStoreEntityType,
-	ChimeraStoreOperatorMap,
-} from "../../../src";
-import type { ChimeraQueryBuilder, QueryBuilderCreator } from "../../qb";
+	ChimeraEntityStoreEntity,
+	ChimeraEntityStoreOperatorsMap,
+} from "@hf-chimera/store";
 
 export type AnyChimeraParams<
-	TStore extends AnyChimeraStore,
-	TEntityName extends ChimeraStoreEntities<TStore>,
+	TStore extends AnyChimeraEntityStore,
 	TMeta = any,
-	QueryBuilder extends ChimeraQueryBuilder<TStore, TEntityName> = ChimeraQueryBuilder<TStore, TEntityName>,
+	QueryBuilder extends ChimeraQueryBuilder<TStore> = ChimeraQueryBuilder<TStore>,
 > =
-	| ChimeraCollectionParams<ChimeraStoreOperatorMap<TStore>, ChimeraStoreEntityType<TStore, TEntityName>, TMeta>
-	| QueryBuilderCreator<TStore, ChimeraStoreEntityType<TStore, TEntityName>, ChimeraStoreOperatorMap<TStore>>
+	| ChimeraCollectionParams<ChimeraEntityStoreOperatorsMap<TStore>, ChimeraEntityStoreEntity<TStore>, TMeta>
+	| QueryBuilderCreator<TStore>
 	| QueryBuilder;
 
-const isQueryBuilder = <TStore extends AnyChimeraStore, EntityName extends ChimeraStoreEntities<TStore>, Meta = any>(
-	params: AnyChimeraParams<TStore, EntityName, Meta>,
-): params is ChimeraQueryBuilder<TStore, EntityName> =>
-	"isChimeraQueryBuilder" in params && params.isChimeraQueryBuilder;
+const isQueryBuilder = <TStore extends AnyChimeraEntityStore, Meta = any>(
+	params: AnyChimeraParams<TStore, Meta>,
+): params is ChimeraQueryBuilder<TStore> => "isChimeraQueryBuilder" in params && params.isChimeraQueryBuilder;
 
-export const normalizeParams = <
-	TStore extends AnyChimeraStore,
-	TEntityName extends ChimeraStoreEntities<TStore>,
-	TMeta = any,
->(
-	createQueryBuilder: () => ChimeraQueryBuilder<TStore, TEntityName>,
-	params: AnyChimeraParams<TStore, TEntityName, TMeta>,
-): ChimeraCollectionParams<ChimeraStoreOperatorMap<TStore>, TEntityName, TMeta> => {
+export const normalizeParams = <TStore extends AnyChimeraEntityStore, TMeta = any>(
+	createQueryBuilder: () => ChimeraQueryBuilder<TStore>,
+	params: AnyChimeraParams<TStore, TMeta>,
+): ChimeraCollectionParams<ChimeraEntityStoreOperatorsMap<TStore>, ChimeraEntityStoreEntity<TStore>, TMeta> => {
 	if (isQueryBuilder(params)) return params.build();
 	if (typeof params === "function") {
 		const q = createQueryBuilder();
-		params(q);
-		return q.build();
+		return (params(q) ?? q).build();
 	}
 	return params;
 };

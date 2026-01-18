@@ -10,12 +10,25 @@ A type-safe query builder for constructing filters and ordering rules for Chimer
 - **Ordering**: Flexible sorting with null handling options
 - **Nested Groups**: Create complex logical groupings with AND/OR/NOT
 
+## Installation
+
+```bash
+# Install both the core store and query builder
+npm install @hf-chimera/store @hf-chimera/query-builder
+
+# Or with yarn
+yarn add @hf-chimera/store @hf-chimera/query-builder
+
+# Or with pnpm
+pnpm add @hf-chimera/store @hf-chimera/query-builder
+```
+
 ## Setting Up Your Store
 
-Before using `ChimeraQueryBuilder`, you need to create a Chimera Store with properly defined generic types. Here's a complete CRUD example:
+Before using `ChimeraQueryBuilder`, you need to create entity stores. Here's a complete example:
 
 ```typescript
-import { ChimeraStore } from '@hf-chimera/store';
+import { createChimeraEntityStore } from "@hf-chimera/store";
 
 // Define your entity types
 type Customer = {
@@ -32,86 +45,84 @@ type Order = {
   productName: string;
   quantity: number;
   totalAmount: number;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: "pending" | "completed" | "cancelled";
   createdAt: Date;
 };
 
-// Create store with EntityMap generic type
-export const store = new ChimeraStore<{
-  customer: Customer;
-  order: Order;
-}>({
-  query: {
-    defaults: {
-      idGetter: 'id',
-      async collectionFetcher(entity, { filter, order }) {
-        // Implement your fetch logic
-        const response = await fetch(`/api/${entity}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filter, order }),
-        });
-        return { data: await response.json() };
-      },
-      async itemCreator(entity, item) {
-        const response = await fetch(`/api/${entity}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item),
-        });
-        return { data: await response.json() };
-      },
-      async itemUpdater(entity, item) {
-        const response = await fetch(`/api/${entity}/${item.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item),
-        });
-        return { data: await response.json() };
-      },
-      async itemDeleter(entity, id) {
-        await fetch(`/api/${entity}/${id}`, {
-          method: 'DELETE',
-        });
-        return { result: { id, success: true } };
-      },
-      async itemFetcher(entity, { id }) {
-        const response = await fetch(`/api/${entity}/${id}`);
-        return { data: await response.json() };
-      },
-    },
-    entities: {
-      customer: {},
-      order: {},
-    },
+// Create entity stores
+export const customerStore = createChimeraEntityStore<"customer", Customer>({
+  name: "customer",
+  idGetter: "id",
+  async collectionFetcher(params, requestParams) {
+    const response = await fetch(`/api/customers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filter: params.filter, order: params.order }),
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
+  },
+  async itemCreator(item, requestParams) {
+    const response = await fetch(`/api/customers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item),
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
+  },
+  async itemUpdater(item, requestParams) {
+    const response = await fetch(`/api/customers/${item.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item),
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
+  },
+  async itemDeleter(id, requestParams) {
+    await fetch(`/api/customers/${id}`, {
+      method: "DELETE",
+      signal: requestParams.signal,
+    });
+    return { result: { id, success: true } };
+  },
+  async itemFetcher(params, requestParams) {
+    const response = await fetch(`/api/customers/${params.id}`, {
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
   },
 });
 
-// Export store type for use with hooks
-export type MyChimeraStore = typeof store;
+export const orderStore = createChimeraEntityStore<"order", Order>({
+  name: "order",
+  idGetter: "id",
+  // ... similar CRUD operations
+});
 ```
 
 ## Basic Usage
 
 ```typescript
-import { ChimeraQueryBuilder } from '@hf-chimera/store/qb';
-import { store } from './store';
+import { ChimeraQueryBuilder } from "@hf-chimera/query-builder";
+import { customerStore } from "./store";
 
 // Create a query builder instance
-const query = new ChimeraQueryBuilder<typeof store, Customer, any>();
+const query = new ChimeraQueryBuilder<typeof customerStore, Customer, any>();
 
 // Build a simple query
 query
-  .where('name', 'eq', 'John')
-  .where('age', 'gte', 18)
-  .orderBy('createdAt', true); // true = descending
+  .where("name", "eq", "John")
+  .where("age", "gte", 18)
+  .orderBy("createdAt", true); // true = descending
 
 // Build the query descriptor
 const descriptor = query.build();
 // Returns: { filter: {...}, order: [...] }
 
-// Use with repository
-const collection = store.from('customer').getCollection(descriptor);
+// Use with entity store
+const customers = customerStore.getCollection(descriptor);
 ```
 
 ## API Reference
@@ -121,6 +132,7 @@ const collection = store.from('customer').getCollection(descriptor);
 Adds an ordering rule to the query.
 
 **Parameters:**
+
 - `key`: `ChimeraPropertyGetter<Entity> | (keyof Entity & string)` - The property to order by (can be a property name string or a property getter function)
 - `desc`: `boolean` (default: `false`) - Whether to sort in descending order
 - `nulls`: `ChimeraOrderNulls` (default: `ChimeraOrderNulls.Last`) - How to handle null values (`Last` or `First`)
@@ -128,11 +140,12 @@ Adds an ordering rule to the query.
 **Returns:** `this` - Returns the builder instance for chaining
 
 **Example:**
+
 ```typescript
 query
-  .orderBy('name')                    // Ascending
-  .orderBy('age', true)               // Descending
-  .orderBy('createdAt', false, ChimeraOrderNulls.First); // Nulls first
+  .orderBy("name") // Ascending
+  .orderBy("age", true) // Descending
+  .orderBy("createdAt", false, ChimeraOrderNulls.First); // Nulls first
 ```
 
 ### `where(value, op, test)`
@@ -140,6 +153,7 @@ query
 Adds a filter condition to the query. Multiple `where` calls are combined with AND logic by default.
 
 **Parameters:**
+
 - `value`: `ChimeraPropertyGetter<Entity> | (KeysOfType<Entity, T> & string)` - The property to filter on (property name or getter function)
 - `op`: `Op extends keyof OperatorsMap & string` - The operator to use (e.g., `'eq'`, `'gte'`, `'in'`, etc.)
 - `test`: `Parameters<OperatorsMap[Op]>[1]` - The value to compare against (type depends on the operator)
@@ -147,11 +161,12 @@ Adds a filter condition to the query. Multiple `where` calls are combined with A
 **Returns:** `this` - Returns the builder instance for chaining
 
 **Example:**
+
 ```typescript
 query
-  .where('status', 'eq', 'active')
-  .where('age', 'gte', 18)
-  .where('tags', 'in', ['javascript', 'typescript']);
+  .where("status", "eq", "active")
+  .where("age", "gte", 18)
+  .where("tags", "in", ["javascript", "typescript"]);
 ```
 
 ### `whereNot(value, op, test)`
@@ -159,6 +174,7 @@ query
 Adds a negated filter condition (NOT condition) to the query.
 
 **Parameters:**
+
 - `value`: Same as `where()`
 - `op`: Same as `where()`
 - `test`: Same as `where()`
@@ -166,10 +182,9 @@ Adds a negated filter condition (NOT condition) to the query.
 **Returns:** `this` - Returns the builder instance for chaining
 
 **Example:**
+
 ```typescript
-query
-  .where('status', 'eq', 'active')
-  .whereNot('deleted', 'eq', true); // NOT deleted = true
+query.where("status", "eq", "active").whereNot("deleted", "eq", true); // NOT deleted = true
 ```
 
 ### `group(conjunction, builder)`
@@ -177,24 +192,24 @@ query
 Creates a grouped condition with a specified logical conjunction. Useful for creating complex logical expressions with AND, OR, or NOT groups.
 
 **Parameters:**
+
 - `conjunction`: `ChimeraConjunctionType` - The logical operator: `'and'`, `'or'`, or `'not'`
 - `builder`: `QueryBuilderCreator<Store, Entity, OperatorsMap>` - A callback function that receives a new builder instance for building the nested query
 
 **Returns:** `this` - Returns the builder instance for chaining
 
 **Example:**
+
 ```typescript
 // Create an OR group: (status = 'active' OR status = 'pending')
-query.group('or', (q) => {
-  q.where('status', 'eq', 'active')
-   .where('status', 'eq', 'pending');
+query.group("or", (q) => {
+  q.where("status", "eq", "active").where("status", "eq", "pending");
 });
 
 // Create a NOT group: NOT (age < 18 OR deleted = true)
-query.group('not', (q) => {
-  q.group('or', (nested) => {
-    nested.where('age', 'lt', 18)
-          .where('deleted', 'eq', true);
+query.group("not", (q) => {
+  q.group("or", (nested) => {
+    nested.where("age", "lt", 18).where("deleted", "eq", true);
   });
 });
 ```
@@ -204,10 +219,11 @@ query.group('not', (q) => {
 Builds and returns the final query descriptor object.
 
 **Returns:**
+
 ```typescript
 {
   filter: ChimeraFilterDescriptor<OperatorsMap, Entity> | null;
-  order: ChimeraOrderDescriptor<Entity>[] | null;
+  order: (ChimeraOrderDescriptor < Entity > []) | null;
 }
 ```
 
@@ -215,16 +231,17 @@ Builds and returns the final query descriptor object.
 - `order`: An array of order descriptors, or `null` if no ordering was specified
 
 **Example:**
+
 ```typescript
 const { filter, order } = query.build();
 
-// Use with repository
-const collection = repository.getCollection({ filter, order });
+// Use with store
+const collection = store.from("customer").getCollection({ filter, order });
 ```
 
 ## Examples
 
-*Note: The following examples use generic type parameters like `Store`, `User`, and `OperatorsMap`. See [Setting Up Your Store](#setting-up-your-store) section above for a complete store setup example.*
+_Note: The following examples use generic type parameters like `Store`, `User`, and `OperatorsMap`. See [Setting Up Your Store](#setting-up-your-store) section above for a complete store setup example._
 
 ### Simple Filtering
 
@@ -232,9 +249,9 @@ const collection = repository.getCollection({ filter, order });
 const query = new ChimeraQueryBuilder<Store, User, OperatorsMap>();
 
 query
-  .where('email', 'eq', 'user@example.com')
-  .where('active', 'eq', true)
-  .orderBy('createdAt', true);
+  .where("email", "eq", "user@example.com")
+  .where("active", "eq", true)
+  .orderBy("createdAt", true);
 
 const { filter, order } = query.build();
 ```
@@ -246,22 +263,21 @@ const query = new ChimeraQueryBuilder<Store, Post, OperatorsMap>();
 
 query
   // Main AND condition
-  .where('published', 'eq', true)
-  .where('createdAt', 'gte', new Date('2024-01-01'))
-  
+  .where("published", "eq", true)
+  .where("createdAt", "gte", new Date("2024-01-01"))
+
   // OR group: (authorId = '123' OR authorId = '456')
-  .group('or', (q) => {
-    q.where('authorId', 'eq', '123')
-     .where('authorId', 'eq', '456');
+  .group("or", (q) => {
+    q.where("authorId", "eq", "123").where("authorId", "eq", "456");
   })
-  
+
   // NOT group: NOT (tags contains 'draft')
-  .group('not', (q) => {
-    q.where('tags', 'contains', 'draft');
+  .group("not", (q) => {
+    q.where("tags", "contains", "draft");
   })
-  
-  .orderBy('createdAt', true)
-  .orderBy('title'); // Secondary sort
+
+  .orderBy("createdAt", true)
+  .orderBy("title"); // Secondary sort
 
 const { filter, order } = query.build();
 ```
@@ -272,11 +288,11 @@ const { filter, order } = query.build();
 const query = new ChimeraQueryBuilder<Store, Product, OperatorsMap>();
 
 query
-  .where('inStock', 'eq', true)
-  .orderBy('category')              // Primary sort: category ascending
-  .orderBy('price', false)         // Secondary sort: price ascending
-  .orderBy('rating', true)         // Tertiary sort: rating descending
-  .orderBy('name');                // Final sort: name ascending
+  .where("inStock", "eq", true)
+  .orderBy("category") // Primary sort: category ascending
+  .orderBy("price", false) // Secondary sort: price ascending
+  .orderBy("rating", true) // Tertiary sort: rating descending
+  .orderBy("name"); // Final sort: name ascending
 
 const { filter, order } = query.build();
 ```
@@ -287,21 +303,20 @@ const { filter, order } = query.build();
 const query = new ChimeraQueryBuilder<Store, Article, OperatorsMap>();
 
 query
-  .where('published', 'eq', true)
-  .whereNot('archived', 'eq', true)
-  
+  .where("published", "eq", true)
+  .whereNot("archived", "eq", true)
+
   // Either in featured category OR has high views
-  .group('or', (q) => {
-    q.where('category', 'eq', 'featured')
-     .where('views', 'gte', 1000);
+  .group("or", (q) => {
+    q.where("category", "eq", "featured").where("views", "gte", 1000);
   })
-  
+
   // But NOT in any of these tags
-  .group('not', (q) => {
-    q.where('tags', 'in', ['spam', 'deprecated']);
+  .group("not", (q) => {
+    q.where("tags", "in", ["spam", "deprecated"]);
   })
-  
-  .orderBy('publishedAt', true);
+
+  .orderBy("publishedAt", true);
 
 const { filter, order } = query.build();
 ```
@@ -323,14 +338,13 @@ All methods return `this`, allowing you to chain operations:
 
 ```typescript
 const query = new ChimeraQueryBuilder<Store, User, OperatorsMap>()
-  .where('active', 'eq', true)
-  .where('role', 'in', ['admin', 'moderator'])
-  .group('or', (q) => {
-    q.where('age', 'gte', 18)
-     .where('verified', 'eq', true);
+  .where("active", "eq", true)
+  .where("role", "in", ["admin", "moderator"])
+  .group("or", (q) => {
+    q.where("age", "gte", 18).where("verified", "eq", true);
   })
-  .orderBy('lastActive', true)
-  .orderBy('name');
+  .orderBy("lastActive", true)
+  .orderBy("name");
 
 const descriptor = query.build();
 ```
@@ -361,14 +375,14 @@ type OperatorsMap = {
 const query = new ChimeraQueryBuilder<Store, User, OperatorsMap>();
 
 // ✅ Valid
-query.where('name', 'eq', 'John');
-query.where('age', 'gte', 18);
-query.where('id', 'in', ['1', '2', '3']);
+query.where("name", "eq", "John");
+query.where("age", "gte", 18);
+query.where("id", "in", ["1", "2", "3"]);
 
 // ❌ TypeScript errors
-query.where('invalidProperty', 'eq', 'value'); // Property doesn't exist
-query.where('age', 'invalidOp', 18);          // Operator doesn't exist
-query.where('age', 'eq', 'not a number');     // Wrong type for operator
+query.where("invalidProperty", "eq", "value"); // Property doesn't exist
+query.where("age", "invalidOp", 18); // Operator doesn't exist
+query.where("age", "eq", "not a number"); // Wrong type for operator
 ```
 
 ## Integration
@@ -376,14 +390,13 @@ query.where('age', 'eq', 'not a number');     // Wrong type for operator
 ### With Repository
 
 ```typescript
-const repository = store.from('user');
 const query = new ChimeraQueryBuilder<typeof store, User, OperatorsMap>()
-  .where('active', 'eq', true)
-  .orderBy('createdAt', true);
+  .where("active", "eq", true)
+  .orderBy("createdAt", true);
 
-const collection = repository.getCollection(query.build());
+// Use with entity store
+const users = userStore.getCollection(query.build());
 ```
-
 
 ## Notes
 
@@ -392,4 +405,3 @@ const collection = repository.getCollection(query.build());
 - Use `group('not', ...)` or `whereNot()` for negations
 - Order rules are applied in the sequence they're added (first = primary sort)
 - An empty query builder will return `{ filter: null, order: null }`
-

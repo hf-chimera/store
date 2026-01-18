@@ -1,6 +1,6 @@
 import type { ChimeraOperatorMap, ChimeraSimplifiedFilter } from "../filter/types.ts";
 import type { ChimeraSimplifiedOrderDescriptor } from "../order/types.ts";
-import type { ChimeraEntityId, ChimeraEntityMap, ChimeraIdGetterFunc, DeepPartial, StrKeys } from "../shared/types.ts";
+import type { ChimeraEntityId, DeepPartial } from "../shared/types.ts";
 
 export enum ChimeraQueryFetchingState {
 	/** Query just initialized. */
@@ -58,17 +58,14 @@ export interface ChimeraQueryFetchingStatable {
  * Id getter types
  */
 
-export type ChimeraQueryEntityIdGetter<Entity> = keyof Entity | ChimeraIdGetterFunc<Entity>;
-
-export type ChimeraQueryDefaultEntityIdGetterFunction<EntityMap extends ChimeraEntityMap> = <
-	EntityName extends StrKeys<EntityMap>,
->(
-	name: EntityName,
-	newEntity: EntityMap[EntityName],
+export type ChimeraIdGetterFunction<TEntityName extends string, TEntity> = (
+	entity: TEntity,
+	entityName: TEntityName,
 ) => ChimeraEntityId;
-export type ChimeraQueryDefaultEntityIdGetter<EntityMap extends ChimeraEntityMap> =
-	| keyof EntityMap[keyof EntityMap]
-	| ChimeraQueryDefaultEntityIdGetterFunction<EntityMap>;
+
+export type ChimeraQueryEntityIdGetter<TEntityName extends string, TEntity> =
+	| keyof TEntity
+	| ChimeraIdGetterFunction<TEntityName, TEntity>;
 
 /**
  * Response types
@@ -119,192 +116,105 @@ export type ChimeraQueryEntityItemFetcherParams<Entity, Meta = any> = {
 	meta: Meta;
 };
 
-export type ChimeraQueryEntityCollectionFetcher<Entity, OperatorsMap extends ChimeraOperatorMap, Meta = any> = (
-	params: ChimeraQueryEntityCollectionFetcherParams<Entity, OperatorsMap, Meta>,
+export type ChimeraQueryEntityCollectionFetcher<
+	TEntityName extends string,
+	TEntity,
+	TOperatorsMap extends ChimeraOperatorMap,
+	TMeta = any,
+> = (
+	params: ChimeraQueryEntityCollectionFetcherParams<TEntity, TOperatorsMap, TMeta>,
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryCollectionFetcherResponse<Entity>>;
+	entityName: TEntityName,
+) => Promise<ChimeraQueryCollectionFetcherResponse<TEntity>>;
 
-export type ChimeraQueryEntityItemFetcher<Entity> = (
-	params: ChimeraQueryEntityItemFetcherParams<Entity>,
+export type ChimeraQueryEntityItemFetcher<TEntityName extends string, TEntity> = (
+	params: ChimeraQueryEntityItemFetcherParams<TEntity>,
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryItemFetcherResponse<Entity>>;
-
-export type ChimeraQueryDefaultCollectionFetcher<
-	EntityMap extends ChimeraEntityMap,
-	OperatorsMap extends ChimeraOperatorMap,
-> = <EntityName extends StrKeys<EntityMap>>(
-	entityName: EntityName,
-	params: ChimeraQueryEntityCollectionFetcherParams<EntityMap[EntityName], OperatorsMap>,
-	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryCollectionFetcherResponse<EntityMap[EntityName]>>;
-
-export type ChimeraQueryDefaultItemFetcher<EntityMap extends ChimeraEntityMap> = <
-	EntityName extends StrKeys<EntityMap>,
->(
-	entityName: EntityName,
-	params: ChimeraQueryEntityItemFetcherParams<EntityMap[EntityName]>,
-	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryItemFetcherResponse<EntityMap[EntityName]>>;
+	entityName: TEntityName,
+) => Promise<ChimeraQueryItemFetcherResponse<TEntity>>;
 
 /**
  * Updater types
  */
 
-export type ChimeraQueryEntityItemUpdater<Entity> = (
-	updatedEntity: Entity,
+export type ChimeraQueryEntityItemUpdater<TEntityName extends string, TEntity> = (
+	updatedEntity: TEntity,
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryItemFetcherResponse<Entity>>;
+	entityName: TEntityName,
+) => Promise<ChimeraQueryItemFetcherResponse<TEntity>>;
 
-export type ChimeraQueryEntityBatchedUpdater<Entity> = (
-	updatedEntities: Entity[],
+export type ChimeraQueryEntityBatchedUpdater<TEntityName extends string, TEntity> = (
+	updatedEntities: TEntity[],
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryCollectionFetcherResponse<Entity>>;
-
-export type ChimeraQueryDefaultItemUpdater<EntityMap extends ChimeraEntityMap> = <
-	EntityName extends StrKeys<EntityMap>,
->(
-	entityName: EntityName,
-	updatedEntity: EntityMap[EntityName],
-	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryItemFetcherResponse<EntityMap[EntityName]>>;
-
-export type ChimeraQueryDefaultBatchedUpdater<EntityMap extends ChimeraEntityMap> = <
-	EntityName extends StrKeys<EntityMap>,
->(
-	entityName: EntityName,
-	updatedEntities: EntityMap[EntityName][],
-	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryCollectionFetcherResponse<EntityMap[EntityName]>>;
+	entityName: TEntityName,
+) => Promise<ChimeraQueryCollectionFetcherResponse<TEntity>>;
 
 /**
  * Deleter types
  */
 
-export type ChimeraQueryEntityItemDeleter = (
+export type ChimeraQueryEntityItemDeleter<TEntityName extends string = string> = (
 	deleteId: ChimeraEntityId,
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
+	entityName: TEntityName,
 ) => Promise<ChimeraQueryItemDeleteResponse>;
 
-export type ChimeraQueryEntityBatchedDeleter = (
+export type ChimeraQueryEntityBatchedDeleter<TEntityName extends string = string> = (
 	deletedIds: ChimeraEntityId[],
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryBatchedDeleteResponse>;
-
-export type ChimeraQueryDefaultItemDeleter<EntityMap extends ChimeraEntityMap> = <
-	EntityName extends StrKeys<EntityMap>,
->(
-	entityName: EntityName,
-	deleteId: ChimeraEntityId,
-	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryItemDeleteResponse>;
-
-export type ChimeraQueryDefaultBatchedDeleter<EntityMap extends ChimeraEntityMap> = <
-	EntityName extends StrKeys<EntityMap>,
->(
-	entityName: EntityName,
-	deletedIds: ChimeraEntityId[],
-	requestParams: ChimeraQueryEntityFetcherRequestParams,
+	entityName: TEntityName,
 ) => Promise<ChimeraQueryBatchedDeleteResponse>;
 
 /**
  * Creator type
  */
 
-export type ChimeraQueryEntityItemCreator<Entity> = (
-	item: DeepPartial<Entity>,
+export type ChimeraQueryEntityItemCreator<TEntityName extends string, TEntity> = (
+	item: DeepPartial<TEntity>,
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryItemFetcherResponse<Entity>>;
+	entityName: TEntityName,
+) => Promise<ChimeraQueryItemFetcherResponse<TEntity>>;
 
-export type ChimeraQueryEntityBatchedCreator<Entity> = (
-	items: DeepPartial<Entity>[],
+export type ChimeraQueryEntityBatchedCreator<TEntityName extends string, TEntity> = (
+	items: DeepPartial<TEntity>[],
 	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryCollectionFetcherResponse<Entity>>;
-
-export type ChimeraQueryDefaultItemCreator<EntityMap extends ChimeraEntityMap> = <
-	EntityName extends StrKeys<EntityMap>,
->(
-	entityName: EntityName,
-	item: DeepPartial<EntityMap[EntityName]>,
-	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryItemFetcherResponse<EntityMap[EntityName]>>;
-
-export type ChimeraQueryDefaultBatchedCreator<EntityMap extends ChimeraEntityMap> = <
-	EntityName extends StrKeys<EntityMap>,
->(
-	entityName: EntityName,
-	items: DeepPartial<EntityMap[EntityName]>[],
-	requestParams: ChimeraQueryEntityFetcherRequestParams,
-) => Promise<ChimeraQueryCollectionFetcherResponse<EntityMap[EntityName]>>;
+	entityName: TEntityName,
+) => Promise<ChimeraQueryCollectionFetcherResponse<TEntity>>;
 
 /**
  * Config types
  */
 
-export type QueryEntityConfig<Entity extends object, OperatorsMap extends ChimeraOperatorMap> = {
-	name: string;
-
-	devMode: boolean;
-	trustQuery: boolean;
-	updateDebounceTimeout: number;
-
-	idGetter: ChimeraIdGetterFunc<Entity>;
-
-	collectionFetcher: ChimeraQueryEntityCollectionFetcher<Entity, OperatorsMap>;
-	itemFetcher: ChimeraQueryEntityItemFetcher<Entity>;
-
-	itemUpdater: ChimeraQueryEntityItemUpdater<Entity>;
-	batchedUpdater: ChimeraQueryEntityBatchedUpdater<Entity>;
-
-	itemDeleter: ChimeraQueryEntityItemDeleter;
-	batchedDeleter: ChimeraQueryEntityBatchedDeleter;
-
-	itemCreator: ChimeraQueryEntityItemCreator<Entity>;
-	batchedCreator: ChimeraQueryEntityBatchedCreator<Entity>;
-};
-
-export type ChimeraQueryEntityConfig<Entity, OperatorsMap extends ChimeraOperatorMap, Meta = any> = {
+export type ChimeraQueryEntityConfig<
+	TEntityName extends string,
+	TEntity,
+	TOperatorsMap extends ChimeraOperatorMap,
+	TMeta = any,
+> = {
+	name: TEntityName;
 	trustQuery?: boolean;
 	updateDebounceTimeout?: number;
 
-	idGetter?: ChimeraQueryEntityIdGetter<Entity>;
+	idGetter: ChimeraQueryEntityIdGetter<TEntityName, TEntity>;
 
-	collectionFetcher?: ChimeraQueryEntityCollectionFetcher<Entity, OperatorsMap, Meta>;
-	itemFetcher?: ChimeraQueryEntityItemFetcher<Entity>;
+	collectionFetcher?: ChimeraQueryEntityCollectionFetcher<TEntityName, TEntity, TOperatorsMap, TMeta>;
+	itemFetcher?: ChimeraQueryEntityItemFetcher<TEntityName, TEntity>;
 
-	itemUpdater?: ChimeraQueryEntityItemUpdater<Entity>;
-	batchedUpdater?: ChimeraQueryEntityBatchedUpdater<Entity>;
+	itemUpdater?: ChimeraQueryEntityItemUpdater<TEntityName, TEntity>;
+	batchedUpdater?: ChimeraQueryEntityBatchedUpdater<TEntityName, TEntity>;
 
-	itemDeleter?: ChimeraQueryEntityItemDeleter;
-	batchedDeleter?: ChimeraQueryEntityBatchedDeleter;
+	itemDeleter?: ChimeraQueryEntityItemDeleter<TEntityName>;
+	batchedDeleter?: ChimeraQueryEntityBatchedDeleter<TEntityName>;
 
-	itemCreator?: ChimeraQueryEntityItemCreator<Entity>;
-	batchedCreator?: ChimeraQueryEntityBatchedCreator<Entity>;
+	itemCreator?: ChimeraQueryEntityItemCreator<TEntityName, TEntity>;
+	batchedCreator?: ChimeraQueryEntityBatchedCreator<TEntityName, TEntity>;
 };
 
-export type ChimeraQueryDefaultsConfig<EntityMap extends ChimeraEntityMap, OperatorsMap extends ChimeraOperatorMap> = {
-	trustQuery?: boolean; // Disable extra filtering and sorting while creating a new query
-	updateDebounceTimeout?: number; // If set, will debounce updates with specified timeout in ms
-
-	idGetter?: ChimeraQueryDefaultEntityIdGetter<EntityMap>;
-
-	collectionFetcher?: ChimeraQueryDefaultCollectionFetcher<EntityMap, OperatorsMap>;
-	itemFetcher?: ChimeraQueryDefaultItemFetcher<EntityMap>;
-
-	itemUpdater?: ChimeraQueryDefaultItemUpdater<EntityMap>;
-	batchedUpdater?: ChimeraQueryDefaultBatchedUpdater<EntityMap>;
-
-	itemDeleter?: ChimeraQueryDefaultItemDeleter<EntityMap>;
-	batchedDeleter?: ChimeraQueryDefaultBatchedDeleter<EntityMap>;
-
-	itemCreator?: ChimeraQueryDefaultItemCreator<EntityMap>;
-	batchedCreator?: ChimeraQueryDefaultBatchedCreator<EntityMap>;
-};
-
-export type ChimeraEntityConfigMap<EntityMap extends ChimeraEntityMap, OperatorsMap extends ChimeraOperatorMap> = {
-	[K in keyof EntityMap]: ChimeraQueryEntityConfig<EntityMap[K], OperatorsMap>;
-};
-
-export type ChimeraQueryConfig<EntityMap extends ChimeraEntityMap, OperatorsMap extends ChimeraOperatorMap> = {
-	defaults: ChimeraQueryDefaultsConfig<EntityMap, OperatorsMap>;
-	entities: ChimeraEntityConfigMap<EntityMap, OperatorsMap>;
+export type QueryEntityConfig<
+	TEntityName extends string,
+	TEntity,
+	TOperatorsMap extends ChimeraOperatorMap,
+	TMeta = any,
+> = Required<ChimeraQueryEntityConfig<TEntityName, TEntity, TOperatorsMap, TMeta>> & {
+	idGetter: ChimeraIdGetterFunction<TEntityName, TEntity>;
 };

@@ -1,0 +1,44 @@
+{
+	"name": "@hf-chimera/vue",
+	"version": "0.2.0",
+	"description": "Cross-end reactivity API - Vue adapter",
+	"license": "MIT",
+	"author": "hewston",
+	"keywords": [
+		"reactivity",
+		"reactive",
+		"vue",
+		"composables",
+		"typescript",
+		"state-management"
+	],
+	"type": "module",
+	"types": "./dist/index.d.ts",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"require": "./dist/index.cjs",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"bugs": {
+		"url": "https://github.com/hf-chimera/store/issues"
+	},
+	"repository": {
+		"url": "https://github.com/hf-chimera/store"
+	},
+	"peerDependencies": {
+		"@hf-chimera/store": "workspace:^",
+		"@hf-chimera/adapters-shared": "workspace:^",
+		"vue": ">=3.0.0"
+	},
+	"scripts": {
+		"build": "tsdown",
+		"changeset:patch": "node ../../../scripts/changeset-patch.mjs @hf-chimera/vue"
+	}
+}

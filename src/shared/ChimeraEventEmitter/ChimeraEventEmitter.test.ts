@@ -297,6 +297,13 @@ describe("ChimeraEventEmitter", () => {
 			expect(e.listeners("foo")).eql([]);
 			expect(e._eventsCount).equals(0);
 		});
+
+		it("not fails if listener is not found", () => {
+			var e = new ChimeraEventEmitter();
+			e.on("foo", () => {});
+			e.on("bar", () => {});
+			expect(e.removeListener("baz", () => {})).equals(e);
+		});
 	});
 
 	describe("ChimeraEventEmitter#removeAllListeners", () => {

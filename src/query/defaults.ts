@@ -1,44 +1,23 @@
 import type { chimeraDefaultFilterOperators } from "../filter/defaults";
-import type { ChimeraEntityMap } from "../shared/types.ts";
-import { ChimeraQueryNotSpecifiedError } from "./errors.ts";
-import type { ChimeraQueryConfig, ChimeraQueryDefaultsConfig } from "./types.ts";
+import type { ChimeraQueryEntityConfig } from "./types.ts";
 
-export const chimeraDefaultQueryConfig = {
-	defaults: {
-		batchedCreator: (entity: string) => {
-			throw new ChimeraQueryNotSpecifiedError(entity, "batchedCreator");
-		},
-		batchedDeleter: (entity: string) => {
-			throw new ChimeraQueryNotSpecifiedError(entity, "batchedDeleter");
-		},
-		batchedUpdater: (entity: string) => {
-			throw new ChimeraQueryNotSpecifiedError(entity, "batchedUpdater");
-		},
+const throwNotImplemented = (method: string) =>
+	function () {
+		throw new Error(`${method} not implemented for entity "${arguments[arguments.length - 1]}"`);
+	};
 
-		collectionFetcher: (entity: string) => {
-			throw new ChimeraQueryNotSpecifiedError(entity, "collectionFetcher");
-		},
-
-		idGetter: (entity: string) => {
-			throw new ChimeraQueryNotSpecifiedError(entity, "idGetter");
-		},
-
-		itemCreator: (entity: string) => {
-			throw new ChimeraQueryNotSpecifiedError(entity, "itemCreator");
-		},
-
-		itemDeleter: (entity: string) => {
-			throw new ChimeraQueryNotSpecifiedError(entity, "itemDeleter");
-		},
-		itemFetcher: (entity: string) => {
-			throw new ChimeraQueryNotSpecifiedError(entity, "itemFetcher");
-		},
-
-		itemUpdater: (entity: string) => {
-			throw new ChimeraQueryNotSpecifiedError(entity, "itemUpdater");
-		},
-		trustQuery: true,
-		updateDebounceTimeout: 0,
-	} as Required<ChimeraQueryDefaultsConfig<ChimeraEntityMap, typeof chimeraDefaultFilterOperators>>,
-	entities: {},
-} satisfies ChimeraQueryConfig<ChimeraEntityMap, typeof chimeraDefaultFilterOperators>;
+export const chimeraDefaultQueryEntityConfig = {
+	trustQuery: true,
+	updateDebounceTimeout: 0,
+	collectionFetcher: throwNotImplemented("collectionFetcher"),
+	itemFetcher: throwNotImplemented("itemFetcher"),
+	itemUpdater: throwNotImplemented("itemUpdater"),
+	batchedUpdater: throwNotImplemented("batchedUpdater"),
+	itemDeleter: throwNotImplemented("itemDeleter"),
+	batchedDeleter: throwNotImplemented("batchedDeleter"),
+	itemCreator: throwNotImplemented("itemCreator"),
+	batchedCreator: throwNotImplemented("batchedCreator"),
+} satisfies Omit<
+	Required<ChimeraQueryEntityConfig<string, object, typeof chimeraDefaultFilterOperators>>,
+	"idGetter" | "name"
+>;

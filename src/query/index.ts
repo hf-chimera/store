@@ -1,6 +1,17 @@
-export type { ChimeraCollectionQueryEventMap } from "./ChimeraCollectionQuery.ts";
+export type {
+	AnyChimeraCollectionQuery,
+	ChimeraCollectionQueryEntity,
+	ChimeraCollectionQueryEventMap,
+	ChimeraCollectionQueryName,
+	ChimeraCollectionQueryOperatorsMap,
+} from "./ChimeraCollectionQuery.ts";
 export { ChimeraCollectionQuery } from "./ChimeraCollectionQuery.ts";
-export type { ChimeraItemQueryEventMap } from "./ChimeraItemQuery.ts";
+export type {
+	AnyChimeraItemQuery,
+	ChimeraItemQueryEntity,
+	ChimeraItemQueryEventMap,
+	ChimeraItemQueryName,
+} from "./ChimeraItemQuery.ts";
 export { ChimeraItemQuery } from "./ChimeraItemQuery.ts";
 export {
 	ChimeraQueryError,
@@ -11,21 +22,8 @@ export {
 	ChimeraQueryTrustIdMismatchError,
 } from "./errors.ts";
 export type {
-	ChimeraEntityConfigMap,
 	ChimeraQueryBatchedDeleteResponse,
 	ChimeraQueryCollectionFetcherResponse,
-	ChimeraQueryConfig,
-	ChimeraQueryDefaultBatchedCreator,
-	ChimeraQueryDefaultBatchedDeleter,
-	ChimeraQueryDefaultBatchedUpdater,
-	ChimeraQueryDefaultCollectionFetcher,
-	ChimeraQueryDefaultEntityIdGetter,
-	ChimeraQueryDefaultEntityIdGetterFunction,
-	ChimeraQueryDefaultItemCreator,
-	ChimeraQueryDefaultItemDeleter,
-	ChimeraQueryDefaultItemFetcher,
-	ChimeraQueryDefaultItemUpdater,
-	ChimeraQueryDefaultsConfig,
 	ChimeraQueryDeletionResult,
 	ChimeraQueryEntityBatchedCreator,
 	ChimeraQueryEntityBatchedDeleter,

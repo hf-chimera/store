@@ -1,6 +1,6 @@
-# ChimeraStore Vue Integration
+# ChimeraEntityStore Vue Integration
 
-This package provides Vue 3 composables for seamless integration with ChimeraStore, enabling fully reactive data queries in Vue applications.
+This package provides Vue 3 composables for seamless integration with ChimeraEntityStore, enabling fully reactive data queries in Vue applications.
 
 ## Features
 
@@ -12,11 +12,14 @@ This package provides Vue 3 composables for seamless integration with ChimeraSto
 ## Installation
 
 ```bash
-# Install the main package
-npm install @hf-chimera/store
+# Install both the core store and Vue adapter
+npm install @hf-chimera/store @hf-chimera/vue
 
-# Install Vue (if not already installed)
+# Vue is a peer dependency
 npm install vue
+
+# Or install all at once
+npm install @hf-chimera/store @hf-chimera/vue vue
 ```
 
 ## Usage
@@ -26,7 +29,7 @@ npm install vue
 Import from the Vue-specific entry point:
 
 ```ts
-import { createChimeraComposables } from '@hf-chimera/store/vue';
+import { createChimeraComposables } from "@hf-chimera/store/vue";
 // In your app, call createChimeraComposables(store) and export the returned composables
 ```
 
@@ -35,70 +38,82 @@ import { createChimeraComposables } from '@hf-chimera/store/vue';
 Import and use the core store directly:
 
 ```ts
-import { ChimeraStore } from '@hf-chimera/store';
+import { createChimeraEntityStore } from "@hf-chimera/store";
+import { createChimeraStoreComposables } from "@hf-chimera/vue";
 ```
 
 ## Quick Start
 
 ### 1. Prepare composables for the store
 
-Use `createChimeraComposables` to create Vue composables bound to your store instance.
+Use `createChimeraStoreComposables` to create Vue composables bound to your entity store instance.
 
 ```ts
-import { ChimeraStore } from '@hf-chimera/store';
-import { createChimeraComposables } from '@hf-chimera/store/vue';
-import type { MyEntityMap } from './types';
+import { createChimeraEntityStore } from "@hf-chimera/store";
+import { createChimeraStoreComposables } from "@hf-chimera/vue";
 
-// Create your store instance
-const store = new ChimeraStore<MyEntityMap>({
-  query: {
-    defaults: {
-      idGetter: 'id',
-      async collectionFetcher(entity, { filter, order }) {
-        return { data: await fetchCollection(entity, filter, order) };
-      },
-      async itemFetcher(entity, { id }) {
-        return { data: await fetchItem(entity, id) };
-      },
-      // ... other fetchers
-    },
-    entities: {
-      customer: {},
-      order: {},
-    },
+// Define your entity type
+type Customer = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+// Create your entity store instance
+const customerStore = createChimeraEntityStore<"customer", Customer>({
+  name: "customer",
+  idGetter: "id",
+  async collectionFetcher(params, requestParams) {
+    const response = await fetch("/api/customers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filter: params.filter, order: params.order }),
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
   },
+  async itemFetcher(params, requestParams) {
+    const response = await fetch(`/api/customers/${params.id}`, {
+      signal: requestParams.signal,
+    });
+    return { data: await response.json() };
+  },
+  // ... other CRUD operations
 });
 
+// Create composables bound to your customer store
+// This generates: useChimeraCustomerStore, useChimeraCustomerCollection, useChimeraCustomerItem
 export const {
-  useChimeraStore,
-  useChimeraRepository,
-  useChimeraCollection,
-  useChimeraItem,
-} = createChimeraComposables(store);
+  useChimeraCustomerStore,
+  useChimeraCustomerCollection,
+  useChimeraCustomerItem,
+} = createChimeraStoreComposables(customerStore);
 ```
 
 ### 2. Use Collection Queries in a component
 
-`useChimeraCollection` returns a Vue `Ref` to a `ChimeraCollectionQuery`. In `<template>`, refs are auto-unwrapped. In `<script setup>`, access via `.value`.
+`useChimeraCustomerCollection` returns a Vue `Ref` to a `ChimeraCollectionQuery`. In `<template>`, refs are auto-unwrapped. In `<script setup>`, access via `.value`.
 
 ```vue
 <script setup lang="ts">
-import { useChimeraCollection } from '@/store/chimera';
+import { useChimeraCustomerCollection } from "@/store/chimera";
 
-const customers = useChimeraCollection('customer', {
-  filter: { status: 'active' },
-  order: [{ field: 'name', direction: 'asc' }],
+const customers = useChimeraCustomerCollection({
+  filter: { status: "active" },
+  order: [{ field: "name", direction: "asc" }],
 });
 
 function addCustomer() {
-  customers.value.create({ name: 'New Customer' });
+  customers.value.create({ name: "New Customer" });
 }
 </script>
 
 <template>
   <div>
     <div v-if="!customers.ready">Loading...</div>
-    <div v-else-if="customers.lastError">Error: {{ String(customers.lastError) }}</div>
+    <div v-else-if="customers.lastError">
+      Error: {{ String(customers.lastError) }}
+    </div>
     <template v-else>
       <div v-for="c in customers" :key="c.id">
         {{ c.name }}
@@ -114,16 +129,18 @@ function addCustomer() {
 
 ```vue
 <script setup lang="ts">
-import { useChimeraItem } from '@/store/chimera';
+import { useChimeraCustomerItem } from "@/store/chimera";
 
-interface Props { customerId: string }
+interface Props {
+  customerId: string;
+}
 const props = defineProps<Props>();
 
-const customer = useChimeraItem('customer', () => props.customerId);
+const customer = useChimeraCustomerItem(() => props.customerId);
 
 function updateName() {
   if (!customer.value.data) return;
-  customer.value.mutable.name = 'Updated Name';
+  customer.value.mutable.name = "Updated Name";
   customer.value.commit();
 }
 </script>
@@ -131,7 +148,9 @@ function updateName() {
 <template>
   <div>
     <div v-if="!customer.ready">Loading...</div>
-    <div v-else-if="customer.lastError">Error: {{ String(customer.lastError) }}</div>
+    <div v-else-if="customer.lastError">
+      Error: {{ String(customer.lastError) }}
+    </div>
     <div v-else-if="!customer.data">Customer not found</div>
     <div v-else>
       <h3>{{ customer.data.name }}</h3>
@@ -146,27 +165,27 @@ function updateName() {
 You can pass a builder function instead of a params object. The composable will call it to build the query.
 
 ```ts
-import { useChimeraCollection } from '@/store/chimera';
+import { useChimeraCollection } from "@/store/chimera";
 
-const activeUsers = useChimeraCollection('customer', (q) => {
-  q.where('email', 'contains', '@example.com')
-   .orderBy('createdAt', true);
+const activeUsers = useChimeraCollection("customer", (q) => {
+  q.where("email", "contains", "@example.com").orderBy("createdAt", true);
 });
 ```
 
 Complex example with groups:
 
 ```ts
-const featuredOrders = useChimeraCollection('order', (q) => {
-  q.where('status', 'eq', 'completed')
-   // Must be either high value OR from VIP customer
-   .group('or', (group) => {
-     group.where('totalAmount', 'gte', 1000)
-          .where('customerId', 'in', [1, 2, 3]);
-   })
-   // But not cancelled
-   .whereNot('status', 'eq', 'cancelled')
-   .orderBy('totalAmount', true);
+const featuredOrders = useChimeraCollection("order", (q) => {
+  q.where("status", "eq", "completed")
+    // Must be either high value OR from VIP customer
+    .group("or", (group) => {
+      group
+        .where("totalAmount", "gte", 1000)
+        .where("customerId", "in", [1, 2, 3]);
+    })
+    // But not cancelled
+    .whereNot("status", "eq", "cancelled")
+    .orderBy("totalAmount", true);
 });
 ```
 
@@ -176,24 +195,7 @@ For more information on the query builder, see the [ChimeraQueryBuilder document
 
 ### Composables
 
-#### `useChimeraStore<Store>()`
-
-Access the ChimeraStore instance directly.
-
-```ts
-const store = useChimeraStore<MyChimeraStore>();
-const customerRepo = store.from('customer');
-```
-
-#### `useChimeraRepository<EntityName>(entityName)`
-
-Access a specific entity repository.
-
-```ts
-const customerRepo = useChimeraRepository<'customer'>('customer');
-```
-
-#### `useChimeraCollection<EntityName, Meta>(entityName, params)`
+#### `useChimeraCustomerCollection<Meta>(params)`
 
 Composable for collection queries with automatic reactivity.
 
@@ -231,11 +233,3 @@ Returns: `Ref<ChimeraItemQuery<Item>>` — see [ChimeraItemQuery](../../../READM
 3. **Optimistic Updates**: Use the `mutable` object on item queries and call `commit()`.
 4. **Batch Operations**: Prefer collection-level operations when possible.
 5. **Query Builder**: Prefer the builder function for complex filtering and ordering with strong types.
-
-## Migration from Vanilla ChimeraStore
-
-If you're using ChimeraStore without Vue, you can gradually adopt the Vue composables:
-
-1. Keep your existing `ChimeraStore` instance.
-2. Create composables with `createChimeraComposables(store)` and replace direct store calls in components.
-3. The Vue integration works with existing stores without changes.

@@ -25,6 +25,18 @@
 		"sourceMap": true,
 		"strict": true,
 		"target": "ES2022",
-		"verbatimModuleSyntax": true
+		"verbatimModuleSyntax": true,
+		"paths": {
+			"@hf-chimera/store": ["./packages/store"],
+			"@hf-chimera/store/*": ["./packages/store/*"],
+			"@hf-chimera/query-builder": ["./packages/qb"],
+			"@hf-chimera/query-builder/*": ["./packages/qb/*"],
+			"@hf-chimera/adapters-shared": ["./packages/adapters/shared"],
+			"@hf-chimera/adapters-shared/*": ["./packages/adapters/shared/*"],
+			"@hf-chimera/react": ["./packages/adapters/react"],
+			"@hf-chimera/react/*": ["./packages/adapters/react/*"],
+			"@hf-chimera/vue": ["./packages/adapters/vue"],
+			"@hf-chimera/vue/*": ["./packages/adapters/vue/*"]
+		}
 	}
 }
