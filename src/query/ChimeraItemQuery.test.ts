@@ -34,12 +34,12 @@ interface TestItemWithNumberId {
 }
 
 describe("ChimeraItemQuery", () => {
-	let mockConfig: QueryEntityConfig<'test', TestItem, ChimeraOperatorMap>;
+	let mockConfig: QueryEntityConfig<"test", TestItem, ChimeraOperatorMap>;
 	let mockParams: { id: string; meta: any };
-	let mockFetcher: Mock<ChimeraQueryEntityItemFetcher<'test', TestItem>>;
-	let mockUpdater: Mock<ChimeraQueryEntityItemUpdater<'test', TestItem>>;
-	let mockDeleter: Mock<ChimeraQueryEntityItemDeleter<'test'>>;
-	let mockCreator: Mock<ChimeraQueryEntityItemCreator<'test', TestItem>>;
+	let mockFetcher: Mock<ChimeraQueryEntityItemFetcher<"test", TestItem>>;
+	let mockUpdater: Mock<ChimeraQueryEntityItemUpdater<"test", TestItem>>;
+	let mockDeleter: Mock<ChimeraQueryEntityItemDeleter<"test">>;
+	let mockCreator: Mock<ChimeraQueryEntityItemCreator<"test", TestItem>>;
 
 	beforeEach(() => {
 		mockFetcher = vi.fn();
@@ -201,7 +201,10 @@ describe("ChimeraItemQuery", () => {
 
 		it("should throw error when refetching during creation", () => {
 			mockCreator.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
-			const query = new ChimeraItemQuery(mockConfig, chimeraDefaultDebugConfig, mockParams, null, { name: "New", value: 42 });
+			const query = new ChimeraItemQuery(mockConfig, chimeraDefaultDebugConfig, mockParams, null, {
+				name: "New",
+				value: 42,
+			});
 
 			expect(() => query.refetch()).toThrow(ChimeraQueryNotCreatedError);
 		});
@@ -243,7 +246,10 @@ describe("ChimeraItemQuery", () => {
 
 		it("should throw error when updating during creation", () => {
 			mockCreator.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
-			const query = new ChimeraItemQuery(mockConfig, chimeraDefaultDebugConfig, mockParams, null, { name: "New", value: 42 });
+			const query = new ChimeraItemQuery(mockConfig, chimeraDefaultDebugConfig, mockParams, null, {
+				name: "New",
+				value: 42,
+			});
 
 			const item: TestItem = { id: "test-1", name: "Test", value: 42 };
 			expect(() => query.update(item)).toThrow(ChimeraQueryNotCreatedError);
@@ -349,7 +355,10 @@ describe("ChimeraItemQuery", () => {
 
 		it("should throw error when deleting during creation", () => {
 			mockCreator.mockResolvedValue({ data: { id: "test-1", name: "Test", value: 42 } });
-			const query = new ChimeraItemQuery(mockConfig, chimeraDefaultDebugConfig, mockParams, null, { name: "New", value: 42 });
+			const query = new ChimeraItemQuery(mockConfig, chimeraDefaultDebugConfig, mockParams, null, {
+				name: "New",
+				value: 42,
+			});
 
 			expect(() => query.delete()).toThrow(ChimeraQueryNotCreatedError);
 		});
@@ -470,8 +479,8 @@ describe("ChimeraItemQuery", () => {
 		});
 
 		it("should handle number IDs", () => {
-			const config: QueryEntityConfig<'test',TestItemWithNumberId, ChimeraOperatorMap> = {
-				...(mockConfig as unknown as QueryEntityConfig<'test',TestItemWithNumberId, ChimeraOperatorMap>),
+			const config: QueryEntityConfig<"test", TestItemWithNumberId, ChimeraOperatorMap> = {
+				...(mockConfig as unknown as QueryEntityConfig<"test", TestItemWithNumberId, ChimeraOperatorMap>),
 				idGetter: (item: TestItemWithNumberId) => item.id,
 			};
 
@@ -579,7 +588,10 @@ describe("ChimeraItemQuery", () => {
 		it("should handle creation errors", async () => {
 			mockCreator.mockRejectedValue(new Error("Creation failed"));
 
-			const query = new ChimeraItemQuery(mockConfig, chimeraDefaultDebugConfig, mockParams, null, { name: "New", value: 42 });
+			const query = new ChimeraItemQuery(mockConfig, chimeraDefaultDebugConfig, mockParams, null, {
+				name: "New",
+				value: 42,
+			});
 
 			await expect(query.promise).rejects.toThrow();
 			await query.progress;
@@ -590,5 +602,3 @@ describe("ChimeraItemQuery", () => {
 		});
 	});
 });
-
-
