@@ -10,4 +10,5 @@ export default defineConfig({
 	format: ["cjs", "esm"],
 	shims: true,
 	skipNodeModulesBundle: true,
+	external: ["@hf-chimera/store"],
 });

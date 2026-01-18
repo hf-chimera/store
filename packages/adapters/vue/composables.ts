@@ -5,7 +5,8 @@ import {
 	CHIMERA_ITEM_UPDATE_EVENTS,
 	normalizeParams,
 } from "@hf-chimera/adapters-shared";
-import { type ChimeraQueryBuilder, DefaultChimeraQueryBuilder } from "@hf-chimera/query-builder";
+import type { ChimeraQueryBuilder } from "@hf-chimera/query-builder";
+import { DefaultChimeraQueryBuilder } from "@hf-chimera/query-builder";
 import type {
 	AnyChimeraEntityStore,
 	AnyChimeraEventEmitter,
