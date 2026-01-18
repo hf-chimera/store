@@ -40,6 +40,6 @@
 		"test:coverage": "vitest --ui --coverage.enabled --coverage.all",
 		"changeset:minor": "node scripts/changeset-minor.mjs",
 		"changeset:major": "node scripts/changeset-major.mjs",
-		"release": "pnpm build:all && pnpm changeset publish"
+		"release": "pnpm build:all && pnpm changeset publish --provenance"
 	}
 }
