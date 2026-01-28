@@ -3,10 +3,9 @@ import {
 	CHIMERA_COLLECTION_UPDATE_EVENTS,
 	CHIMERA_ENTITY_STORE_UPDATE_EVENTS,
 	CHIMERA_ITEM_UPDATE_EVENTS,
+	type ChimeraQueryBuilder,
 	normalizeParams,
 } from "@hf-chimera/adapters-shared";
-import type { ChimeraQueryBuilder } from "@hf-chimera/query-builder";
-import { DefaultChimeraQueryBuilder } from "@hf-chimera/query-builder";
 import type {
 	AnyChimeraEntityStore,
 	AnyChimeraEventEmitter,
@@ -62,7 +61,7 @@ const useSubscribedValue = <TEventEmitter extends AnyChimeraEventEmitter>(
 
 export function createChimeraStoreHooks<TStore extends AnyChimeraEntityStore>(
 	store: TStore,
-): ChimeraHooks<TStore, DefaultChimeraQueryBuilder<TStore>>;
+): ChimeraHooks<TStore, never>;
 export function createChimeraStoreHooks<
 	TStore extends AnyChimeraEntityStore,
 	TQueryBuilder extends ChimeraQueryBuilder<TStore>,
@@ -71,8 +70,6 @@ export function createChimeraStoreHooks<
 	TStore extends AnyChimeraEntityStore,
 	TQueryBuilder extends ChimeraQueryBuilder<TStore>,
 >(store: TStore, createQueryBuilder?: () => TQueryBuilder): ChimeraHooks<TStore, TQueryBuilder> {
-	createQueryBuilder ||= () => new DefaultChimeraQueryBuilder() as unknown as TQueryBuilder;
-
 	return {
 		[`useChimera${capitalize(store.name)}Store`]: () => useSubscribedValue(store, CHIMERA_ENTITY_STORE_UPDATE_EVENTS),
 		[`useChimera${capitalize(store.name)}Collection`]: <TMeta = any>(

@@ -3,10 +3,9 @@ import {
 	CHIMERA_COLLECTION_UPDATE_EVENTS,
 	CHIMERA_ENTITY_STORE_UPDATE_EVENTS,
 	CHIMERA_ITEM_UPDATE_EVENTS,
+	type ChimeraQueryBuilder,
 	normalizeParams,
 } from "@hf-chimera/adapters-shared";
-import type { ChimeraQueryBuilder } from "@hf-chimera/query-builder";
-import { DefaultChimeraQueryBuilder } from "@hf-chimera/query-builder";
 import type {
 	AnyChimeraEntityStore,
 	AnyChimeraEventEmitter,
@@ -89,7 +88,7 @@ const createEmitterRef = <TEventEmitter extends AnyChimeraEventEmitter>(
 
 export function createChimeraStoreComposables<TStore extends AnyChimeraEntityStore>(
 	store: TStore,
-): ChimeraComposables<TStore, DefaultChimeraQueryBuilder<TStore>>;
+): ChimeraComposables<TStore, never>;
 export function createChimeraStoreComposables<
 	TStore extends AnyChimeraEntityStore,
 	TQueryBuilder extends ChimeraQueryBuilder<TStore>,
@@ -98,8 +97,6 @@ export function createChimeraStoreComposables<
 	TStore extends AnyChimeraEntityStore,
 	TQueryBuilder extends ChimeraQueryBuilder<TStore>,
 >(store: TStore, createQueryBuilder?: () => TQueryBuilder): ChimeraComposables<TStore, TQueryBuilder> {
-	createQueryBuilder ||= () => new DefaultChimeraQueryBuilder() as unknown as TQueryBuilder;
-
 	return {
 		[`useChimera${capitalize(store.name)}Store`]: () =>
 			createEmitterRef(store, CHIMERA_ENTITY_STORE_UPDATE_EVENTS, "ChimeraEntityStore"),
