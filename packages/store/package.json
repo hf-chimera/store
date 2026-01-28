@@ -16,19 +16,19 @@
 		"state-sync"
 	],
 	"type": "module",
-	"types": "./dist/index.d.ts",
+	"types": "./dist/index.d.mts",
 	"main": "./dist/index.cjs",
-	"module": "./dist/index.js",
+	"module": "./dist/index.mjs",
 	"exports": {
 		".": {
-			"types": "./dist/index.d.ts",
+			"types": "./dist/index.d.mts",
 			"require": "./dist/index.cjs",
-			"import": "./dist/index.js"
+			"import": "./dist/index.mjs"
 		},
 		"./defaults": {
-			"types": "./dist/defaults.d.ts",
+			"types": "./dist/defaults.d.mts",
 			"require": "./dist/defaults.cjs",
-			"import": "./dist/defaults.js"
+			"import": "./dist/defaults.mjs"
 		}
 	},
 	"files": [
