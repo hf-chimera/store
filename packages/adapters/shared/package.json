@@ -1,6 +1,6 @@
 {
 	"name": "@hf-chimera/adapters-shared",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"description": "Cross-end reactivity API - Shared adapter utilities",
 	"license": "MIT",
 	"author": "hewston",
