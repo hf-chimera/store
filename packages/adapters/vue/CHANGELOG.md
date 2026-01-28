@@ -1,5 +1,15 @@
 # @hf-chimera/vue
 
+## 0.2.3
+
+### Patch Changes
+
+- a29dcd8: Fixed package.json to reference correct built file extensions (.d.mts and .mjs instead of .d.ts and .js) to resolve TypeScript module resolution errors
+- Updated dependencies [a29dcd8]
+- Updated dependencies [a29dcd8]
+  - @hf-chimera/adapters-shared@0.2.3
+  - @hf-chimera/store@0.2.2
+
 ## 0.2.2
 
 ### Patch Changes

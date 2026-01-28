@@ -1,6 +1,6 @@
 {
 	"name": "@hf-chimera/store",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"description": "Cross-end reactivity API - Core store",
 	"license": "MIT",
 	"author": "hewston",
