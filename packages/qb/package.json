@@ -32,7 +32,7 @@
 		"url": "https://github.com/hf-chimera/store"
 	},
 	"peerDependencies": {
-		"@hf-chimera/store": "workspace:^"
+		"@hf-chimera/store": "workspace:~"
 	},
 	"scripts": {
 		"build": "tsdown",

@@ -1,5 +1,6 @@
-import { writeFileSync } from 'fs';
-import { randomBytes } from 'crypto';
+import { writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import path from 'node:path';
 
 const packageName = process.argv[2];
 
@@ -17,5 +18,5 @@ const changesetContent = `---
 Patch version bump for ${packageName}
 `;
 
-writeFileSync(`.changeset/${changesetId}.md`, changesetContent);
+writeFileSync(path.resolve(import.meta.dirname, `../.changeset/${changesetId}.md`), changesetContent);
 console.log(`✅ Created patch changeset for ${packageName}`);

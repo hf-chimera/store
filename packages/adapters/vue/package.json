@@ -33,9 +33,11 @@
 		"url": "https://github.com/hf-chimera/store"
 	},
 	"peerDependencies": {
-		"@hf-chimera/store": "workspace:^",
-		"@hf-chimera/adapters-shared": "workspace:^",
+		"@hf-chimera/store": "workspace:~",
 		"vue": ">=3.0.0"
+	},
+	"dependencies": {
+		"@hf-chimera/adapters-shared": "workspace:~"
 	},
 	"scripts": {
 		"build": "tsdown",

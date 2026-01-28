@@ -51,10 +51,10 @@ importers:
   packages/adapters/react:
     dependencies:
       '@hf-chimera/adapters-shared':
-        specifier: workspace:^
+        specifier: workspace:~
         version: link:../shared
       '@hf-chimera/store':
-        specifier: workspace:^
+        specifier: workspace:~
         version: link:../../store
       react:
         specifier: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -63,16 +63,16 @@ importers:
   packages/adapters/shared:
     dependencies:
       '@hf-chimera/store':
-        specifier: workspace:^
+        specifier: workspace:~
         version: link:../../store
 
   packages/adapters/vue:
     dependencies:
       '@hf-chimera/adapters-shared':
-        specifier: workspace:^
+        specifier: workspace:~
         version: link:../shared
       '@hf-chimera/store':
-        specifier: workspace:^
+        specifier: workspace:~
         version: link:../../store
       vue:
         specifier: '>=3.0.0'
@@ -81,7 +81,7 @@ importers:
   packages/qb:
     dependencies:
       '@hf-chimera/store':
-        specifier: workspace:^
+        specifier: workspace:~
         version: link:../store
 
   packages/store: {}

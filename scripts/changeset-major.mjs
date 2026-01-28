@@ -1,5 +1,6 @@
-import { writeFileSync } from 'fs';
-import { randomBytes } from 'crypto';
+import { writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import path from 'node:path';
 
 const packages = [
   '@hf-chimera/store',
@@ -17,5 +18,5 @@ ${packages.map(pkg => `"${pkg}": major`).join('\n')}
 Major version bump across all packages
 `;
 
-writeFileSync(`.changeset/${changesetId}.md`, changesetContent);
+writeFileSync(path.resolve(import.meta.dirname, `../.changeset/${changesetId}.md`), changesetContent);
 console.log('✅ Created synchronized major changeset for all packages');

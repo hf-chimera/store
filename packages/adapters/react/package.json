@@ -33,9 +33,11 @@
 		"url": "https://github.com/hf-chimera/store"
 	},
 	"peerDependencies": {
-		"@hf-chimera/store": "workspace:^",
-		"@hf-chimera/adapters-shared": "workspace:^",
+		"@hf-chimera/store": "workspace:~",
 		"react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+	},
+	"dependencies": {
+		"@hf-chimera/adapters-shared": "workspace:~"
 	},
 	"scripts": {
 		"build": "tsdown",
