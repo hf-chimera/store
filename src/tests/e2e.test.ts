@@ -323,7 +323,7 @@ describe("Store Module - e2e Tests", () => {
 	describe("Store Configuration", () => {
 		it("should work with different ID getters", async () => {
 			// Create entity stores with custom ID getter
-			const userStore = createChimeraEntityStore<"user", User>({
+			const userStore = createChimeraEntityStore<User, "user">({
 				name: "user",
 				idGetter: (item) => item.id,
 				trustQuery: true,
@@ -340,7 +340,7 @@ describe("Store Module - e2e Tests", () => {
 		});
 
 		it("should handle entity-specific configuration", async () => {
-			const customUserStore = createChimeraEntityStore<"user", User>({
+			const customUserStore = createChimeraEntityStore<User, "user">({
 				name: "user",
 				idGetter: "id",
 				trustQuery: true,
@@ -352,7 +352,7 @@ describe("Store Module - e2e Tests", () => {
 				itemUpdater: (updatedEntity, requestParams) => stubApi.updateItem("user", updatedEntity, requestParams),
 			});
 
-			const customPostStore = createChimeraEntityStore<"post", Post>({
+			const customPostStore = createChimeraEntityStore<Post, "post">({
 				name: "post",
 				idGetter: "id",
 				trustQuery: true,

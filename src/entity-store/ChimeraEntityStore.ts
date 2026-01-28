@@ -342,9 +342,9 @@ export class ChimeraEntityStore<
  * @returns ChimeraEntityStore instance
  */
 export function createChimeraEntityStore<
-	TEntityName extends string,
 	TItem extends object,
-	TOperatorsMap extends ChimeraOperatorMap,
+	TEntityName extends string = string,
+	TOperatorsMap extends ChimeraOperatorMap = ChimeraOperatorMap,
 >(
 	entityConfig: ChimeraQueryEntityConfig<TEntityName, TItem, TOperatorsMap>,
 	filterConfig: Required<ChimeraFilterConfig<TOperatorsMap>>,
@@ -352,29 +352,29 @@ export function createChimeraEntityStore<
 	debugConfig: Required<ChimeraDebugConfig>,
 ): ChimeraEntityStore<TEntityName, TItem, TOperatorsMap>;
 export function createChimeraEntityStore<
-	TEntityName extends string,
 	TItem extends object,
-	TOperatorsMap extends ChimeraOperatorMap,
+	TEntityName extends string = string,
+	TOperatorsMap extends ChimeraOperatorMap = ChimeraOperatorMap,
 >(
 	entityConfig: ChimeraQueryEntityConfig<TEntityName, TItem, TOperatorsMap>,
 	filterConfig: Required<ChimeraFilterConfig<TOperatorsMap>>,
 	orderConfig: Required<ChimeraOrderConfig>,
 ): ChimeraEntityStore<TEntityName, TItem, TOperatorsMap>;
 export function createChimeraEntityStore<
-	TEntityName extends string,
 	TItem extends object,
-	TOperatorsMap extends ChimeraOperatorMap,
+	TEntityName extends string = string,
+	TOperatorsMap extends ChimeraOperatorMap = ChimeraOperatorMap,
 >(
 	entityConfig: ChimeraQueryEntityConfig<TEntityName, TItem, TOperatorsMap>,
 	filterConfig: Required<ChimeraFilterConfig<TOperatorsMap>>,
 ): ChimeraEntityStore<TEntityName, TItem, TOperatorsMap>;
-export function createChimeraEntityStore<TEntityName extends string, TItem extends object>(
+export function createChimeraEntityStore<TItem extends object, TEntityName extends string = string>(
 	entityConfig: ChimeraQueryEntityConfig<TEntityName, TItem, typeof chimeraDefaultFilterConfig.operators>,
 ): ChimeraEntityStore<TEntityName, TItem, typeof chimeraDefaultFilterConfig.operators>;
 export function createChimeraEntityStore<
-	TEntityName extends string,
 	TItem extends object,
-	TOperatorsMap extends ChimeraOperatorMap,
+	TEntityName extends string = string,
+	TOperatorsMap extends ChimeraOperatorMap = ChimeraOperatorMap,
 >(
 	entityConfig: ChimeraQueryEntityConfig<TEntityName, TItem, TOperatorsMap>,
 	filterConfig?: Required<ChimeraFilterConfig<TOperatorsMap>>,
