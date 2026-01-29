@@ -38,6 +38,7 @@
 		"prepare": "husky",
 		"test": "vitest run --passWithNoTests",
 		"test:coverage": "vitest --ui --coverage.enabled --coverage.all",
+		"add-patches": "node scripts/add-patches.mjs",
 		"changeset:minor": "node scripts/changeset-minor.mjs",
 		"changeset:major": "node scripts/changeset-major.mjs",
 		"release": "pnpm build:all && pnpm changeset publish --provenance"

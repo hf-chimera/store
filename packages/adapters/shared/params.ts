@@ -13,18 +13,19 @@ export interface ChimeraQueryBuilder<TStore extends AnyChimeraEntityStore> {
 	build(): ChimeraCollectionParams<ChimeraEntityStoreOperatorsMap<TStore>, ChimeraEntityStoreEntity<TStore>, any>;
 }
 
-export type QueryBuilderCreator<TStore extends AnyChimeraEntityStore> = (
-	qb: ChimeraQueryBuilder<TStore>,
-) => ChimeraQueryBuilder<TStore> | undefined;
+export type QueryBuilderCreator<
+	TStore extends AnyChimeraEntityStore,
+	TQueryBuilder extends ChimeraQueryBuilder<TStore> = ChimeraQueryBuilder<TStore>,
+> = (qb: TQueryBuilder) => TQueryBuilder | undefined;
 
 export type AnyChimeraParams<
 	TStore extends AnyChimeraEntityStore,
 	TMeta = any,
-	QueryBuilder extends ChimeraQueryBuilder<TStore> = ChimeraQueryBuilder<TStore>,
+	TQueryBuilder extends ChimeraQueryBuilder<TStore> = ChimeraQueryBuilder<TStore>,
 > =
 	| ChimeraCollectionParams<ChimeraEntityStoreOperatorsMap<TStore>, ChimeraEntityStoreEntity<TStore>, TMeta>
-	| QueryBuilderCreator<TStore>
-	| QueryBuilder;
+	| QueryBuilderCreator<TStore, TQueryBuilder>
+	| ChimeraQueryBuilder<TStore>;
 
 const isQueryBuilder = <TStore extends AnyChimeraEntityStore, Meta = any>(
 	params: AnyChimeraParams<TStore, Meta>,

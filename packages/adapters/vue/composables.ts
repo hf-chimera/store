@@ -30,7 +30,7 @@ type ChimeraComposables<
 	[K in TEntityName as `useChimera${Capitalize<K>}Store`]: () => Ref<TStore>;
 } & {
 	[K in TEntityName as `useChimera${Capitalize<K>}Collection`]: <TMeta = any>(
-		params: MaybeRefOrGetter<AnyChimeraParams<TStore, TMeta, Extract<TQueryBuilder, ChimeraQueryBuilder<TStore>>>>,
+		params: MaybeRefOrGetter<AnyChimeraParams<TStore, TMeta, TQueryBuilder>>,
 	) => Ref<
 		ChimeraCollectionQuery<
 			ChimeraEntityStoreName<TStore>,
@@ -101,7 +101,7 @@ export function createChimeraStoreComposables<
 		[`useChimera${capitalize(store.name)}Store`]: () =>
 			createEmitterRef(store, CHIMERA_ENTITY_STORE_UPDATE_EVENTS, "ChimeraEntityStore"),
 		[`useChimera${capitalize(store.name)}Collection`]: <TMeta = any>(
-			params: MaybeRefOrGetter<AnyChimeraParams<TStore, TMeta, Extract<TQueryBuilder, ChimeraQueryBuilder<TStore>>>>,
+			params: MaybeRefOrGetter<AnyChimeraParams<TStore, TMeta, TQueryBuilder>>,
 		): Ref<
 			ChimeraCollectionQuery<
 				ChimeraEntityStoreName<TStore>,
@@ -109,7 +109,7 @@ export function createChimeraStoreComposables<
 				ChimeraEntityStoreOperatorsMap<TStore>
 			>
 		> => {
-			const normalizedParams = computed(() => normalizeParams(createQueryBuilder, toValue(params)));
+			const normalizedParams = computed(() => normalizeParams(createQueryBuilder, toValue(params as TQueryBuilder)));
 			return createEmitterRef(
 				computed(() => store.getCollection(normalizedParams.value)),
 				CHIMERA_COLLECTION_UPDATE_EVENTS,

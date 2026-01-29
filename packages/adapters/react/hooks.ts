@@ -27,7 +27,7 @@ type ChimeraHooks<
 	[K in TEntityName as `useChimera${Capitalize<K>}Store`]: () => TStore;
 } & {
 	[K in TEntityName as `useChimera${Capitalize<K>}Collection`]: <Meta = any>(
-		params: AnyChimeraParams<TStore, Meta, Extract<TQueryBuilder, ChimeraQueryBuilder<TStore>>>,
+		params: AnyChimeraParams<TStore, Meta, TQueryBuilder>,
 		deps?: unknown[],
 	) => ChimeraCollectionQuery<TEntityName, ChimeraEntityStoreEntity<TStore>, ChimeraEntityStoreOperatorsMap<TStore>>;
 } & {
@@ -73,7 +73,7 @@ export function createChimeraStoreHooks<
 	return {
 		[`useChimera${capitalize(store.name)}Store`]: () => useSubscribedValue(store, CHIMERA_ENTITY_STORE_UPDATE_EVENTS),
 		[`useChimera${capitalize(store.name)}Collection`]: <TMeta = any>(
-			params: AnyChimeraParams<TStore, TMeta, Extract<TQueryBuilder, ChimeraQueryBuilder<TStore>>>,
+			params: AnyChimeraParams<TStore, TMeta, TQueryBuilder>,
 			deps?: unknown[],
 		) => {
 			const oldDeps = useRef(deps);
@@ -87,7 +87,7 @@ export function createChimeraStoreHooks<
 			oldDeps.current = deps;
 
 			const stableParams = useMemo(
-				() => normalizeParams(createQueryBuilder, params),
+				() => normalizeParams(createQueryBuilder, params as TQueryBuilder),
 				// biome-ignore lint/correctness/useExhaustiveDependencies: Very unlikely it will be changed over time, anyway warning for this already added.
 				deps ? deps : [params],
 			);
