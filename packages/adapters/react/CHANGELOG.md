@@ -1,5 +1,13 @@
 # @hf-chimera/react
 
+## 0.2.4
+
+### Patch Changes
+
+- 22d5db8: Fix query builder types
+- Updated dependencies [22d5db8]
+  - @hf-chimera/adapters-shared@0.2.4
+
 ## 0.2.3
 
 ### Patch Changes
