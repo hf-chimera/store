@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { useChimeraCollection } from '../../store';
+import { useChimeraCustomerCollection } from '../../store';
 import type { Customer } from '../../../../server/types';
 
 export const Route = createFileRoute('/customers/')({
@@ -13,8 +13,7 @@ function CustomersList() {
 	const [sortBy, setSortBy] = useState<SortOptions>('createdAt:-');
 	const [nameSearch, setNameSearch] = useState('');
 
-	const customersQuery = useChimeraCollection(
-		'customer',
+	const customersQuery = useChimeraCustomerCollection(
 		(q) => {
 			if (nameSearch) {
 				q.where('name', 'contains', nameSearch)

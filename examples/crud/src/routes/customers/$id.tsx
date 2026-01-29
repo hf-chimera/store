@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useChimeraItem } from '../../store';
-import { useState, useEffect } from 'react';
+import { useChimeraCustomerItem } from '../../store';
+import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 
 export const Route = createFileRoute('/customers/$id')({
 	component: UpdateCustomer,
@@ -16,7 +16,7 @@ function UpdateCustomer() {
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const customerQuery = useChimeraItem('customer', +id);
+	const customerQuery = useChimeraCustomerItem(+id);
 
 	useEffect(() => {
 		if (customerQuery.ready) {
@@ -28,7 +28,7 @@ function UpdateCustomer() {
 		}
 	}, [customerQuery.ready]);
 
-	const handleSubmit = async (e: React.FormEvent) => {
+	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
 		setIsSubmitting(true);
 
@@ -40,7 +40,7 @@ function UpdateCustomer() {
 				phone: formData.phone
 			});
 
-			navigate({ to: '/customers' });
+			await navigate({ to: '/customers' });
 		} catch (error) {
 			console.error('Failed to update customer:', error);
 		} finally {
@@ -48,7 +48,7 @@ function UpdateCustomer() {
 		}
 	};
 
-	const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+	const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
 		setFormData(prev => ({
 			...prev,
 			[e.target.name]: e.target.value

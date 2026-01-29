@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useChimeraRepository } from '../../store';
-import { useState } from 'react';
+import { useChimeraOrderStore } from '../../store';
+import { type ChangeEvent, type FormEvent, useState } from 'react';
 
 export const Route = createFileRoute('/orders/new')({
 	component: NewOrder,
@@ -17,9 +17,9 @@ function NewOrder() {
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const orderRepository = useChimeraRepository('order');
+	const orderRepository = useChimeraOrderStore();
 
-	const handleSubmit = async (e: React.FormEvent) => {
+	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
 		setIsSubmitting(true);
 
@@ -43,7 +43,7 @@ function NewOrder() {
 		}
 	};
 
-	const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+	const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
 		setFormData(prev => ({
 			...prev,
 			[e.target.name]: e.target.value

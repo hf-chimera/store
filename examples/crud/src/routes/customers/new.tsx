@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useChimeraRepository } from '../../store';
-import { useState } from 'react';
+import { useChimeraCustomerStore } from '../../store';
+import { type ChangeEvent, type FormEvent, useState } from 'react';
 
 export const Route = createFileRoute('/customers/new')({
 	component: NewCustomer,
@@ -15,9 +15,9 @@ function NewCustomer() {
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const customerRepository = useChimeraRepository('customer');
+	const customerRepository = useChimeraCustomerStore();
 
-	const handleSubmit = async (e: React.FormEvent) => {
+	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
 		setIsSubmitting(true);
 
@@ -31,7 +31,7 @@ function NewCustomer() {
 			// Wait for the creation to complete
 			await newCustomerQuery.progress;
 
-			navigate({ to: '/customers' });
+			await navigate({ to: '/customers' });
 		} catch (error) {
 			console.error('Failed to create customer:', error);
 		} finally {
@@ -39,7 +39,7 @@ function NewCustomer() {
 		}
 	};
 
-	const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+	const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
 		setFormData(prev => ({
 			...prev,
 			[e.target.name]: e.target.value

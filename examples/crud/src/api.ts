@@ -17,12 +17,7 @@ const entityEndpointMap = {
 	customer: "customers",
 } as const;
 
-export const endpointEntityMap = {
-	orders: "order",
-	customers: "customer",
-} as const;
-
-type OperatorMap = typeof chimeraDefaultFilterOperators;
+export type OperatorMap = typeof chimeraDefaultFilterOperators;
 
 /**
  * Transform Chimera filter to a unified filter format

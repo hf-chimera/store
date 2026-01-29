@@ -4,8 +4,9 @@
 	"private": true,
 	"packageManager": "pnpm@10.20.0",
 	"dependencies": {
-		"@hf-chimera/react": "^0.2.1",
-		"@hf-chimera/store": "^0.2.0",
+		"@hf-chimera/query-builder": "^0.2.3",
+		"@hf-chimera/react": "^0.2.5",
+		"@hf-chimera/store": "^0.2.2",
 		"@tailwindcss/vite": "^4.0.6",
 		"@tanstack/react-router": "^1.132.0",
 		"@tanstack/react-table": "^8.21.2",

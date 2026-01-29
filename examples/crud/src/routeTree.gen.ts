@@ -59,8 +59,8 @@ export interface FileRoutesByFullPath {
   '/customers/new': typeof CustomersNewRoute
   '/orders/$id': typeof OrdersIdRoute
   '/orders/new': typeof OrdersNewRoute
-  '/customers': typeof CustomersIndexRoute
-  '/orders': typeof OrdersIndexRoute
+  '/customers/': typeof CustomersIndexRoute
+  '/orders/': typeof OrdersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -89,8 +89,8 @@ export interface FileRouteTypes {
     | '/customers/new'
     | '/orders/$id'
     | '/orders/new'
-    | '/customers'
-    | '/orders'
+    | '/customers/'
+    | '/orders/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,14 +133,14 @@ declare module '@tanstack/react-router' {
     '/orders/': {
       id: '/orders/'
       path: '/orders'
-      fullPath: '/orders'
+      fullPath: '/orders/'
       preLoaderRoute: typeof OrdersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/customers/': {
       id: '/customers/'
       path: '/customers'
-      fullPath: '/customers'
+      fullPath: '/customers/'
       preLoaderRoute: typeof CustomersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }

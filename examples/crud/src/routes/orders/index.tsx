@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { useChimeraCollection } from '../../store';
+import { useChimeraOrderCollection } from '../../store';
 import type { Order } from '../../../../server/types';
 
 export const Route = createFileRoute('/orders/')({
@@ -14,10 +14,9 @@ function OrdersList() {
 	const [minAmount, setMinAmount] = useState<number>(0);
 	const [sortBy, setSortBy] = useState<SortOptions>('createdAt:-');
 
-	const ordersQuery = useChimeraCollection(
-		'order',
+	const ordersQuery = useChimeraOrderCollection(
 		(q) => {
-			// Filter: exclude cancelled orders if statusFilter is not 'all'
+			// Filter: exclude canceled orders if statusFilter is not 'all'
 			if (statusFilter !== 'all') {
 				q.where('status', 'eq', statusFilter);
 			}

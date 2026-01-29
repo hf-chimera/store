@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useChimeraItem } from '../../store';
-import { useState, useEffect } from 'react';
+import { useChimeraOrderItem } from '../../store';
+import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 
 export const Route = createFileRoute('/orders/$id')({
 	component: UpdateOrder,
@@ -18,7 +18,7 @@ function UpdateOrder() {
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const orderQuery = useChimeraItem('order', +id);
+	const orderQuery = useChimeraOrderItem(+id);
 
 	useEffect(() => {
 		if (orderQuery.ready) {
@@ -32,7 +32,7 @@ function UpdateOrder() {
 		}
 	}, [orderQuery.ready]);
 
-	const handleSubmit = async (e: React.FormEvent) => {
+	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
 		setIsSubmitting(true);
 
@@ -54,7 +54,7 @@ function UpdateOrder() {
 		}
 	};
 
-	const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+	const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
 		setFormData(prev => ({
 			...prev,
 			[e.target.name]: e.target.value
