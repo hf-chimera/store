@@ -1,5 +1,13 @@
 # @hf-chimera/vue
 
+## 0.2.5
+
+### Patch Changes
+
+- 747eaa3: Fix shared adapter param type
+- Updated dependencies [747eaa3]
+  - @hf-chimera/adapters-shared@0.2.5
+
 ## 0.2.4
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @hf-chimera/adapters-shared
 
+## 0.2.5
+
+### Patch Changes
+
+- 747eaa3: Fix shared adapter param type
+
 ## 0.2.4
 
 ### Patch Changes
