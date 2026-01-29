@@ -1,6 +1,6 @@
 {
 	"name": "@hf-chimera/vue",
-	"version": "0.2.3",
+	"version": "0.2.4",
 	"description": "Cross-end reactivity API - Vue adapter",
 	"license": "MIT",
 	"author": "hewston",
