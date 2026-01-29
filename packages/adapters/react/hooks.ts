@@ -27,7 +27,7 @@ type ChimeraHooks<
 	[K in TEntityName as `useChimera${Capitalize<K>}Store`]: () => TStore;
 } & {
 	[K in TEntityName as `useChimera${Capitalize<K>}Collection`]: <Meta = any>(
-		params: AnyChimeraParams<TStore, Meta, TQueryBuilder>,
+		params?: AnyChimeraParams<TStore, Meta, TQueryBuilder>,
 		deps?: unknown[],
 	) => ChimeraCollectionQuery<TEntityName, ChimeraEntityStoreEntity<TStore>, ChimeraEntityStoreOperatorsMap<TStore>>;
 } & {
@@ -73,7 +73,7 @@ export function createChimeraStoreHooks<
 	return {
 		[`useChimera${capitalize(store.name)}Store`]: () => useSubscribedValue(store, CHIMERA_ENTITY_STORE_UPDATE_EVENTS),
 		[`useChimera${capitalize(store.name)}Collection`]: <TMeta = any>(
-			params: AnyChimeraParams<TStore, TMeta, TQueryBuilder>,
+			params?: AnyChimeraParams<TStore, TMeta, TQueryBuilder>,
 			deps?: unknown[],
 		) => {
 			const oldDeps = useRef(deps);

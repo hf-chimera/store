@@ -16,7 +16,7 @@ export interface ChimeraQueryBuilder<TStore extends AnyChimeraEntityStore> {
 export type QueryBuilderCreator<
 	TStore extends AnyChimeraEntityStore,
 	TQueryBuilder extends ChimeraQueryBuilder<TStore> = ChimeraQueryBuilder<TStore>,
-> = (qb: TQueryBuilder) => TQueryBuilder | undefined;
+> = (qb: TQueryBuilder) => TQueryBuilder | void;
 
 export type AnyChimeraParams<
 	TStore extends AnyChimeraEntityStore,
@@ -25,11 +25,14 @@ export type AnyChimeraParams<
 > =
 	| ChimeraCollectionParams<ChimeraEntityStoreOperatorsMap<TStore>, ChimeraEntityStoreEntity<TStore>, TMeta>
 	| QueryBuilderCreator<TStore, TQueryBuilder>
-	| ChimeraQueryBuilder<TStore>;
+	| ChimeraQueryBuilder<TStore>
+	| (() => ChimeraCollectionParams<ChimeraEntityStoreOperatorsMap<TStore>, ChimeraEntityStoreEntity<TStore>, TMeta>)
+	| undefined
+	| null
 
 const isQueryBuilder = <TStore extends AnyChimeraEntityStore, Meta = any>(
 	params: AnyChimeraParams<TStore, Meta>,
-): params is ChimeraQueryBuilder<TStore> => "isChimeraQueryBuilder" in params && params.isChimeraQueryBuilder;
+): params is ChimeraQueryBuilder<TStore> => params != null && "isChimeraQueryBuilder" in params && params.isChimeraQueryBuilder;
 
 export const normalizeParams = <TStore extends AnyChimeraEntityStore, TMeta = any>(
 	createQueryBuilder: (() => ChimeraQueryBuilder<TStore>) | undefined,
@@ -46,7 +49,9 @@ export const normalizeParams = <TStore extends AnyChimeraEntityStore, TMeta = an
 			);
 		}
 		const q = createQueryBuilder();
-		return (params(q) ?? q).build();
+		const result = (params(q) ?? q)
+		return isQueryBuilder(result) ? result.build() : result;
 	}
+	if (params == null) return {};
 	return params;
 };

@@ -54,8 +54,8 @@ importers:
         specifier: ^0.2.3
         version: 0.2.3(@hf-chimera/store@0.2.2)
       '@hf-chimera/react':
-        specifier: ^0.2.3
-        version: 0.2.3(@hf-chimera/store@0.2.2)(react@19.2.0)
+        specifier: ^0.2.4
+        version: 0.2.4(@hf-chimera/store@0.2.2)(react@19.2.0)
       '@hf-chimera/store':
         specifier: ^0.2.2
         version: 0.2.2
@@ -588,8 +588,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@hf-chimera/adapters-shared@0.2.3':
-    resolution: {integrity: sha512-NBn1vVUg9Gv81JJAxprXLgqta1PXV6qrqORaOz+MAJ3eHBCm9uEXFW56yFlK8krlIs9T/G65LWzs0gWrgdT2bQ==}
+  '@hf-chimera/adapters-shared@0.2.4':
+    resolution: {integrity: sha512-CukmeYYlVhkIy/6+4NQUQzHkCfGg/M6TAstVhAtVVo7mIRMiit4QcUxeYWfTb5em3jLZhxUhRfTAiYsx12mOLQ==}
     peerDependencies:
       '@hf-chimera/store': ~0.2.2
 
@@ -598,8 +598,8 @@ packages:
     peerDependencies:
       '@hf-chimera/store': ~0.2.2
 
-  '@hf-chimera/react@0.2.3':
-    resolution: {integrity: sha512-0HIALXbYDJsUcdRagmo94g6x2tnMe5PpnLc19YOBsoba2e7C8R3OT7eav9MqP0zaNv7OxYBCKeC4+zUJq00jhw==}
+  '@hf-chimera/react@0.2.4':
+    resolution: {integrity: sha512-2yJK5jrf40OCAyZBX2qqhRueh1T4ei5AgMH+5PdlQkCA05ilfqhfIIADbZbN20DH3PgK/mcxc6mX/XW0WTf88A==}
     peerDependencies:
       '@hf-chimera/store': ~0.2.2
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -3049,7 +3049,7 @@ snapshots:
   '@esbuild/win32-x64@0.27.2':
     optional: true
 
-  '@hf-chimera/adapters-shared@0.2.3(@hf-chimera/store@0.2.2)':
+  '@hf-chimera/adapters-shared@0.2.4(@hf-chimera/store@0.2.2)':
     dependencies:
       '@hf-chimera/store': 0.2.2
 
@@ -3057,9 +3057,9 @@ snapshots:
     dependencies:
       '@hf-chimera/store': 0.2.2
 
-  '@hf-chimera/react@0.2.3(@hf-chimera/store@0.2.2)(react@19.2.0)':
+  '@hf-chimera/react@0.2.4(@hf-chimera/store@0.2.2)(react@19.2.0)':
     dependencies:
-      '@hf-chimera/adapters-shared': 0.2.3(@hf-chimera/store@0.2.2)
+      '@hf-chimera/adapters-shared': 0.2.4(@hf-chimera/store@0.2.2)
       '@hf-chimera/store': 0.2.2
       react: 19.2.0
 
